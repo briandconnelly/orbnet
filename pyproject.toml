@@ -1,0 +1,47 @@
+[project]
+name = "orbnet"
+version = "0.1.0"
+description = "Retrieve network quality data from Orb Sensor."
+authors = [
+    { name = "Brian Connelly", email = "bdc@bconnelly.net" },
+    { name = "Orb Forge Incorporated" },
+]
+requires-python = ">=3.13"
+readme = "README.md"
+license = { file = "LICENSE" }
+keywords = []
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: System :: Networking :: Monitoring"
+]
+
+
+dependencies = [
+    "httpx>=0.28.1",
+    "pydantic>=2.11.9",
+]
+
+[project.scripts]
+orbnet = "orbnet:main"
+
+[project.optional-dependencies]
+mcp = [
+    "fastmcp>=2.12.4",
+]
+
+[build-system]
+requires = ["uv_build>=0.8.22,<0.9.0"]
+build-backend = "uv_build"
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I", "SIM"]
+ignore = []
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
