@@ -16,18 +16,17 @@ classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.13",
-    "Topic :: System :: Networking :: Monitoring"
+    "Topic :: System :: Networking :: Monitoring",
 ]
-
-[project.urls]
-Repository = "https://github.com/briandconnelly/orbnet"
-Issues = "https://github.com/briandconnelly/orbnet/issues"
-
 
 dependencies = [
     "httpx>=0.28.1",
     "pydantic>=2.11.9",
 ]
+
+[project.urls]
+Repository = "https://github.com/briandconnelly/orbnet"
+Issues = "https://github.com/briandconnelly/orbnet/issues"
 
 [dependency-groups]
 dev = [
