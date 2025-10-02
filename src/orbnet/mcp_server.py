@@ -74,7 +74,7 @@ async def get_scores_1m(
         for updates without receiving duplicate records.
 
     Args:
-        host: Orb sensor hostname or IP (default: from ORB_HOST env var or 192.168.0.20)
+        host: Orb sensor hostname or IP (default: from ORB_HOST env var or 'localhost')
         port: API port number (default: from ORB_PORT env var or 7080)
         caller_id: Unique ID to track polling state. Leave as None to use the default
                    session-specific ID, or provide your own for custom polling behavior.
@@ -123,7 +123,7 @@ async def get_responsiveness(
 
     Args:
         granularity: Time bucket size - '1s', '15s', or '1m' (default: '1m')
-        host: Orb sensor hostname or IP (default: from ORB_HOST env var or 192.168.0.20)
+        host: Orb sensor hostname or IP (default: from ORB_HOST env var or 'localhost')
         port: API port number (default: from ORB_PORT env var or 7080)
         caller_id: Unique ID to track polling state. Leave as None to use the default
                    session-specific ID, or provide your own for custom polling behavior.
@@ -169,7 +169,7 @@ async def get_web_responsiveness(
         for updates without receiving duplicate records.
 
     Args:
-        host: Orb sensor hostname or IP (default: from ORB_HOST env var or 192.168.0.20)
+        host: Orb sensor hostname or IP (default: from ORB_HOST env var or 'localhost')
         port: API port number (default: from ORB_PORT env var or 7080)
         caller_id: Unique ID to track polling state. Leave as None to use the default
                    session-specific ID, or provide your own for custom polling behavior.
@@ -210,7 +210,7 @@ async def get_speed_results(
         for updates without receiving duplicate records.
 
     Args:
-        host: Orb sensor hostname or IP (default: from ORB_HOST env var or 192.168.0.20)
+        host: Orb sensor hostname or IP (default: from ORB_HOST env var or 'localhost')
         port: API port number (default: from ORB_PORT env var or 7080)
         caller_id: Unique ID to track polling state. Leave as None to use the default
                    session-specific ID, or provide your own for custom polling behavior.
@@ -254,8 +254,9 @@ async def get_all_datasets(
 
     Args:
         include_all_responsiveness: If True, fetches all responsiveness granularities 
-                                   (1s, 15s, 1m). If False, only fetches 1m. (default: False)
-        host: Orb sensor hostname or IP (default: from ORB_HOST env var or 192.168.0.20)
+                                   (1s, 15s, 1m). If False, only fetches 1m. (default:
+                                   False)
+        host: Orb sensor hostname or IP (default: from ORB_HOST env var or 'localhost')
         port: API port number (default: from ORB_PORT env var or 7080)
         caller_id: Unique ID to track polling state. Leave as None to use the default
                    session-specific ID, or provide your own for custom polling behavior.
@@ -266,8 +267,10 @@ async def get_all_datasets(
         Dictionary with keys for each dataset type:
         - scores_1m: 1-minute scores dataset
         - responsiveness_1m: 1-minute responsiveness dataset
-        - responsiveness_15s: 15-second responsiveness (if include_all_responsiveness=True)
-        - responsiveness_1s: 1-second responsiveness (if include_all_responsiveness=True)
+        - responsiveness_15s: 15-second responsiveness if
+            (include_all_responsiveness=True)
+        - responsiveness_1s: 1-second responsiveness
+            (if include_all_responsiveness=True)
         - web_responsiveness: Web responsiveness results
         - speed_results: Speed test results
         
@@ -295,7 +298,7 @@ def get_client_info(
     verifying which Orb sensor you're connected to.
 
     Args:
-        host: Orb sensor hostname or IP (default: from ORB_HOST env var or 192.168.0.20)
+        host: Orb sensor hostname or IP (default: from ORB_HOST env var or 'localhost')
         port: API port number (default: from ORB_PORT env var or 7080)
         caller_id: Unique ID to track polling state. Leave as None to see the default
                    session-specific ID that's being used.
