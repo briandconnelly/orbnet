@@ -341,17 +341,6 @@ except httpx.HTTPStatusError as e:
 
 `orbnet` includes a [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that allows Claude and other LLM applications to access your Orb network data.
 
-### Quick Start
-
-```bash
-# Install with MCP support
-uv pip install -e ".[mcp]"
-
-# Run the server
-export ORB_HOST="192.168.0.20"
-export ORB_PORT="7080"
-orbnet-mcp
-```
 
 ### Claude Desktop Configuration
 
@@ -361,9 +350,14 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 {
   "mcpServers": {
     "orb-net": {
-      "command": "orbnet-mcp",
+      "command": "uvx",
+      "args": [
+        "--from",
+        "https://github.com/briandconnelly/orbnet.git",
+        "orbnet-mcp"
+      ]
       "env": {
-        "ORB_HOST": "192.168.0.20",
+        "ORB_HOST": "<host IP address>",
         "ORB_PORT": "7080"
       }
     }
@@ -371,7 +365,6 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 }
 ```
 
-See [MCP_SERVER.md](MCP_SERVER.md) for complete documentation.
 
 ## License
 
