@@ -44,7 +44,7 @@ class OrbAPIClient:
             host=host,
             port=port,
             caller_id=caller_id or str(uuid.uuid4()),
-            client_id=client_id or f"orb-api-client/{uuid.uuid4().hex[:8]}",
+            client_id=client_id or "orbnet", # TODO add version
             timeout=timeout,
             use_https=use_https,
         )
@@ -244,108 +244,3 @@ class OrbAPIClient:
             "speed_results", request.format, request.caller_id, **params
         )
 
-    async def get_all_datasets(
-        self,
-        format: Literal["json", "jsonl"] = "json",
-        caller_id: Optional[str] = None,
-        include_all_responsiveness: bool = False,
-    ) -> Dict[str, Union[List[Dict[str, Any]], str]]:
-        """
-        Retrieve all datasets concurrently.
-
-        Args:
-            format: Response format - "json" for array or "jsonl" for NDJSON
-            caller_id: Override the default caller_id for this request
-            include_all_responsiveness: If True, fetches all responsiveness
-                                       granularities (1s, 15s, 1m). If False,
-                                       only fetches 1m granularity.
-
-        Returns:
-            Dictionary with keys for each dataset type containing their data
-        """
-        request = AllDatasetsRequestParams(
-            format=format,
-            caller_id=caller_id,
-            include_all_responsiveness=include_all_responsiveness,
-        )
-
-        tasks = {
-            "scores_1m": self.get_scores_1m(request.format, request.caller_id),
-            "responsiveness_1m": self.get_responsiveness(
-                "1m", request.format, request.caller_id
-            ),
-            "web_responsiveness": self.get_web_responsiveness(
-                request.format, request.caller_id
-            ),
-            "speed_results": self.get_speed_results(request.format, request.caller_id),
-        }
-
-        if request.include_all_responsiveness:
-            tasks["responsiveness_15s"] = self.get_responsiveness(
-                "15s", request.format, request.caller_id
-            )
-            tasks["responsiveness_1s"] = self.get_responsiveness(
-                "1s", request.format, request.caller_id
-            )
-
-        results = await asyncio.gather(*tasks.values(), return_exceptions=True)
-
-        return {
-            key: result if not isinstance(result, Exception) else {"error": str(result)}
-            for key, result in zip(tasks.keys(), results, strict=True)
-        }
-
-    async def poll_dataset(
-        self,
-        dataset_name: str,
-        interval: float = 60.0,
-        format: Literal["json", "jsonl"] = "json",
-        callback: Optional[Callable] = None,
-        max_iterations: Optional[int] = None,
-    ):
-        """
-        Continuously poll a dataset at regular intervals.
-
-        This method automatically tracks state using the client's caller_id,
-        so each poll will only return new records since the last request.
-
-        Args:
-            dataset_name: Name of the dataset to poll (e.g., "responsiveness_1s")
-            interval: Seconds to wait between polls
-            format: Response format - "json" for array or "jsonl" for NDJSON
-            callback: Optional function to call with each batch of new records.
-                     Should accept (dataset_name, records) as arguments.
-            max_iterations: Maximum number of polls (None for infinite)
-
-        Yields:
-            Each batch of new records
-        """
-        config = PollingConfig(
-            dataset_name=dataset_name,
-            interval=interval,
-            format=format,
-            callback=callback,
-            max_iterations=max_iterations,
-        )
-
-        iteration = 0
-        while config.max_iterations is None or iteration < config.max_iterations:
-            try:
-                records = await self._get_dataset(config.dataset_name, config.format)
-
-                if config.callback and records:
-                    await config.callback(
-                        config.dataset_name, records
-                    ) if asyncio.iscoroutinefunction(
-                        config.callback
-                    ) else config.callback(config.dataset_name, records)
-
-                yield records
-
-                await asyncio.sleep(config.interval)
-                iteration += 1
-
-            except Exception as e:
-                print(f"Error polling {config.dataset_name}: {e}")
-                await asyncio.sleep(config.interval)
-                iteration += 1
