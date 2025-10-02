@@ -25,8 +25,8 @@ class TestOrbClientConfig:
 
     def test_default_values(self):
         """Test default configuration values."""
-        config = OrbClientConfig()
-        assert config.host == "localhost"
+        config = OrbClientConfig(host="192.168.1.100")
+        assert config.host == "192.168.1.100"
         assert config.port == 7080
         assert config.caller_id is None
         assert config.client_id is None
@@ -50,25 +50,25 @@ class TestOrbClientConfig:
     def test_port_validation(self):
         """Test port number validation."""
         # Valid ports
-        OrbClientConfig(port=1)
-        OrbClientConfig(port=65535)
+        OrbClientConfig(host="192.168.1.100", port=1)
+        OrbClientConfig(host="192.168.1.100", port=65535)
         
         # Invalid ports
         with pytest.raises(ValidationError):
-            OrbClientConfig(port=0)
+            OrbClientConfig(host="192.168.1.100", port=0)
         with pytest.raises(ValidationError):
-            OrbClientConfig(port=65536)
+            OrbClientConfig(host="192.168.1.100", port=65536)
 
     def test_timeout_validation(self):
         """Test timeout validation."""
         # Valid timeout
-        OrbClientConfig(timeout=0.1)
+        OrbClientConfig(host="192.168.1.100", timeout=0.1)
         
         # Invalid timeout
         with pytest.raises(ValidationError):
-            OrbClientConfig(timeout=0)
+            OrbClientConfig(host="192.168.1.100", timeout=0)
         with pytest.raises(ValidationError):
-            OrbClientConfig(timeout=-1.0)
+            OrbClientConfig(host="192.168.1.100", timeout=-1.0)
 
 
 class TestDatasetRequestParams:

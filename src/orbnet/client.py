@@ -23,16 +23,16 @@ class OrbAPIClient:
     granularities, and both JSON and JSONL output formats.
 
     Examples:
-        Basic usage with default settings:
+        Basic usage:
 
-        >>> client = OrbAPIClient(host="localhost")
+        >>> client = OrbAPIClient(host="192.168.1.100")
         >>> scores = await client.get_scores_1m()
         >>> print(f"Received {len(scores)} score records")
 
         Custom configuration for production monitoring:
 
         >>> client = OrbAPIClient(
-        ...     host="localhost",
+        ...     host="192.168.1.100",
         ...     port=7080,
         ...     caller_id="production-monitor",
         ...     client_id="MyApp/1.0.0",
@@ -44,7 +44,7 @@ class OrbAPIClient:
 
     def __init__(
         self,
-        host: str = "localhost",
+        host: str,
         port: int = 7080,
         caller_id: Optional[str] = None,
         client_id: Optional[str] = None,
@@ -54,7 +54,7 @@ class OrbAPIClient:
         Initialize the Orb API client.
 
         Args:
-            host: Hostname or IP address of the Orb sensor (default: "localhost")
+            host: Hostname or IP address of the Orb sensor
             port: Port number for the Orb API (default: 7080)
             caller_id: Unique ID for this caller to track polling state.
                       If None, generates a random UUID. Use the same caller_id
@@ -65,14 +65,14 @@ class OrbAPIClient:
             timeout: Request timeout in seconds (default: 30.0)
 
         Examples:
-            Connect to local Orb sensor:
+            Connect to Orb sensor:
 
-            >>> client = OrbAPIClient(host="localhost")
+            >>> client = OrbAPIClient(host="192.168.1.100")
 
             Connect with persistent caller_id for stateful polling:
 
             >>> client = OrbAPIClient(
-            ...     host="localhost",
+            ...     host="192.168.1.100",
             ...     caller_id="my-monitoring-service",
             ...     client_id="NetworkMonitor/2.1.0"
             ... )
@@ -80,7 +80,7 @@ class OrbAPIClient:
             Connect with custom timeout for slow networks:
 
             >>> client = OrbAPIClient(
-            ...     host="localhost",
+            ...     host="192.168.1.100",
             ...     timeout=120.0
             ... )
         """
@@ -188,7 +188,7 @@ class OrbAPIClient:
         Examples:
             Get latest scores and display overall quality:
 
-            >>> client = OrbAPIClient(host="localhost")
+            >>> client = OrbAPIClient(host="192.168.1.100")
             >>> scores = await client.get_scores_1m()
             >>> if scores:
             ...     latest = scores[-1]
@@ -256,7 +256,7 @@ class OrbAPIClient:
         Examples:
             Get high-resolution 1-second responsiveness data:
 
-            >>> client = OrbAPIClient(host="localhost")
+            >>> client = OrbAPIClient(host="192.168.1.100")
             >>> data = await client.get_responsiveness(granularity="1s")
             >>> if data:
             ...     latest = data[-1]
@@ -324,7 +324,7 @@ class OrbAPIClient:
         Examples:
             Monitor web browsing experience:
 
-            >>> client = OrbAPIClient(host="localhost")
+            >>> client = OrbAPIClient(host="192.168.1.100")
             >>> data = await client.get_web_responsiveness()
             >>> if data:
             ...     latest = data[-1]
@@ -391,7 +391,7 @@ class OrbAPIClient:
         Examples:
             Get latest speed test results:
 
-            >>> client = OrbAPIClient(host="localhost")
+            >>> client = OrbAPIClient(host="192.168.1.100")
             >>> speeds = await client.get_speed_results()
             >>> if speeds:
             ...     latest = speeds[-1]
@@ -458,7 +458,7 @@ class OrbAPIClient:
         Examples:
             Fetch all datasets at once:
 
-            >>> client = OrbAPIClient(host="localhost")
+            >>> client = OrbAPIClient(host="192.168.1.100")
             >>> datasets = await client.get_all_datasets()
             >>> print(f"Scores: {len(datasets['scores_1m'])} records")
             >>> print(f"Responsiveness: {len(datasets['responsiveness_1m'])} records")
@@ -555,7 +555,7 @@ class OrbAPIClient:
         Examples:
             Poll for new responsiveness data every 10 seconds:
 
-            >>> client = OrbAPIClient(host="localhost")
+            >>> client = OrbAPIClient(host="192.168.1.100")
             >>> async for records in client.poll_dataset(
             ...     dataset_name="responsiveness_1s",
             ...     interval=10.0,

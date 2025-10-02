@@ -16,8 +16,8 @@ class TestOrbAPIClient:
 
     def test_init_default_values(self):
         """Test client initialization with default values."""
-        client = OrbAPIClient()
-        assert client.host == "localhost"
+        client = OrbAPIClient(host="192.168.1.100")
+        assert client.host == "192.168.1.100"
         assert client.port == 7080
         assert client.caller_id is not None  # Should generate UUID
         assert client.client_id.startswith("orbnet/")
@@ -45,7 +45,7 @@ class TestOrbAPIClient:
 
     def test_get_headers(self):
         """Test _get_headers method."""
-        client = OrbAPIClient(client_id="test-client")
+        client = OrbAPIClient(host="192.168.1.100", client_id="test-client")
         headers = client._get_headers()
         assert headers == {
             "Accept": "application/json",
@@ -62,7 +62,7 @@ class TestOrbAPIClient:
             mock_client_class.return_value.__aenter__.return_value = mock_client
             mock_client.get.return_value = mock_httpx_response
             
-            client = OrbAPIClient()
+            client = OrbAPIClient(host="192.168.1.100")
             result = await client._get_dataset("scores_1m", format="json")
             
             assert result == sample_scores_data
@@ -81,7 +81,7 @@ class TestOrbAPIClient:
             mock_client_class.return_value.__aenter__.return_value = mock_client
             mock_client.get.return_value = mock_httpx_response
             
-            client = OrbAPIClient()
+            client = OrbAPIClient(host="192.168.1.100")
             result = await client._get_dataset("scores_1m", format="jsonl")
             
             assert result == sample_jsonl_data
@@ -99,7 +99,7 @@ class TestOrbAPIClient:
             mock_client_class.return_value.__aenter__.return_value = mock_client
             mock_client.get.return_value = mock_httpx_response
             
-            client = OrbAPIClient()
+            client = OrbAPIClient(host="192.168.1.100")
             result = await client._get_dataset(
                 "scores_1m", 
                 format="json", 
@@ -120,7 +120,7 @@ class TestOrbAPIClient:
             mock_client_class.return_value.__aenter__.return_value = mock_client
             mock_client.get.return_value = mock_httpx_response
             
-            client = OrbAPIClient()
+            client = OrbAPIClient(host="192.168.1.100")
             result = await client._get_dataset(
                 "scores_1m", 
                 format="json",
@@ -146,7 +146,7 @@ class TestOrbAPIClient:
             mock_client_class.return_value.__aenter__.return_value = mock_client
             mock_client.get.return_value = mock_httpx_response
             
-            client = OrbAPIClient()
+            client = OrbAPIClient(host="192.168.1.100")
             
             with pytest.raises(httpx.HTTPStatusError):
                 await client._get_dataset("scores_1m", format="json")
@@ -161,7 +161,7 @@ class TestOrbAPIClient:
             mock_client_class.return_value.__aenter__.return_value = mock_client
             mock_client.get.return_value = mock_httpx_response
             
-            client = OrbAPIClient()
+            client = OrbAPIClient(host="192.168.1.100")
             result = await client.get_scores_1m()
             
             assert result == sample_scores_data
@@ -178,7 +178,7 @@ class TestOrbAPIClient:
             mock_client_class.return_value.__aenter__.return_value = mock_client
             mock_client.get.return_value = mock_httpx_response
             
-            client = OrbAPIClient()
+            client = OrbAPIClient(host="192.168.1.100")
             result = await client.get_scores_1m(format="jsonl")
             
             assert result == sample_jsonl_data
@@ -195,7 +195,7 @@ class TestOrbAPIClient:
             mock_client_class.return_value.__aenter__.return_value = mock_client
             mock_client.get.return_value = mock_httpx_response
             
-            client = OrbAPIClient()
+            client = OrbAPIClient(host="192.168.1.100")
             result = await client.get_responsiveness(granularity="1m")
             
             assert result == sample_responsiveness_data
@@ -212,7 +212,7 @@ class TestOrbAPIClient:
             mock_client_class.return_value.__aenter__.return_value = mock_client
             mock_client.get.return_value = mock_httpx_response
             
-            client = OrbAPIClient()
+            client = OrbAPIClient(host="192.168.1.100")
             result = await client.get_responsiveness(granularity="1s")
             
             assert result == sample_responsiveness_data
@@ -229,7 +229,7 @@ class TestOrbAPIClient:
             mock_client_class.return_value.__aenter__.return_value = mock_client
             mock_client.get.return_value = mock_httpx_response
             
-            client = OrbAPIClient()
+            client = OrbAPIClient(host="192.168.1.100")
             result = await client.get_responsiveness(granularity="15s")
             
             assert result == sample_responsiveness_data
@@ -246,7 +246,7 @@ class TestOrbAPIClient:
             mock_client_class.return_value.__aenter__.return_value = mock_client
             mock_client.get.return_value = mock_httpx_response
             
-            client = OrbAPIClient()
+            client = OrbAPIClient(host="192.168.1.100")
             result = await client.get_web_responsiveness()
             
             assert result == sample_web_responsiveness_data
@@ -263,7 +263,7 @@ class TestOrbAPIClient:
             mock_client_class.return_value.__aenter__.return_value = mock_client
             mock_client.get.return_value = mock_httpx_response
             
-            client = OrbAPIClient()
+            client = OrbAPIClient(host="192.168.1.100")
             result = await client.get_speed_results()
             
             assert result == sample_speed_data
@@ -278,7 +278,7 @@ class TestOrbAPIClient:
              patch.object(OrbAPIClient, 'get_web_responsiveness', return_value=sample_all_datasets_response["web_responsiveness"]), \
              patch.object(OrbAPIClient, 'get_speed_results', return_value=sample_all_datasets_response["speed_results"]):
             
-            client = OrbAPIClient()
+            client = OrbAPIClient(host="192.168.1.100")
             result = await client.get_all_datasets()
             
             assert "scores_1m" in result
@@ -295,7 +295,7 @@ class TestOrbAPIClient:
              patch.object(OrbAPIClient, 'get_web_responsiveness', return_value=sample_all_datasets_response["web_responsiveness"]), \
              patch.object(OrbAPIClient, 'get_speed_results', return_value=sample_all_datasets_response["speed_results"]):
             
-            client = OrbAPIClient()
+            client = OrbAPIClient(host="192.168.1.100")
             result = await client.get_all_datasets(include_all_responsiveness=True)
             
             assert "scores_1m" in result
@@ -313,7 +313,7 @@ class TestOrbAPIClient:
              patch.object(OrbAPIClient, 'get_web_responsiveness', return_value=sample_all_datasets_response["web_responsiveness"]), \
              patch.object(OrbAPIClient, 'get_speed_results', return_value=sample_all_datasets_response["speed_results"]):
             
-            client = OrbAPIClient()
+            client = OrbAPIClient(host="192.168.1.100")
             result = await client.get_all_datasets()
             
             assert "scores_1m" in result
@@ -333,7 +333,7 @@ class TestOrbAPIClient:
             mock_client_class.return_value.__aenter__.return_value = mock_client
             mock_client.get.return_value = mock_httpx_response
             
-            client = OrbAPIClient()
+            client = OrbAPIClient(host="192.168.1.100")
             
             # Test with max_iterations=2
             results = []
@@ -357,7 +357,7 @@ class TestOrbAPIClient:
             mock_client_class.return_value.__aenter__.return_value = mock_client
             mock_client.get.return_value = mock_httpx_response
             
-            client = OrbAPIClient()
+            client = OrbAPIClient(host="192.168.1.100")
             
             # Test with max_iterations=1
             results = []
@@ -388,7 +388,7 @@ class TestOrbAPIClient:
             mock_client_class.return_value.__aenter__.return_value = mock_client
             mock_client.get.return_value = mock_httpx_response
             
-            client = OrbAPIClient()
+            client = OrbAPIClient(host="192.168.1.100")
             
             # Test with max_iterations=1
             results = []
@@ -417,7 +417,7 @@ class TestOrbAPIClient:
             mock_client_class.return_value.__aenter__.return_value = mock_client
             mock_client.get.return_value = mock_httpx_response
             
-            client = OrbAPIClient()
+            client = OrbAPIClient(host="192.168.1.100")
             
             # Test with max_iterations=1 - should handle error gracefully
             results = []
@@ -438,7 +438,7 @@ class TestOrbAPIClient:
             mock_client_class.return_value.__aenter__.return_value = mock_client
             mock_client.get.return_value = mock_httpx_response
             
-            client = OrbAPIClient()
+            client = OrbAPIClient(host="192.168.1.100")
             
             # Test with max_iterations=None and short interval
             # We'll manually break after a few iterations

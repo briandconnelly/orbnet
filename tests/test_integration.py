@@ -9,7 +9,7 @@ import pytest
 from unittest.mock import patch
 
 from orbnet.client import OrbAPIClient
-from orbnet.mcp_server import get_client_info
+from orbnet.mcp_server import _get_client_info_impl
 
 
 class TestIntegration:
@@ -34,7 +34,7 @@ class TestIntegration:
 
     def test_mcp_server_client_creation(self):
         """Test that MCP server creates clients correctly."""
-        info = get_client_info(
+        info = _get_client_info_impl(
             host="test-host",
             port=8080,
             caller_id="mcp-test",
@@ -50,7 +50,7 @@ class TestIntegration:
     @pytest.mark.asyncio
     async def test_client_headers_integration(self):
         """Test that client headers are properly constructed."""
-        client = OrbAPIClient(client_id="test-client")
+        client = OrbAPIClient(host="192.168.1.100", client_id="test-client")
         headers = client._get_headers()
         
         expected_headers = {
@@ -118,7 +118,7 @@ class TestIntegration:
             max_iterations=5
         )
         
-        client = OrbAPIClient()
+        client = OrbAPIClient(host="192.168.1.100")
         
         # Test that polling config can be used with client
         assert config.dataset_name == "scores_1m"
@@ -140,7 +140,8 @@ class TestIntegration:
             OrbClientConfig(timeout=-1.0)  # Invalid timeout
         
         # Test valid configuration
-        config = OrbClientConfig(port=8080, timeout=30.0)
+        config = OrbClientConfig(host="192.168.1.100", port=8080, timeout=30.0)
+        assert config.host == "192.168.1.100"
         assert config.port == 8080
         assert config.timeout == 30.0
 
@@ -150,7 +151,7 @@ class TestIntegration:
         """Test client timeout behavior (marked as slow)."""
         # This test would require actual network calls with timeouts
         # For now, we'll just test the configuration
-        client = OrbAPIClient(timeout=0.1)  # Very short timeout
+        client = OrbAPIClient(host="192.168.1.100", timeout=0.1)  # Very short timeout
         assert client.timeout == 0.1
         
         # In a real integration test, we would:
@@ -169,12 +170,12 @@ class TestIntegration:
         # Test that main classes are available
         from orbnet.client import OrbAPIClient
         from orbnet.models import OrbClientConfig
-        from orbnet.mcp_server import get_client_info
+        from orbnet.mcp_server import _get_client_info_impl
         
         # Test that they can be instantiated
-        client = OrbAPIClient()
-        config = OrbClientConfig()
-        info = get_client_info()
+        client = OrbAPIClient(host="192.168.1.100")
+        config = OrbClientConfig(host="192.168.1.100")
+        info = _get_client_info_impl(host="192.168.1.100")
         
         assert client is not None
         assert config is not None

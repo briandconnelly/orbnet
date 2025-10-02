@@ -7,8 +7,7 @@ class OrbClientConfig(BaseModel):
     """Configuration for the Orb API Client"""
 
     host: str = Field(
-        default="localhost",
-        description="Hostname or IP address of the Orb sensor (default: localhost)",
+        description="Hostname or IP address of the Orb sensor",
     )
     port: int = Field(
         default=7080, ge=1, le=65535, description="Port number for the Orb API"

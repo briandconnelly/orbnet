@@ -37,14 +37,14 @@ DEFAULT_CALLER_ID = str(uuid.uuid4())
 
 
 def get_client(
-    host: Optional[str] = None,
+    host: str = ORB_HOST,
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
 ) -> OrbAPIClient:
-    """Create an OrbAPIClient with environment defaults and optional overrides."""
+    """Create an OrbAPIClient with required host and optional overrides."""
     return OrbAPIClient(
-        host=host or ORB_HOST,
+        host=host,
         port=port or ORB_PORT,
         caller_id=caller_id or DEFAULT_CALLER_ID,
         timeout=timeout or 30.0,
@@ -53,7 +53,7 @@ def get_client(
 
 @mcp.tool()
 async def get_scores_1m(
-    host: Optional[str] = None,
+    host: str = ORB_HOST,
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
@@ -98,8 +98,8 @@ async def get_scores_1m(
 
 @mcp.tool()
 async def get_responsiveness(
+    host: str = ORB_HOST,
     granularity: Literal["1s", "15s", "1m"] = "1m",
-    host: Optional[str] = None,
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
@@ -144,7 +144,7 @@ async def get_responsiveness(
 
 @mcp.tool()
 async def get_web_responsiveness(
-    host: Optional[str] = None,
+    host: str = ORB_HOST,
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
@@ -183,7 +183,7 @@ async def get_web_responsiveness(
 
 @mcp.tool()
 async def get_speed_results(
-    host: Optional[str] = None,
+    host: str = ORB_HOST,
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
@@ -223,8 +223,8 @@ async def get_speed_results(
 
 @mcp.tool()
 async def get_all_datasets(
+    host: str = ORB_HOST,
     include_all_responsiveness: bool = False,
-    host: Optional[str] = None,
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
@@ -270,9 +270,8 @@ async def get_all_datasets(
     )
 
 
-@mcp.tool()
-def get_client_info(
-    host: Optional[str] = None,
+def _get_client_info_impl(
+    host: str = ORB_HOST,
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
@@ -285,7 +284,7 @@ def get_client_info(
     verifying which Orb sensor you're connected to.
 
     Args:
-        host: Orb sensor hostname or IP (default: from ORB_HOST env var or 'localhost')
+        host: Orb sensor hostname or IP
         port: API port number (default: from ORB_PORT env var or 7080)
         caller_id: Unique ID to track polling state. Leave as None to see the default
                    session-specific ID that's being used.
@@ -307,6 +306,17 @@ def get_client_info(
         "caller_id": client.caller_id,
         "timeout": client.timeout,
     }
+
+
+@mcp.tool()
+def get_client_info(
+    host: str = ORB_HOST,
+    port: Optional[int] = None,
+    caller_id: Optional[str] = None,
+    timeout: Optional[float] = None,
+) -> Dict[str, Any]:
+    """Get information about the Orb API client configuration."""
+    return _get_client_info_impl(host, port, caller_id, timeout)
 
 
 def main():
