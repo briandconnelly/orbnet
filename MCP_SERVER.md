@@ -49,7 +49,7 @@ python server.py
 
 ### Environment Variables
 
-- `ORB_HOST` - Orb sensor hostname or IP address (default: `192.168.0.20`)
+- `ORB_HOST` - Orb sensor hostname or IP address (default: `localhost`)
 - `ORB_PORT` - Orb API port number (default: `7080`)
 
 ### Claude Desktop Configuration
