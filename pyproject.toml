@@ -1,7 +1,7 @@
 [project]
 name = "orbnet"
 version = "0.1.0"
-description = "Retrieve network quality data from Orb Sensor."
+description = "Retrieve network quality data from Orb Sensor"
 authors = [
     { name = "Brian Connelly", email = "bdc@bconnelly.net" },
     { name = "Orb Forge Incorporated" },
@@ -18,6 +18,10 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Topic :: System :: Networking :: Monitoring"
 ]
+
+[project.urls]
+Repository = "https://github.com/briandconnelly/orbnet"
+Issues = "https://github.com/briandconnelly/orbnet/issues"
 
 
 dependencies = [
