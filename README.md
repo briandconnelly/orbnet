@@ -352,7 +352,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
       "command": "uvx",
       "args": [
         "--from",
-        "https://github.com/briandconnelly/orbnet.git",
+        "orbnet[mcp]",
         "orbnet-mcp"
       ]
       "env": {
