@@ -228,7 +228,6 @@ client = OrbAPIClient(
     caller_id="my-app",             # Persistent ID for polling
     client_id="MyApp/1.0.0",        # User-Agent identifier
     timeout=30.0,                   # Request timeout in seconds
-    use_https=False                 # Use HTTPS (default: False)
 )
 ```
 
@@ -294,7 +293,6 @@ client = OrbAPIClient(
 - `caller_id` - Configured caller ID
 - `client_id` - Configured client ID
 - `timeout` - Request timeout
-- `use_https` - HTTPS setting
 
 ## Output Formats
 

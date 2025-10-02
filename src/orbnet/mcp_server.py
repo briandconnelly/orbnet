@@ -11,7 +11,7 @@ Stateful Polling:
     - First query returns all available historical data
     - Subsequent queries in the same session return only new data
     - Server restart generates a new caller_id and starts fresh
-    
+
     You can override the default caller_id in any tool call if you need different
     polling behavior.
 """
@@ -41,7 +41,6 @@ def get_client(
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
-    use_https: Optional[bool] = None,
 ) -> OrbAPIClient:
     """Create an OrbAPIClient with environment defaults and optional overrides."""
     return OrbAPIClient(
@@ -49,7 +48,6 @@ def get_client(
         port=port or ORB_PORT,
         caller_id=caller_id or DEFAULT_CALLER_ID,
         timeout=timeout or 30.0,
-        use_https=use_https or False,
     )
 
 
@@ -59,14 +57,13 @@ async def get_scores_1m(
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
-    use_https: Optional[bool] = None,
 ) -> List[Dict[str, Any]]:
     """
     Retrieve 1-minute granularity Scores dataset from an Orb sensor.
 
-    The Scores Dataset includes Orb Score and its component scores (Responsiveness, 
+    The Scores Dataset includes Orb Score and its component scores (Responsiveness,
     Reliability, and Speed), along with underlying network quality measures.
-    
+
     Note on Stateful Polling:
         By default, this tool uses a session-specific caller_id. This means your
         first call returns all available data, and subsequent calls return only
@@ -79,7 +76,6 @@ async def get_scores_1m(
         caller_id: Unique ID to track polling state. Leave as None to use the default
                    session-specific ID, or provide your own for custom polling behavior.
         timeout: Request timeout in seconds (default: 30.0)
-        use_https: Use HTTPS instead of HTTP (default: False)
 
     Returns:
         List of score records, each containing:
@@ -96,7 +92,7 @@ async def get_scores_1m(
         - timestamp: Measurement timestamp in epoch milliseconds
         - And more...
     """
-    client = get_client(host, port, caller_id, timeout, use_https)
+    client = get_client(host, port, caller_id, timeout)
     return await client.get_scores_1m(format="json")
 
 
@@ -107,14 +103,13 @@ async def get_responsiveness(
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
-    use_https: Optional[bool] = None,
 ) -> List[Dict[str, Any]]:
     """
     Retrieve Responsiveness dataset from an Orb sensor.
 
-    Includes detailed network responsiveness measures including lag, latency, 
+    Includes detailed network responsiveness measures including lag, latency,
     jitter, and packet loss. Available in 1-second, 15-second, and 1-minute buckets.
-    
+
     Note on Stateful Polling:
         By default, this tool uses a session-specific caller_id. This means your
         first call returns all available data, and subsequent calls return only
@@ -128,7 +123,6 @@ async def get_responsiveness(
         caller_id: Unique ID to track polling state. Leave as None to use the default
                    session-specific ID, or provide your own for custom polling behavior.
         timeout: Request timeout in seconds (default: 30.0)
-        use_https: Use HTTPS instead of HTTP (default: False)
 
     Returns:
         List of responsiveness records, each containing:
@@ -144,7 +138,7 @@ async def get_responsiveness(
         - timestamp: Measurement timestamp in epoch milliseconds
         - And more...
     """
-    client = get_client(host, port, caller_id, timeout, use_https)
+    client = get_client(host, port, caller_id, timeout)
     return await client.get_responsiveness(granularity=granularity, format="json")
 
 
@@ -154,14 +148,13 @@ async def get_web_responsiveness(
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
-    use_https: Optional[bool] = None,
 ) -> List[Dict[str, Any]]:
     """
     Retrieve Web Responsiveness dataset from an Orb sensor.
 
-    Includes Time to First Byte (TTFB) for web page loads and DNS resolver 
+    Includes Time to First Byte (TTFB) for web page loads and DNS resolver
     response time. Measurements are conducted once per minute by default.
-    
+
     Note on Stateful Polling:
         By default, this tool uses a session-specific caller_id. This means your
         first call returns all available data, and subsequent calls return only
@@ -174,7 +167,6 @@ async def get_web_responsiveness(
         caller_id: Unique ID to track polling state. Leave as None to use the default
                    session-specific ID, or provide your own for custom polling behavior.
         timeout: Request timeout in seconds (default: 30.0)
-        use_https: Use HTTPS instead of HTTP (default: False)
 
     Returns:
         List of web responsiveness records, each containing:
@@ -185,7 +177,7 @@ async def get_web_responsiveness(
         - network_type: Network interface type
         - And more...
     """
-    client = get_client(host, port, caller_id, timeout, use_https)
+    client = get_client(host, port, caller_id, timeout)
     return await client.get_web_responsiveness(format="json")
 
 
@@ -195,14 +187,13 @@ async def get_speed_results(
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
-    use_https: Optional[bool] = None,
 ) -> List[Dict[str, Any]]:
     """
     Retrieve Speed test results dataset from an Orb sensor.
 
-    Includes download and upload speed test results. Content speed measurements 
+    Includes download and upload speed test results. Content speed measurements
     are conducted once per hour by default.
-    
+
     Note on Stateful Polling:
         By default, this tool uses a session-specific caller_id. This means your
         first call returns all available data, and subsequent calls return only
@@ -215,7 +206,6 @@ async def get_speed_results(
         caller_id: Unique ID to track polling state. Leave as None to use the default
                    session-specific ID, or provide your own for custom polling behavior.
         timeout: Request timeout in seconds (default: 30.0)
-        use_https: Use HTTPS instead of HTTP (default: False)
 
     Returns:
         List of speed test records, each containing:
@@ -227,7 +217,7 @@ async def get_speed_results(
         - network_type: Network interface type
         - And more...
     """
-    client = get_client(host, port, caller_id, timeout, use_https)
+    client = get_client(host, port, caller_id, timeout)
     return await client.get_speed_results(format="json")
 
 
@@ -238,14 +228,13 @@ async def get_all_datasets(
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
-    use_https: Optional[bool] = None,
 ) -> Dict[str, List[Dict[str, Any]]]:
     """
     Retrieve all available datasets from an Orb sensor concurrently.
 
-    Fetches scores, responsiveness, web responsiveness, and speed test datasets 
+    Fetches scores, responsiveness, web responsiveness, and speed test datasets
     in parallel for efficiency.
-    
+
     Note on Stateful Polling:
         By default, this tool uses a session-specific caller_id. This means your
         first call returns all available data, and subsequent calls return only
@@ -253,7 +242,7 @@ async def get_all_datasets(
         for updates without receiving duplicate records.
 
     Args:
-        include_all_responsiveness: If True, fetches all responsiveness granularities 
+        include_all_responsiveness: If True, fetches all responsiveness granularities
                                    (1s, 15s, 1m). If False, only fetches 1m. (default:
                                    False)
         host: Orb sensor hostname or IP (default: from ORB_HOST env var or 'localhost')
@@ -261,7 +250,6 @@ async def get_all_datasets(
         caller_id: Unique ID to track polling state. Leave as None to use the default
                    session-specific ID, or provide your own for custom polling behavior.
         timeout: Request timeout in seconds (default: 30.0)
-        use_https: Use HTTPS instead of HTTP (default: False)
 
     Returns:
         Dictionary with keys for each dataset type:
@@ -273,10 +261,10 @@ async def get_all_datasets(
             (if include_all_responsiveness=True)
         - web_responsiveness: Web responsiveness results
         - speed_results: Speed test results
-        
+
         Each value is either a list of records or an error dict if that dataset failed.
     """
-    client = get_client(host, port, caller_id, timeout, use_https)
+    client = get_client(host, port, caller_id, timeout)
     return await client.get_all_datasets(
         format="json", include_all_responsiveness=include_all_responsiveness
     )
@@ -288,7 +276,6 @@ def get_client_info(
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
-    use_https: Optional[bool] = None,
 ) -> Dict[str, Any]:
     """
     Get information about the Orb API client configuration.
@@ -303,7 +290,6 @@ def get_client_info(
         caller_id: Unique ID to track polling state. Leave as None to see the default
                    session-specific ID that's being used.
         timeout: Request timeout in seconds (default: 30.0)
-        use_https: Use HTTPS instead of HTTP (default: False)
 
     Returns:
         Dictionary containing:
@@ -312,16 +298,14 @@ def get_client_info(
         - base_url: Full base URL for API requests
         - caller_id: Caller ID being used for polling state tracking
         - timeout: Request timeout in seconds
-        - use_https: Whether HTTPS is enabled
     """
-    client = get_client(host, port, caller_id, timeout, use_https)
+    client = get_client(host, port, caller_id, timeout)
     return {
         "host": client.host,
         "port": client.port,
         "base_url": client.base_url,
         "caller_id": client.caller_id,
         "timeout": client.timeout,
-        "use_https": client.use_https,
     }
 
 

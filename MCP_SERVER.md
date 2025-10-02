@@ -187,7 +187,6 @@ All data retrieval tools support these optional parameters:
 - `port` - Override the API port
 - `caller_id` - Custom ID for polling state (advanced use)
 - `timeout` - Request timeout in seconds (default: 30.0)
-- `use_https` - Use HTTPS instead of HTTP (default: False)
 
 ## Understanding the Data
 

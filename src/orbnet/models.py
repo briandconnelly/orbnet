@@ -22,9 +22,6 @@ class OrbClientConfig(BaseModel):
         description="Optional identifier for the HTTP client itself (sent as User-Agent header). If None, uses a default.",  # noqa: E501
     )
     timeout: float = Field(default=30.0, gt=0, description="Request timeout in seconds")
-    use_https: bool = Field(
-        default=False, description="If True, use HTTPS instead of HTTP"
-    )
 
     class Config:
         validate_assignment = True
