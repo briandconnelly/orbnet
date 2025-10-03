@@ -3,7 +3,7 @@
 A lightweight Python client for retrieving network quality data from [Orb](https://orb.net) sensors.
 
 [![Python Version](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
-![PyPI - Version](https://img.shields.io/pypi/v/ami)
+![PyPI - Version](https://img.shields.io/pypi/v/orbnet)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Overview
@@ -11,7 +11,7 @@ A lightweight Python client for retrieving network quality data from [Orb](https
 `orbnet` provides a simple, async Python interface to the [Orb Local API](https://orb.net/docs/deploy-and-configure/datasets-configuration#local-api) and [Datasets](https://orb.net/docs/deploy-and-configure/datasets), allowing you to easily retrieve comprehensive network quality metrics from your Orb sensors.
 You can monitor responsiveness, reliability, speed, and web performance from multiple sites with just a few lines of code.
 
-### What is Orb?
+## What is Orb?
 
 [Orb](https://orb.net) is an intelligent network monitoring platform that continuously measures internet experience.
 Unlike traditional speed tests that provide only momentary snapshots, Orb gives you real-time insights into your network's responsiveness, reliability, and speed.
@@ -354,7 +354,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
         "--from",
         "orbnet[mcp]",
         "orbnet-mcp"
-      ]
+      ],
       "env": {
         "ORB_HOST": "<host IP address>",
         "ORB_PORT": "7080"
