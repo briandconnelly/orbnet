@@ -25,7 +25,30 @@ from fastmcp import FastMCP
 from .client import OrbAPIClient
 
 # Initialize FastMCP server
-mcp = FastMCP("Orb Network Data")
+mcp = FastMCP(
+    "Orb Network Quality Data",
+    instructions="""
+    This server provides real-time network quality data from Orb sensors.
+    
+    **When to use this server:**
+    - Monitor network performance metrics (latency, jitter, packet loss)
+    - Track internet speed test results over time
+    - Analyze web responsiveness (TTFB, DNS times)
+    - Get comprehensive network quality scores
+    
+    **Key Features:**
+    - Stateful polling: First call returns historical data, subsequent calls
+                        return only new data
+    - Multiple time granularities (1s, 15s, 1m) for different analysis needs
+    - Concurrent data fetching for efficiency
+    
+    **Common use cases:**
+    - "Show me my current network quality"
+    - "Has my internet been stable today?"
+    - "What was my average latency over the past hour?"
+    - "Compare speed test results from this morning vs now"
+    """,
+)
 
 # Configuration from environment variables
 ORB_HOST = os.getenv("ORB_HOST", "localhost")
@@ -64,6 +87,25 @@ async def get_scores_1m(
     The Scores Dataset includes Orb Score and its component scores (Responsiveness,
     Reliability, and Speed), along with underlying network quality measures.
 
+    The Orb score represents the overall health of your network using
+    measurements of responsiveness, reliability, and speed.
+
+        - Responsiveness: How quickly and consistently a network responds
+                          to requests
+        - Reliability: How consistent and dependable the network is
+        - Speed: How fast a network can transfer data to and from
+                 a device
+
+    A higher Orb Score indicates better overall performance.
+    Scores can be interpreted as follows:
+
+        - 90-100: Excellent performance and quality
+        - 80-89: Good performance with room for improvement
+        - 70-79: Ok performance with room for improvement
+        - 50-59: Fair performance with noticeable issues
+        - 0-49: Poor performance that needs attention
+
+
     Note on Stateful Polling:
         By default, this tool uses a session-specific caller_id. This means your
         first call returns all available data, and subsequent calls return only
@@ -84,9 +126,9 @@ async def get_scores_1m(
         - reliability_score: Network reliability score (0-100)
         - speed_score: Network speed score (0-100)
         - lag_avg_us: Average lag in microseconds
-        - download_avg_kbps: Average download speed in Kbps
-        - upload_avg_kbps: Average upload speed in Kbps
-        - network_type: Network interface type (0=unknown, 1=wifi, 2=ethernet)
+        - download_avg_kbps: Average download speed in kbps
+        - upload_avg_kbps: Average upload speed in kbps
+        - network_type: Network interface type (0=Unknown, 1=Wi-Fi, 2=Ethernet)
         - isp_name: Internet service provider name
         - country_code: Two-letter country code
         - timestamp: Measurement timestamp in epoch milliseconds
@@ -133,7 +175,7 @@ async def get_responsiveness(
         - latency_count: Number of successful latency measurements
         - latency_lost_count: Number of lost packets
         - router_lag_avg_us: Average lag to router in microseconds
-        - router_latency_avg_us: Average router round-trip latency
+        - router_latency_avg_us: Average router round-trip latency in microseconds
         - router_packet_loss_pct: Router packet loss percentage
         - timestamp: Measurement timestamp in epoch milliseconds
         - And more...
@@ -209,8 +251,8 @@ async def get_speed_results(
 
     Returns:
         List of speed test records, each containing:
-        - download_kbps: Download speed in Kbps
-        - upload_kbps: Upload speed in Kbps
+        - download_kbps: Download speed in kbps
+        - upload_kbps: Upload speed in kbps
         - speed_test_engine: Name of the speed test engine used
         - speed_test_server: Server used for the speed test
         - timestamp: Test timestamp in epoch milliseconds
@@ -317,6 +359,35 @@ def get_client_info(
 ) -> Dict[str, Any]:
     """Get information about the Orb API client configuration."""
     return _get_client_info_impl(host, port, caller_id, timeout)
+
+
+@mcp.prompt()
+def analyze_network_quality() -> str:
+    """Analyze current network quality for the configured Orb and provide insights"""
+    return """
+    Analyze the network quality using these steps:
+    1. Call get_scores_1m() to get the latest Orb scores
+    2. Examine orb_score (0-100, higher is better)
+    3. Check component scores: responsiveness_score, reliability_score, speed_score
+    4. If scores are low, call get_responsiveness() for detailed metrics
+    5. Provide actionable insights about network performance
+    """
+
+
+@mcp.prompt()
+def troubleshoot_slow_internet() -> str:
+    """Diagnose slow internet connection issues"""
+    return """
+    To troubleshoot slow internet:
+    1. Call get_speed_results() to check recent speed tests
+    2. Call get_responsiveness(granularity="1m") for latency/jitter data
+    3. Call get_web_responsiveness() to check TTFB and DNS performance
+    4. Compare metrics against typical values:
+       - Good latency: < 50ms
+       - Good jitter: < 10ms
+       - Acceptable packet loss: < 1%
+    5. Identify which metric is problematic and explain to the user
+    """
 
 
 def main():
