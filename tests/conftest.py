@@ -212,8 +212,12 @@ def mock_httpx_client_context(mock_httpx_client):
 
 
 @pytest.fixture
-def sample_all_datasets_response(sample_scores_data, sample_responsiveness_data, 
-                                sample_web_responsiveness_data, sample_speed_data):
+def sample_all_datasets_response(
+    sample_scores_data,
+    sample_responsiveness_data,
+    sample_web_responsiveness_data,
+    sample_speed_data,
+):
     """Sample response for get_all_datasets."""
     return {
         "scores_1m": sample_scores_data,

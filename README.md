@@ -1,22 +1,18 @@
 # orbnet
 
-A lightweight Python client for retrieving network quality data from [Orb](https://orb.net) sensors.
+`orbnet` provides a simple, async Python interface to the [Orb Local API](https://orb.net/docs/deploy-and-configure/datasets-configuration#local-api) and [Datasets](https://orb.net/docs/deploy-and-configure/datasets), allowing you to easily retrieve comprehensive network quality metrics from your Orb sensors.
 
 [![Python Version](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
 ![PyPI - Version](https://img.shields.io/pypi/v/orbnet)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Overview
-
-`orbnet` provides a simple, async Python interface to the [Orb Local API](https://orb.net/docs/deploy-and-configure/datasets-configuration#local-api) and [Datasets](https://orb.net/docs/deploy-and-configure/datasets), allowing you to easily retrieve comprehensive network quality metrics from your Orb sensors.
-You can monitor responsiveness, reliability, speed, and web performance from multiple sites with just a few lines of code.
 
 ## What is Orb?
 
 [Orb](https://orb.net) is an intelligent network monitoring platform that continuously measures internet experience.
 Unlike traditional speed tests that provide only momentary snapshots, Orb gives you real-time insights into your network's responsiveness, reliability, and speed.
 
-## Features
+## orbnet Features
 
 - **Async/await support** - Built on `httpx` for efficient concurrent requests
 - **Type safety** - Pydantic models for data validation
@@ -52,12 +48,19 @@ async def main():
     
     if scores:
         latest = scores[-1]
-        print(f"Orb Score: {latest['orb_score']}")
-        print(f"Responsiveness: {latest['responsiveness_score']}")
-        print(f"Reliability: {latest['reliability_score']}")
-        print(f"Speed: {latest['speed_score']}")
+        print(f"Orb Score: {latest['orb_score']:.0f}")
+        print(f"Responsiveness: {latest['responsiveness_score']:.0f}")
+        print(f"Reliability: {latest['reliability_score']:.0f}")
+        print(f"Speed: {latest['speed_score']:.0f}")
 
 asyncio.run(main())
+```
+
+```
+Orb Score: 93
+Responsiveness: 91
+Reliability: 100
+Speed: 95
 ```
 
 ## Usage Examples

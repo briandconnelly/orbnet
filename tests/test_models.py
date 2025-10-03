@@ -52,7 +52,7 @@ class TestOrbClientConfig:
         # Valid ports
         OrbClientConfig(host="192.168.1.100", port=1)
         OrbClientConfig(host="192.168.1.100", port=65535)
-        
+
         # Invalid ports
         with pytest.raises(ValidationError):
             OrbClientConfig(host="192.168.1.100", port=0)
@@ -63,7 +63,7 @@ class TestOrbClientConfig:
         """Test timeout validation."""
         # Valid timeout
         OrbClientConfig(host="192.168.1.100", timeout=0.1)
-        
+
         # Invalid timeout
         with pytest.raises(ValidationError):
             OrbClientConfig(host="192.168.1.100", timeout=0)
@@ -83,9 +83,7 @@ class TestDatasetRequestParams:
     def test_custom_values(self):
         """Test custom parameter values."""
         params = DatasetRequestParams(
-            format="jsonl",
-            caller_id="test-caller",
-            extra_param="extra_value"
+            format="jsonl", caller_id="test-caller", extra_param="extra_value"
         )
         assert params.format == "jsonl"
         assert params.caller_id == "test-caller"
@@ -96,7 +94,7 @@ class TestDatasetRequestParams:
         # Valid formats
         DatasetRequestParams(format="json")
         DatasetRequestParams(format="jsonl")
-        
+
         # Invalid format
         with pytest.raises(ValidationError):
             DatasetRequestParams(format="xml")
@@ -115,9 +113,7 @@ class TestResponsivenessRequestParams:
     def test_custom_values(self):
         """Test custom parameter values."""
         params = ResponsivenessRequestParams(
-            format="jsonl",
-            caller_id="test-caller",
-            granularity="1s"
+            format="jsonl", caller_id="test-caller", granularity="1s"
         )
         assert params.format == "jsonl"
         assert params.caller_id == "test-caller"
@@ -129,7 +125,7 @@ class TestResponsivenessRequestParams:
         ResponsivenessRequestParams(granularity="1s")
         ResponsivenessRequestParams(granularity="15s")
         ResponsivenessRequestParams(granularity="1m")
-        
+
         # Invalid granularity
         with pytest.raises(ValidationError):
             ResponsivenessRequestParams(granularity="5m")
@@ -148,9 +144,7 @@ class TestAllDatasetsRequestParams:
     def test_custom_values(self):
         """Test custom parameter values."""
         params = AllDatasetsRequestParams(
-            format="jsonl",
-            caller_id="test-caller",
-            include_all_responsiveness=True
+            format="jsonl", caller_id="test-caller", include_all_responsiveness=True
         )
         assert params.format == "jsonl"
         assert params.caller_id == "test-caller"
@@ -171,15 +165,16 @@ class TestPollingConfig:
 
     def test_custom_values(self):
         """Test custom configuration values."""
+
         def dummy_callback(dataset_name, records):
             pass
-            
+
         config = PollingConfig(
             dataset_name="responsiveness_1s",
             interval=10.0,
             format="jsonl",
             callback=dummy_callback,
-            max_iterations=5
+            max_iterations=5,
         )
         assert config.dataset_name == "responsiveness_1s"
         assert config.interval == 10.0
@@ -191,7 +186,7 @@ class TestPollingConfig:
         """Test interval validation."""
         # Valid interval
         PollingConfig(dataset_name="test", interval=0.1)
-        
+
         # Invalid interval
         with pytest.raises(ValidationError):
             PollingConfig(dataset_name="test", interval=0)
@@ -203,7 +198,7 @@ class TestPollingConfig:
         # Valid max_iterations
         PollingConfig(dataset_name="test", max_iterations=1)
         PollingConfig(dataset_name="test", max_iterations=None)
-        
+
         # Invalid max_iterations
         with pytest.raises(ValidationError):
             PollingConfig(dataset_name="test", max_iterations=0)
