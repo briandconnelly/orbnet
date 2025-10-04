@@ -104,17 +104,6 @@ def create_mock_orb_response(
     return records
 
 
-def create_mock_jsonl_response(records: List[Dict[str, Any]]) -> str:
-    """
-    Convert records to JSONL format string.
-
-    Args:
-        records: List of record dictionaries
-
-    Returns:
-        JSONL formatted string
-    """
-    return "\n".join(json.dumps(record) for record in records)
 
 
 def assert_valid_orb_score_record(record: Dict[str, Any]) -> None:

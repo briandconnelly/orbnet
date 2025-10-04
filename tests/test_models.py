@@ -77,27 +77,16 @@ class TestDatasetRequestParams:
     def test_default_values(self):
         """Test default parameter values."""
         params = DatasetRequestParams()
-        assert params.format == "json"
         assert params.caller_id is None
 
     def test_custom_values(self):
         """Test custom parameter values."""
         params = DatasetRequestParams(
-            format="jsonl", caller_id="test-caller", extra_param="extra_value"
+            caller_id="test-caller", extra_param="extra_value"
         )
-        assert params.format == "jsonl"
         assert params.caller_id == "test-caller"
         assert params.extra_param == "extra_value"
 
-    def test_format_validation(self):
-        """Test format validation."""
-        # Valid formats
-        DatasetRequestParams(format="json")
-        DatasetRequestParams(format="jsonl")
-
-        # Invalid format
-        with pytest.raises(ValidationError):
-            DatasetRequestParams(format="xml")
 
 
 class TestResponsivenessRequestParams:
@@ -106,16 +95,14 @@ class TestResponsivenessRequestParams:
     def test_default_values(self):
         """Test default parameter values."""
         params = ResponsivenessRequestParams()
-        assert params.format == "json"
         assert params.caller_id is None
         assert params.granularity == "1m"
 
     def test_custom_values(self):
         """Test custom parameter values."""
         params = ResponsivenessRequestParams(
-            format="jsonl", caller_id="test-caller", granularity="1s"
+            caller_id="test-caller", granularity="1s"
         )
-        assert params.format == "jsonl"
         assert params.caller_id == "test-caller"
         assert params.granularity == "1s"
 
@@ -137,16 +124,14 @@ class TestAllDatasetsRequestParams:
     def test_default_values(self):
         """Test default parameter values."""
         params = AllDatasetsRequestParams()
-        assert params.format == "json"
         assert params.caller_id is None
         assert params.include_all_responsiveness is False
 
     def test_custom_values(self):
         """Test custom parameter values."""
         params = AllDatasetsRequestParams(
-            format="jsonl", caller_id="test-caller", include_all_responsiveness=True
+            caller_id="test-caller", include_all_responsiveness=True
         )
-        assert params.format == "jsonl"
         assert params.caller_id == "test-caller"
         assert params.include_all_responsiveness is True
 
@@ -159,7 +144,6 @@ class TestPollingConfig:
         config = PollingConfig(dataset_name="scores_1m")
         assert config.dataset_name == "scores_1m"
         assert config.interval == 60.0
-        assert config.format == "json"
         assert config.callback is None
         assert config.max_iterations is None
 
@@ -172,13 +156,11 @@ class TestPollingConfig:
         config = PollingConfig(
             dataset_name="responsiveness_1s",
             interval=10.0,
-            format="jsonl",
             callback=dummy_callback,
             max_iterations=5,
         )
         assert config.dataset_name == "responsiveness_1s"
         assert config.interval == 10.0
-        assert config.format == "jsonl"
         assert config.callback == dummy_callback
         assert config.max_iterations == 5
 

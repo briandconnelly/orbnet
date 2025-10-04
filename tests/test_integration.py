@@ -68,16 +68,16 @@ class TestIntegration:
         )
 
         # Test dataset request with config values
-        dataset_params = DatasetRequestParams(format="json", caller_id=config.caller_id)
+        dataset_params = DatasetRequestParams(caller_id=config.caller_id)
 
         # Test responsiveness request
         resp_params = ResponsivenessRequestParams(
-            granularity="1s", format="jsonl", caller_id=config.caller_id
+            granularity="1s", caller_id=config.caller_id
         )
 
         # Test all datasets request
         all_params = AllDatasetsRequestParams(
-            format="json", caller_id=config.caller_id, include_all_responsiveness=True
+            caller_id=config.caller_id, include_all_responsiveness=True
         )
 
         # Verify all parameters are valid
@@ -97,7 +97,6 @@ class TestIntegration:
         config = PollingConfig(
             dataset_name="scores_1m",
             interval=10.0,
-            format="json",
             callback=test_callback,
             max_iterations=5,
         )
@@ -107,7 +106,6 @@ class TestIntegration:
         # Test that polling config can be used with client
         assert config.dataset_name == "scores_1m"
         assert config.interval == 10.0
-        assert config.format == "json"
         assert config.callback == test_callback
         assert config.max_iterations == 5
 

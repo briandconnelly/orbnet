@@ -52,10 +52,10 @@ class TestOrbAPIClient:
         }
 
     @pytest.mark.asyncio
-    async def test_get_dataset_json_format(
+    async def test_get_dataset(
         self, sample_scores_data, mock_httpx_response
     ):
-        """Test _get_dataset with JSON format."""
+        """Test _get_dataset method."""
         mock_httpx_response.json.return_value = sample_scores_data
 
         with patch("httpx.AsyncClient") as mock_client_class:
@@ -64,7 +64,7 @@ class TestOrbAPIClient:
             mock_client.get.return_value = mock_httpx_response
 
             client = OrbAPIClient(host="192.168.1.100")
-            result = await client._get_dataset("scores_1m", format="json")
+            result = await client._get_dataset("scores_1m")
 
             assert result == sample_scores_data
             mock_client.get.assert_called_once()
@@ -72,25 +72,6 @@ class TestOrbAPIClient:
             assert "scores_1m.json" in call_args[0][0]
             assert call_args[1]["params"]["id"] == client.caller_id
 
-    @pytest.mark.asyncio
-    async def test_get_dataset_jsonl_format(
-        self, sample_jsonl_data, mock_httpx_response
-    ):
-        """Test _get_dataset with JSONL format."""
-        mock_httpx_response.text = sample_jsonl_data
-
-        with patch("httpx.AsyncClient") as mock_client_class:
-            mock_client = AsyncMock()
-            mock_client_class.return_value.__aenter__.return_value = mock_client
-            mock_client.get.return_value = mock_httpx_response
-
-            client = OrbAPIClient(host="192.168.1.100")
-            result = await client._get_dataset("scores_1m", format="jsonl")
-
-            assert result == sample_jsonl_data
-            mock_client.get.assert_called_once()
-            call_args = mock_client.get.call_args
-            assert "scores_1m.jsonl" in call_args[0][0]
 
     @pytest.mark.asyncio
     async def test_get_dataset_with_custom_caller_id(
@@ -106,7 +87,7 @@ class TestOrbAPIClient:
 
             client = OrbAPIClient(host="192.168.1.100")
             result = await client._get_dataset(
-                "scores_1m", format="json", caller_id="custom-caller"
+                "scores_1m", caller_id="custom-caller"
             )
 
             assert result == sample_scores_data
@@ -128,7 +109,6 @@ class TestOrbAPIClient:
             client = OrbAPIClient(host="192.168.1.100")
             result = await client._get_dataset(
                 "scores_1m",
-                format="json",
                 start_time=1700000000000,
                 end_time=1700000060000,
             )
@@ -154,7 +134,7 @@ class TestOrbAPIClient:
             client = OrbAPIClient(host="192.168.1.100")
 
             with pytest.raises(httpx.HTTPStatusError):
-                await client._get_dataset("scores_1m", format="json")
+                await client._get_dataset("scores_1m")
 
     @pytest.mark.asyncio
     async def test_get_scores_1m(self, sample_scores_data, mock_httpx_response):
@@ -173,22 +153,6 @@ class TestOrbAPIClient:
             call_args = mock_client.get.call_args
             assert "scores_1m.json" in call_args[0][0]
 
-    @pytest.mark.asyncio
-    async def test_get_scores_1m_jsonl(self, sample_jsonl_data, mock_httpx_response):
-        """Test get_scores_1m method with JSONL format."""
-        mock_httpx_response.text = sample_jsonl_data
-
-        with patch("httpx.AsyncClient") as mock_client_class:
-            mock_client = AsyncMock()
-            mock_client_class.return_value.__aenter__.return_value = mock_client
-            mock_client.get.return_value = mock_httpx_response
-
-            client = OrbAPIClient(host="192.168.1.100")
-            result = await client.get_scores_1m(format="jsonl")
-
-            assert result == sample_jsonl_data
-            call_args = mock_client.get.call_args
-            assert "scores_1m.jsonl" in call_args[0][0]
 
     @pytest.mark.asyncio
     async def test_get_responsiveness_1m(
