@@ -20,7 +20,7 @@ import os
 import uuid
 from typing import Any, Dict, List, Literal, Optional
 
-from fastmcp import FastMCP
+from fastmcp import Context, FastMCP
 
 from .client import OrbAPIClient
 
@@ -28,25 +28,40 @@ from .client import OrbAPIClient
 mcp = FastMCP(
     "Orb Network Quality Data",
     instructions="""
-    This server provides real-time network quality data from Orb sensors.
+    This server provides real-time network quality monitoring from Orb sensors.
     
-    **When to use this server:**
-    - Monitor network performance metrics (latency, jitter, packet loss)
-    - Track internet speed test results over time
-    - Analyze web responsiveness (TTFB, DNS times)
-    - Get comprehensive network quality scores
+    **What You Can Ask:**
+    ✓ "What's my current network quality?"
+    ✓ "Why is my internet slow right now?"
+    ✓ "Show me speed test history from today"
+    ✓ "Is my connection good enough for video calls?"
+    ✓ "Compare my network quality from yesterday vs today"
     
-    **Key Features:**
-    - Stateful polling: First call returns historical data, subsequent calls
-                        return only new data
-    - Multiple time granularities (1s, 15s, 1m) for different analysis needs
-    - Concurrent data fetching for efficiency
+    **Primary Metrics:**
+    • Orb Score (0-100): Overall network health
+    • Responsiveness: Latency, jitter, packet loss
+    • Speed: Download/upload bandwidth
+    • Web Performance: Page load times, DNS speed
     
-    **Common use cases:**
-    - "Show me my current network quality"
-    - "Has my internet been stable today?"
-    - "What was my average latency over the past hour?"
-    - "Compare speed test results from this morning vs now"
+    **Data Availability:**
+    - 1-second granularity for recent detailed analysis
+    - 1-minute aggregates for trends
+    - Historical data depends on sensor configuration
+    
+    **Key Tools:**
+    • get_scores_1m() - Quick health check
+    • get_all_datasets() - Complete snapshot
+    • get_responsiveness() - Good for realtime applications
+    
+    **Built-in Workflows:**
+    Use prompts like 'analyze_network_quality' or 'troubleshoot_slow_internet'
+    for guided analysis.
+
+    **Note:**
+    A given Orb sensor is not necessarily on the same network as
+    the user, so the results may not be representative of the network
+    quality that the user is experiencing. Be sure to attribute the
+    results to the Orb, not the user.
     """,
 )
 
@@ -74,8 +89,16 @@ def get_client(
     )
 
 
-@mcp.tool()
+@mcp.tool(
+    annotations={
+        "title": "Get Scores Dataset (1m)",
+        "readOnlyHint": True,
+        "idempotentHint": False,
+        "openWorldHint": True,
+    }
+)
 async def get_scores_1m(
+    ctx: Context,
     host: str = ORB_HOST,
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
@@ -133,13 +156,41 @@ async def get_scores_1m(
         - country_code: Two-letter country code
         - timestamp: Measurement timestamp in epoch milliseconds
         - And more...
+
+    **Example Usage:**
+        "Show me my current network quality"
+        "What's my Orb score right now?"
+        "Has my internet performance been good today?"
+
+    **Example Response:**
+        [
+            {
+                "orb_score": 87,
+                "responsiveness_score": 90,
+                "reliability_score": 85,
+                "speed_score": 86,
+                "lag_avg_us": 12500,
+                "download_avg_kbps": 95000,
+                "upload_avg_kbps": 20000,
+                "timestamp": 1727984400000
+            }
+        ]
     """
+    await ctx.info(f"Getting 1m scores from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)
     return await client.get_scores_1m(format="json")
 
 
-@mcp.tool()
+@mcp.tool(
+    annotations={
+        "title": "Get Responsiveness Dataset",
+        "readOnlyHint": True,
+        "idempotentHint": False,
+        "openWorldHint": True,
+    }
+)
 async def get_responsiveness(
+    ctx: Context,
     host: str = ORB_HOST,
     granularity: Literal["1s", "15s", "1m"] = "1m",
     port: Optional[int] = None,
@@ -179,13 +230,39 @@ async def get_responsiveness(
         - router_packet_loss_pct: Router packet loss percentage
         - timestamp: Measurement timestamp in epoch milliseconds
         - And more...
+
+
+    Example response:
+    [
+        {
+            "timestamp": 1727984400000,
+            "lag_avg_us": 12500,
+            "latency_avg_us": 25000,
+            "jitter_avg_us": 3500,
+            "packet_loss_pct": 0.1,
+            "latency_count": 60,
+            "latency_lost_count": 0
+        },
+        ...
+    ]
+
+    Empty list [] if no new data since last poll.
     """
+    await ctx.info(f"Getting responsiveness data from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)
     return await client.get_responsiveness(granularity=granularity, format="json")
 
 
-@mcp.tool()
+@mcp.tool(
+    annotations={
+        "title": "Get Web Responsiveness Dataset",
+        "readOnlyHint": True,
+        "idempotentHint": False,
+        "openWorldHint": True,
+    }
+)
 async def get_web_responsiveness(
+    ctx: Context,
     host: str = ORB_HOST,
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
@@ -219,12 +296,21 @@ async def get_web_responsiveness(
         - network_type: Network interface type
         - And more...
     """
+    await ctx.info(f"Getting web responsiveness data from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)
     return await client.get_web_responsiveness(format="json")
 
 
-@mcp.tool()
+@mcp.tool(
+    annotations={
+        "title": "Get Speed Test Results",
+        "readOnlyHint": True,
+        "idempotentHint": False,
+        "openWorldHint": True,
+    }
+)
 async def get_speed_results(
+    ctx: Context,
     host: str = ORB_HOST,
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
@@ -259,12 +345,21 @@ async def get_speed_results(
         - network_type: Network interface type
         - And more...
     """
+    await ctx.info(f"Getting speed test data from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)
     return await client.get_speed_results(format="json")
 
 
-@mcp.tool()
+@mcp.tool(
+    annotations={
+        "title": "Get All Datasets",
+        "readOnlyHint": True,
+        "idempotentHint": False,
+        "openWorldHint": True,
+    }
+)
 async def get_all_datasets(
+    ctx: Context,
     host: str = ORB_HOST,
     include_all_responsiveness: bool = False,
     port: Optional[int] = None,
@@ -306,6 +401,7 @@ async def get_all_datasets(
 
         Each value is either a list of records or an error dict if that dataset failed.
     """
+    await ctx.info(f"Getting all datasets from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)
     return await client.get_all_datasets(
         format="json", include_all_responsiveness=include_all_responsiveness
@@ -350,7 +446,14 @@ def _get_client_info_impl(
     }
 
 
-@mcp.tool()
+@mcp.tool(
+    annotations={
+        "title": "Get Information About the Orb API Client Configuration",
+        "readOnlyHint": True,
+        "idempotentHint": True,
+        "openWorldHint": False,
+    }
+)
 def get_client_info(
     host: str = ORB_HOST,
     port: Optional[int] = None,
