@@ -36,6 +36,7 @@ mcp = FastMCP(
     ✓ "Show me speed test history from today"
     ✓ "Is my connection good enough for video calls?"
     ✓ "Compare my network quality from yesterday vs today"
+    ✓ "Summarize network quality across all of my orbs"
     
     **Primary Metrics:**
     • Orb Score (0-100): Overall network health
