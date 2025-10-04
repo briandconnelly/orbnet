@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Orb Network MCP Server
 
@@ -21,6 +20,7 @@ import uuid
 from typing import Any, Dict, List, Literal, Optional
 
 from fastmcp import Context, FastMCP
+from pydantic import BaseModel, Field
 
 from .client import OrbAPIClient
 
@@ -65,27 +65,44 @@ mcp = FastMCP(
     """,
 )
 
-# Configuration from environment variables
-ORB_HOST = os.getenv("ORB_HOST", "localhost")
-ORB_PORT = int(os.getenv("ORB_PORT", "7080"))
 
-# Generate a fixed caller_id for this MCP server instance
-# This enables stateful polling within a session while starting fresh on restart
-DEFAULT_CALLER_ID = str(uuid.uuid4())
+class OrbSensorConfig(BaseModel):
+    """Configuration for Orb MCP Server"""
+
+    host: str = Field(default="localhost", description="Orb sensor hostname or IP")
+    port: int = Field(default=7080, description="Orb API port", ge=1, le=65535)
+    timeout: float = Field(
+        default=30.0, description="API request timeout in seconds", gt=0, le=60.0
+    )
+
+    # Default caller_id for the session
+    caller_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+
+    @classmethod
+    def from_env(cls) -> "OrbSensorConfig":
+        """Load configuration from environment variables"""
+        return cls(
+            host=os.getenv("ORB_HOST", "localhost"),
+            port=int(os.getenv("ORB_PORT", "7080")),
+            timeout=float(os.getenv("ORB_TIMEOUT", "30.0")),
+        )
+
+
+config = OrbSensorConfig.from_env()
 
 
 def get_client(
-    host: str = ORB_HOST,
+    host: Optional[str] = None,
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
 ) -> OrbAPIClient:
-    """Create an OrbAPIClient with required host and optional overrides."""
+    """Create an OrbAPIClient with config defaults and optional overrides."""
     return OrbAPIClient(
-        host=host,
-        port=port or ORB_PORT,
-        caller_id=caller_id or DEFAULT_CALLER_ID,
-        timeout=timeout or 30.0,
+        host=host or config.host,
+        port=port or config.port,
+        caller_id=caller_id or config.caller_id,
+        timeout=timeout or config.timeout,
     )
 
 
@@ -99,7 +116,7 @@ def get_client(
 )
 async def get_scores_1m(
     ctx: Context,
-    host: str = ORB_HOST,
+    host: Optional[str] = None,
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
@@ -191,7 +208,7 @@ async def get_scores_1m(
 )
 async def get_responsiveness(
     ctx: Context,
-    host: str = ORB_HOST,
+    host: Optional[str] = None,
     granularity: Literal["1s", "15s", "1m"] = "1m",
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
@@ -263,7 +280,7 @@ async def get_responsiveness(
 )
 async def get_web_responsiveness(
     ctx: Context,
-    host: str = ORB_HOST,
+    host: Optional[str] = None,
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
@@ -311,7 +328,7 @@ async def get_web_responsiveness(
 )
 async def get_speed_results(
     ctx: Context,
-    host: str = ORB_HOST,
+    host: Optional[str] = None,
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
@@ -343,7 +360,6 @@ async def get_speed_results(
         - speed_test_server: Server used for the speed test
         - timestamp: Test timestamp in epoch milliseconds
         - network_type: Network interface type
-        - And more...
     """
     await ctx.info(f"Getting speed test data from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)
@@ -360,7 +376,7 @@ async def get_speed_results(
 )
 async def get_all_datasets(
     ctx: Context,
-    host: str = ORB_HOST,
+    host: Optional[str] = None,
     include_all_responsiveness: bool = False,
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
@@ -409,7 +425,7 @@ async def get_all_datasets(
 
 
 def _get_client_info_impl(
-    host: str = ORB_HOST,
+    host: Optional[str] = None,
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
@@ -448,14 +464,14 @@ def _get_client_info_impl(
 
 @mcp.tool(
     annotations={
-        "title": "Get Information About the Orb API Client Configuration",
+        "title": "Get Client Configuration",
         "readOnlyHint": True,
         "idempotentHint": True,
         "openWorldHint": False,
     }
 )
 def get_client_info(
-    host: str = ORB_HOST,
+    host: Optional[str] = None,
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
