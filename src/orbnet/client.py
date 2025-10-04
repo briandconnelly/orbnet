@@ -407,7 +407,9 @@ class OrbAPIClient:
             >>> avg_speed = sum(downloads) / len(downloads)
             >>> min_speed = min(downloads)
             >>> max_speed = max(downloads)
-            >>> print(f"Download: Avg={avg_speed:.1f}, Min={min_speed:.1f}, Max={max_speed:.1f} Mbps") # noqa: E501
+            >>> print(f"Download: Avg={avg_speed:.1f}, "
+            >>>       f"Min={min_speed:.1f}, "
+            >>>       f"Max={max_speed:.1f} Mbps")
 
             Check if speeds meet SLA requirements:
 

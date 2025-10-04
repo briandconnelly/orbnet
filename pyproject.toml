@@ -1,6 +1,6 @@
 [project]
 name = "orbnet"
-version = "0.1.1"
+version = "0.1.2"
 description = "Retrieve network quality data from Orb Sensor"
 authors = [
     { name = "Brian Connelly", email = "bdc@bconnelly.net" },

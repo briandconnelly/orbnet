@@ -13,17 +13,17 @@ def create_mock_orb_response(
 ) -> List[Dict[str, Any]]:
     """
     Create mock Orb API response data for testing.
-    
+
     Args:
         dataset_type: Type of dataset ('scores', 'responsiveness', 'web', 'speed')
         record_count: Number of records to generate
         timestamp_base: Base timestamp for records
-        
+
     Returns:
         List of mock records
     """
     records = []
-    
+
     for i in range(record_count):
         base_record = {
             "orb_id": f"test-orb-{i}",
@@ -41,7 +41,7 @@ def create_mock_orb_response(
             "longitude": -122.4194,
             "location_source": 1,
         }
-        
+
         if dataset_type == "scores":
             record = {
                 **base_record,
@@ -98,19 +98,19 @@ def create_mock_orb_response(
             }
         else:
             raise ValueError(f"Unknown dataset type: {dataset_type}")
-        
+
         records.append(record)
-    
+
     return records
 
 
 def create_mock_jsonl_response(records: List[Dict[str, Any]]) -> str:
     """
     Convert records to JSONL format string.
-    
+
     Args:
         records: List of record dictionaries
-        
+
     Returns:
         JSONL formatted string
     """
@@ -120,30 +120,43 @@ def create_mock_jsonl_response(records: List[Dict[str, Any]]) -> str:
 def assert_valid_orb_score_record(record: Dict[str, Any]) -> None:
     """
     Assert that a record has valid Orb score data structure.
-    
+
     Args:
         record: Record to validate
-        
+
     Raises:
         AssertionError: If record is invalid
     """
     required_fields = [
-        "orb_id", "orb_name", "device_name", "timestamp",
-        "score_version", "orb_version", "orb_score",
-        "responsiveness_score", "reliability_score", "speed_score",
-        "lag_avg_us", "download_avg_kbps", "upload_avg_kbps",
-        "network_type", "country_code", "isp_name"
+        "orb_id",
+        "orb_name",
+        "device_name",
+        "timestamp",
+        "score_version",
+        "orb_version",
+        "orb_score",
+        "responsiveness_score",
+        "reliability_score",
+        "speed_score",
+        "lag_avg_us",
+        "download_avg_kbps",
+        "upload_avg_kbps",
+        "network_type",
+        "country_code",
+        "isp_name",
     ]
-    
+
     for field in required_fields:
         assert field in record, f"Missing required field: {field}"
-    
+
     # Validate score ranges
     assert 0 <= record["orb_score"] <= 100, "orb_score must be 0-100"
-    assert 0 <= record["responsiveness_score"] <= 100, "responsiveness_score must be 0-100"
+    assert 0 <= record["responsiveness_score"] <= 100, (
+        "responsiveness_score must be 0-100"
+    )  # noqa: E501
     assert 0 <= record["reliability_score"] <= 100, "reliability_score must be 0-100"
     assert 0 <= record["speed_score"] <= 100, "speed_score must be 0-100"
-    
+
     # Validate numeric types
     assert isinstance(record["timestamp"], int), "timestamp must be integer"
     assert isinstance(record["orb_score"], (int, float)), "orb_score must be numeric"
@@ -153,22 +166,29 @@ def assert_valid_orb_score_record(record: Dict[str, Any]) -> None:
 def assert_valid_responsiveness_record(record: Dict[str, Any]) -> None:
     """
     Assert that a record has valid responsiveness data structure.
-    
+
     Args:
         record: Record to validate
-        
+
     Raises:
         AssertionError: If record is invalid
     """
     required_fields = [
-        "orb_id", "orb_name", "device_name", "timestamp",
-        "orb_version", "lag_avg_us", "latency_avg_us",
-        "jitter_avg_us", "packet_loss_pct", "network_type"
+        "orb_id",
+        "orb_name",
+        "device_name",
+        "timestamp",
+        "orb_version",
+        "lag_avg_us",
+        "latency_avg_us",
+        "jitter_avg_us",
+        "packet_loss_pct",
+        "network_type",
     ]
-    
+
     for field in required_fields:
         assert field in record, f"Missing required field: {field}"
-    
+
     # Validate numeric ranges
     assert record["lag_avg_us"] >= 0, "lag_avg_us must be non-negative"
     assert record["latency_avg_us"] >= 0, "latency_avg_us must be non-negative"
@@ -179,21 +199,27 @@ def assert_valid_responsiveness_record(record: Dict[str, Any]) -> None:
 def assert_valid_web_responsiveness_record(record: Dict[str, Any]) -> None:
     """
     Assert that a record has valid web responsiveness data structure.
-    
+
     Args:
         record: Record to validate
-        
+
     Raises:
         AssertionError: If record is invalid
     """
     required_fields = [
-        "orb_id", "orb_name", "device_name", "timestamp",
-        "orb_version", "ttfb_us", "dns_us", "web_url"
+        "orb_id",
+        "orb_name",
+        "device_name",
+        "timestamp",
+        "orb_version",
+        "ttfb_us",
+        "dns_us",
+        "web_url",
     ]
-    
+
     for field in required_fields:
         assert field in record, f"Missing required field: {field}"
-    
+
     # Validate numeric ranges
     assert record["ttfb_us"] >= 0, "ttfb_us must be non-negative"
     assert record["dns_us"] >= 0, "dns_us must be non-negative"
@@ -202,22 +228,28 @@ def assert_valid_web_responsiveness_record(record: Dict[str, Any]) -> None:
 def assert_valid_speed_record(record: Dict[str, Any]) -> None:
     """
     Assert that a record has valid speed test data structure.
-    
+
     Args:
         record: Record to validate
-        
+
     Raises:
         AssertionError: If record is invalid
     """
     required_fields = [
-        "orb_id", "orb_name", "device_name", "timestamp",
-        "orb_version", "download_kbps", "upload_kbps",
-        "speed_test_engine", "speed_test_server"
+        "orb_id",
+        "orb_name",
+        "device_name",
+        "timestamp",
+        "orb_version",
+        "download_kbps",
+        "upload_kbps",
+        "speed_test_engine",
+        "speed_test_server",
     ]
-    
+
     for field in required_fields:
         assert field in record, f"Missing required field: {field}"
-    
+
     # Validate numeric ranges
     assert record["download_kbps"] >= 0, "download_kbps must be non-negative"
     assert record["upload_kbps"] >= 0, "upload_kbps must be non-negative"
@@ -226,10 +258,10 @@ def assert_valid_speed_record(record: Dict[str, Any]) -> None:
 def create_mock_error_response(error_message: str = "Test error") -> Dict[str, str]:
     """
     Create a mock error response.
-    
+
     Args:
         error_message: Error message to include
-        
+
     Returns:
         Error response dictionary
     """
@@ -239,18 +271,18 @@ def create_mock_error_response(error_message: str = "Test error") -> Dict[str, s
 def validate_client_config(config: Dict[str, Any]) -> None:
     """
     Validate client configuration dictionary.
-    
+
     Args:
         config: Configuration dictionary to validate
-        
+
     Raises:
         AssertionError: If configuration is invalid
     """
     required_fields = ["host", "port", "base_url", "caller_id", "timeout"]
-    
+
     for field in required_fields:
         assert field in config, f"Missing required config field: {field}"
-    
+
     assert isinstance(config["host"], str), "host must be string"
     assert isinstance(config["port"], int), "port must be integer"
     assert 1 <= config["port"] <= 65535, "port must be 1-65535"
@@ -259,4 +291,3 @@ def validate_client_config(config: Dict[str, Any]) -> None:
     assert isinstance(config["caller_id"], str), "caller_id must be string"
     assert isinstance(config["timeout"], (int, float)), "timeout must be numeric"
     assert config["timeout"] > 0, "timeout must be positive"
-
