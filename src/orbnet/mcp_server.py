@@ -202,7 +202,8 @@ async def get_scores_1m(
     """
     await ctx.info(f"Getting 1m scores from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)
-    return await client.get_scores_1m()
+    records = await client.get_scores_1m()
+    return [record.model_dump() for record in records]
 
 
 @mcp.tool(
@@ -274,7 +275,8 @@ async def get_responsiveness(
     """
     await ctx.info(f"Getting responsiveness data from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)
-    return await client.get_responsiveness(granularity=granularity)
+    records = await client.get_responsiveness(granularity=granularity)
+    return [record.model_dump() for record in records]
 
 
 @mcp.tool(
@@ -322,7 +324,8 @@ async def get_web_responsiveness(
     """
     await ctx.info(f"Getting web responsiveness data from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)
-    return await client.get_web_responsiveness()
+    records = await client.get_web_responsiveness()
+    return [record.model_dump() for record in records]
 
 
 @mcp.tool(
@@ -370,7 +373,8 @@ async def get_speed_results(
     """
     await ctx.info(f"Getting speed test data from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)
-    return await client.get_speed_results()
+    records = await client.get_speed_results()
+    return [record.model_dump() for record in records]
 
 
 @mcp.tool(
@@ -426,9 +430,19 @@ async def get_all_datasets(
     """
     await ctx.info(f"Getting all datasets from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)
-    return await client.get_all_datasets(
+    response = await client.get_all_datasets(
         include_all_responsiveness=include_all_responsiveness
     )
+
+    # Convert AllDatasetsResponse to dictionary with lists of dicts
+    result = {}
+    for key, value in response.model_dump().items():
+        if value is None:
+            continue
+        # If it's a list of records, keep it; if it's an error dict, keep it
+        result[key] = value
+
+    return result
 
 
 def _get_client_info_impl(
