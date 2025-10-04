@@ -202,7 +202,7 @@ async def get_scores_1m(
     """
     await ctx.info(f"Getting 1m scores from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)
-    return await client.get_scores_1m(format="json")
+    return await client.get_scores_1m()
 
 
 @mcp.tool(
@@ -274,7 +274,7 @@ async def get_responsiveness(
     """
     await ctx.info(f"Getting responsiveness data from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)
-    return await client.get_responsiveness(granularity=granularity, format="json")
+    return await client.get_responsiveness(granularity=granularity)
 
 
 @mcp.tool(
@@ -322,7 +322,7 @@ async def get_web_responsiveness(
     """
     await ctx.info(f"Getting web responsiveness data from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)
-    return await client.get_web_responsiveness(format="json")
+    return await client.get_web_responsiveness()
 
 
 @mcp.tool(
@@ -370,7 +370,7 @@ async def get_speed_results(
     """
     await ctx.info(f"Getting speed test data from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)
-    return await client.get_speed_results(format="json")
+    return await client.get_speed_results()
 
 
 @mcp.tool(
@@ -427,7 +427,7 @@ async def get_all_datasets(
     await ctx.info(f"Getting all datasets from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)
     return await client.get_all_datasets(
-        format="json", include_all_responsiveness=include_all_responsiveness
+        include_all_responsiveness=include_all_responsiveness
     )
 
 

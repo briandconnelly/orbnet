@@ -29,10 +29,6 @@ class OrbClientConfig(BaseModel):
 class DatasetRequestParams(BaseModel):
     """Parameters for dataset requests"""
 
-    format: Literal["json", "jsonl"] = Field(
-        default="json",
-        description="Response format - 'json' for array or 'jsonl' for NDJSON",
-    )
     caller_id: Optional[str] = Field(
         default=None, description="Override the default caller_id for this request"
     )
@@ -66,10 +62,6 @@ class PollingConfig(BaseModel):
     )
     interval: float = Field(
         default=60.0, gt=0, description="Seconds to wait between polls"
-    )
-    format: Literal["json", "jsonl"] = Field(
-        default="json",
-        description="Response format - 'json' for array or 'jsonl' for NDJSON",
     )
     callback: Optional[Callable] = Field(
         default=None,

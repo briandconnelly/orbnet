@@ -1,7 +1,7 @@
 import asyncio
 import uuid
 from importlib.metadata import version as get_version
-from typing import Any, Callable, Dict, List, Literal, Optional, Union
+from typing import Any, Callable, Dict, List, Literal, Optional
 
 import httpx
 
@@ -19,8 +19,8 @@ class OrbAPIClient:
     Client for interacting with Orb.net Local Data API.
 
     The OrbAPIClient provides a high-level interface to retrieve network quality
-    datasets from Orb sensors. It supports polling for new data, multiple
-    granularities, and both JSON and JSONL output formats.
+    datasets from Orb sensors. It supports polling for new data and multiple
+    granularities.
 
     Examples:
         Basic usage:
@@ -129,24 +129,22 @@ class OrbAPIClient:
     async def _get_dataset(
         self,
         dataset_name: str,
-        format: Literal["json", "jsonl"] = "json",
         caller_id: Optional[str] = None,
         **params,
-    ) -> Union[List[Dict[str, Any]], str]:
+    ) -> List[Dict[str, Any]]:
         """
         Internal method to fetch a dataset from the Local Data API.
 
         Args:
             dataset_name: Name of the dataset (e.g., "responsiveness_1s")
-            format: Response format - "json" for array or "jsonl" for NDJSON
             caller_id: Override the default caller_id for this request
             **params: Additional query parameters
 
         Returns:
-            List of records (for json) or NDJSON string (for jsonl)
+            List of records as dictionaries
         """
         caller = caller_id or self.config.caller_id
-        endpoint = f"{self.base_url}/api/v2/datasets/{dataset_name}.{format}"
+        endpoint = f"{self.base_url}/api/v2/datasets/{dataset_name}.json"
 
         query_params = {"id": caller, **params}
 
@@ -156,17 +154,13 @@ class OrbAPIClient:
             )
             response.raise_for_status()
 
-            if format == "json":
-                return response.json()
-            else:  # jsonl
-                return response.text
+            return response.json()
 
     async def get_scores_1m(
         self,
-        format: Literal["json", "jsonl"] = "json",
         caller_id: Optional[str] = None,
         **params,
-    ) -> Union[List[Dict[str, Any]], str]:
+    ) -> List[Dict[str, Any]]:
         """
         Retrieve 1-minute granularity Scores dataset.
 
@@ -175,12 +169,11 @@ class OrbAPIClient:
         Minimum granularity is 1 minute.
 
         Args:
-            format: Response format - "json" for array or "jsonl" for NDJSON
             caller_id: Override the default caller_id for this request
             **params: Additional query parameters
 
         Returns:
-            List of records or NDJSON string, each containing:
+            List of records, each containing:
             - identifiers: ScoreIdentifiers (orb_id, orb_name, device_name, etc.)
             - measures: ScoreMeasures (orb_score, responsiveness_score, etc.)
             - dimensions: NetworkDimensions (network_type, country_code, etc.)
@@ -203,11 +196,10 @@ class OrbAPIClient:
             >>> avg_score = sum(s['orb_score'] for s in scores) / len(scores)
             >>> print(f"Average Orb Score: {avg_score:.1f}")
 
-            Get scores in JSONL format for streaming processing:
+            Process scores in real-time:
 
-            >>> scores_jsonl = await client.get_scores_1m(format="jsonl")
-            >>> for line in scores_jsonl.strip().split('\\n'):
-            ...     record = json.loads(line)
+            >>> scores = await client.get_scores_1m()
+            >>> for record in scores:
             ...     print(f"Score at {record['timestamp']}: {record['orb_score']}")
 
             Check network quality by ISP:
@@ -223,18 +215,15 @@ class OrbAPIClient:
             ...     avg = sum(scores_list) / len(scores_list)
             ...     print(f"{isp}: {avg:.1f}")
         """
-        request = DatasetRequestParams(format=format, caller_id=caller_id, **params)
-        return await self._get_dataset(
-            "scores_1m", request.format, request.caller_id, **params
-        )
+        request = DatasetRequestParams(caller_id=caller_id, **params)
+        return await self._get_dataset("scores_1m", request.caller_id, **params)
 
     async def get_responsiveness(
         self,
         granularity: Literal["1s", "15s", "1m"] = "1m",
-        format: Literal["json", "jsonl"] = "json",
         caller_id: Optional[str] = None,
         **params,
-    ) -> Union[List[Dict[str, Any]], str]:
+    ) -> List[Dict[str, Any]]:
         """
         Retrieve Responsiveness dataset.
 
@@ -243,12 +232,11 @@ class OrbAPIClient:
 
         Args:
             granularity: Time bucket size - "1s", "15s", or "1m"
-            format: Response format - "json" for array or "jsonl" for NDJSON
             caller_id: Override the default caller_id for this request
             **params: Additional query parameters
 
         Returns:
-            List of records or NDJSON string, each containing:
+            List of records, each containing:
             - identifiers: orb_id, orb_name, device_name, orb_version, timestamp
             - measures: ResponsivenessMeasures (lag_avg_us, latency_avg_us, etc.)
             - dimensions: NetworkDimensions + network_name, pingers
@@ -290,19 +278,16 @@ class OrbAPIClient:
             >>> print(f"Avg packet loss: {avg_loss:.2f}%, Max: {max_loss:.2f}%")
         """
         request = ResponsivenessRequestParams(
-            granularity=granularity, format=format, caller_id=caller_id, **params
+            granularity=granularity, caller_id=caller_id, **params
         )
         dataset_name = f"responsiveness_{request.granularity}"
-        return await self._get_dataset(
-            dataset_name, request.format, request.caller_id, **params
-        )
+        return await self._get_dataset(dataset_name, request.caller_id, **params)
 
     async def get_web_responsiveness(
         self,
-        format: Literal["json", "jsonl"] = "json",
         caller_id: Optional[str] = None,
         **params,
-    ) -> Union[List[Dict[str, Any]], str]:
+    ) -> List[Dict[str, Any]]:
         """
         Retrieve Web Responsiveness dataset.
 
@@ -311,12 +296,11 @@ class OrbAPIClient:
         conducted once per minute by default (raw results, not aggregates).
 
         Args:
-            format: Response format - "json" for array or "jsonl" for NDJSON
             caller_id: Override the default caller_id for this request
             **params: Additional query parameters
 
         Returns:
-            List of records or NDJSON string, each containing:
+            List of records, each containing:
             - identifiers: orb_id, orb_name, device_name, orb_version, timestamp
             - measures: WebResponsivenessMeasures (ttfb_us, dns_us)
             - dimensions: NetworkDimensions + network_name, web_url
@@ -359,17 +343,16 @@ class OrbAPIClient:
             ...     avg = sum(ttfbs) / len(ttfbs)
             ...     print(f"{url}: {avg:.1f}ms avg TTFB")
         """
-        request = DatasetRequestParams(format=format, caller_id=caller_id, **params)
+        request = DatasetRequestParams(caller_id=caller_id, **params)
         return await self._get_dataset(
-            "web_responsiveness_results", request.format, request.caller_id, **params
+            "web_responsiveness_results", request.caller_id, **params
         )
 
     async def get_speed_results(
         self,
-        format: Literal["json", "jsonl"] = "json",
         caller_id: Optional[str] = None,
         **params,
-    ) -> Union[List[Dict[str, Any]], str]:
+    ) -> List[Dict[str, Any]]:
         """
         Retrieve Speed dataset.
 
@@ -377,12 +360,11 @@ class OrbAPIClient:
         are conducted once per hour by default (raw results, not aggregates).
 
         Args:
-            format: Response format - "json" for array or "jsonl" for NDJSON
             caller_id: Override the default caller_id for this request
             **params: Additional query parameters
 
         Returns:
-            List of records or NDJSON string, each containing:
+            List of records, each containing:
             - identifiers: orb_id, orb_name, device_name, orb_version, timestamp
             - measures: SpeedMeasures (download_kbps, upload_kbps)
             - dimensions: NetworkDimensions + network_name, speed_test_engine,
@@ -433,22 +415,18 @@ class OrbAPIClient:
             ...     avg = sum(speeds_list) / len(speeds_list)
             ...     print(f"{server}: {avg:.1f} Mbps avg")
         """
-        request = DatasetRequestParams(format=format, caller_id=caller_id, **params)
-        return await self._get_dataset(
-            "speed_results", request.format, request.caller_id, **params
-        )
+        request = DatasetRequestParams(caller_id=caller_id, **params)
+        return await self._get_dataset("speed_results", request.caller_id, **params)
 
     async def get_all_datasets(
         self,
-        format: Literal["json", "jsonl"] = "json",
         caller_id: Optional[str] = None,
         include_all_responsiveness: bool = False,
-    ) -> Dict[str, Union[List[Dict[str, Any]], str]]:
+    ) -> Dict[str, List[Dict[str, Any]]]:
         """
         Retrieve all datasets concurrently.
 
         Args:
-            format: Response format - "json" for array or "jsonl" for NDJSON
             caller_id: Override the default caller_id for this request
             include_all_responsiveness: If True, fetches all responsiveness
                                        granularities (1s, 15s, 1m). If False,
@@ -498,28 +476,23 @@ class OrbAPIClient:
             ...         print(f"{name}: {len(data)} records")
         """
         request = AllDatasetsRequestParams(
-            format=format,
             caller_id=caller_id,
             include_all_responsiveness=include_all_responsiveness,
         )
 
         tasks = {
-            "scores_1m": self.get_scores_1m(request.format, request.caller_id),
-            "responsiveness_1m": self.get_responsiveness(
-                "1m", request.format, request.caller_id
-            ),
-            "web_responsiveness": self.get_web_responsiveness(
-                request.format, request.caller_id
-            ),
-            "speed_results": self.get_speed_results(request.format, request.caller_id),
+            "scores_1m": self.get_scores_1m(request.caller_id),
+            "responsiveness_1m": self.get_responsiveness("1m", request.caller_id),
+            "web_responsiveness": self.get_web_responsiveness(request.caller_id),
+            "speed_results": self.get_speed_results(request.caller_id),
         }
 
         if request.include_all_responsiveness:
             tasks["responsiveness_15s"] = self.get_responsiveness(
-                "15s", request.format, request.caller_id
+                "15s", request.caller_id
             )
             tasks["responsiveness_1s"] = self.get_responsiveness(
-                "1s", request.format, request.caller_id
+                "1s", request.caller_id
             )
 
         results = await asyncio.gather(*tasks.values(), return_exceptions=True)
@@ -533,7 +506,6 @@ class OrbAPIClient:
         self,
         dataset_name: str,
         interval: float = 60.0,
-        format: Literal["json", "jsonl"] = "json",
         callback: Optional[Callable] = None,
         max_iterations: Optional[int] = None,
     ):
@@ -546,7 +518,6 @@ class OrbAPIClient:
         Args:
             dataset_name: Name of the dataset to poll (e.g., "responsiveness_1s")
             interval: Seconds to wait between polls
-            format: Response format - "json" for array or "jsonl" for NDJSON
             callback: Optional function to call with each batch of new records.
                      Should accept (dataset_name, records) as arguments.
             max_iterations: Maximum number of polls (None for infinite)
@@ -630,7 +601,6 @@ class OrbAPIClient:
         config = PollingConfig(
             dataset_name=dataset_name,
             interval=interval,
-            format=format,
             callback=callback,
             max_iterations=max_iterations,
         )
@@ -638,7 +608,7 @@ class OrbAPIClient:
         iteration = 0
         while config.max_iterations is None or iteration < config.max_iterations:
             try:
-                records = await self._get_dataset(config.dataset_name, config.format)
+                records = await self._get_dataset(config.dataset_name)
 
                 if config.callback and records:
                     await config.callback(
