@@ -5,8 +5,8 @@ These tests verify that the components work together correctly,
 but may require actual network connectivity or external services.
 """
 
+
 import pytest
-from unittest.mock import patch
 
 from orbnet.client import OrbAPIClient
 from orbnet.mcp_server import _get_client_info_impl
@@ -56,10 +56,10 @@ class TestIntegration:
     def test_model_validation_integration(self):
         """Test that models work together in realistic scenarios."""
         from orbnet.models import (
-            OrbClientConfig,
-            DatasetRequestParams,
-            ResponsivenessRequestParams,
             AllDatasetsRequestParams,
+            DatasetRequestParams,
+            OrbClientConfig,
+            ResponsivenessRequestParams,
         )
 
         # Test configuration chain
@@ -113,8 +113,9 @@ class TestIntegration:
 
     def test_error_handling_integration(self):
         """Test error handling across components."""
-        from orbnet.models import OrbClientConfig
         from pydantic import ValidationError
+
+        from orbnet.models import OrbClientConfig
 
         # Test invalid configuration
         with pytest.raises(ValidationError):
@@ -146,15 +147,11 @@ class TestIntegration:
     def test_import_integration(self):
         """Test that all modules can be imported together."""
         # Test that all main modules can be imported
-        import orbnet
-        import orbnet.client
-        import orbnet.models
-        import orbnet.mcp_server
 
         # Test that main classes are available
         from orbnet.client import OrbAPIClient
-        from orbnet.models import OrbClientConfig
         from orbnet.mcp_server import _get_client_info_impl
+        from orbnet.models import OrbClientConfig
 
         # Test that they can be instantiated
         client = OrbAPIClient(host="192.168.1.100")

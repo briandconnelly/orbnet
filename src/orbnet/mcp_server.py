@@ -58,12 +58,18 @@ mcp = FastMCP(
     Use prompts like 'analyze_network_quality' or 'troubleshoot_slow_internet'
     for guided analysis.
 
+    **Troubleshooting:**
+    If an Orb sensor cannot be reached, check the following:
+    - Is the Orb sensor currently running?
+    - Has [Local API](https://orb.net/docs/deploy-and-configure/datasets-configuration#local-api) access been enabled for that Orb?
+    - Has the user given the right IP address and port?
+
     **Note:**
     A given Orb sensor is not necessarily on the same network as
     the user, so the results may not be representative of the network
     quality that the user is experiencing. Be sure to attribute the
     results to the Orb, not the user.
-    """,
+    """,  # noqa: E501
 )
 
 

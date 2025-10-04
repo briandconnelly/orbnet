@@ -2,12 +2,10 @@
 Pytest configuration and shared fixtures for orbnet tests.
 """
 
-import json
 from typing import Any, Dict, List
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-import httpx
 
 
 @pytest.fixture

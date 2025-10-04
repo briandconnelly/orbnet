@@ -2,7 +2,6 @@
 Tests for OrbAPIClient in orbnet.client.
 """
 
-import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx

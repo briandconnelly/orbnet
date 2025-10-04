@@ -33,6 +33,12 @@ Or using [uv](https://docs.astral.sh/uv/):
 uv add orbnet
 ```
 
+### Prerequisites
+
+- [Install Orb](https://orb.net/get-orb/) on your machine of choice
+- Enable [Local API](https://orb.net/docs/deploy-and-configure/datasets-configuration#local-api) access
+
+
 ## Quick Start
 
 ```python
