@@ -8,6 +8,13 @@ import httpx
 import pytest
 
 from orbnet.client import OrbAPIClient
+from orbnet.models import (
+    AllDatasetsResponse,
+    ResponsivenessRecord,
+    ScoreRecord,
+    SpeedRecord,
+    WebResponsivenessRecord,
+)
 
 
 class TestOrbAPIClient:
@@ -52,9 +59,7 @@ class TestOrbAPIClient:
         }
 
     @pytest.mark.asyncio
-    async def test_get_dataset(
-        self, sample_scores_data, mock_httpx_response
-    ):
+    async def test_get_dataset(self, sample_scores_data, mock_httpx_response):
         """Test _get_dataset method."""
         mock_httpx_response.json.return_value = sample_scores_data
 
@@ -72,7 +77,6 @@ class TestOrbAPIClient:
             assert "scores_1m.json" in call_args[0][0]
             assert call_args[1]["params"]["id"] == client.caller_id
 
-
     @pytest.mark.asyncio
     async def test_get_dataset_with_custom_caller_id(
         self, sample_scores_data, mock_httpx_response
@@ -86,9 +90,7 @@ class TestOrbAPIClient:
             mock_client.get.return_value = mock_httpx_response
 
             client = OrbAPIClient(host="192.168.1.100")
-            result = await client._get_dataset(
-                "scores_1m", caller_id="custom-caller"
-            )
+            result = await client._get_dataset("scores_1m", caller_id="custom-caller")
 
             assert result == sample_scores_data
             call_args = mock_client.get.call_args
@@ -138,7 +140,7 @@ class TestOrbAPIClient:
 
     @pytest.mark.asyncio
     async def test_get_scores_1m(self, sample_scores_data, mock_httpx_response):
-        """Test get_scores_1m method."""
+        """Test get_scores_1m method returns ScoreRecord objects."""
         mock_httpx_response.json.return_value = sample_scores_data
 
         with patch("httpx.AsyncClient") as mock_client_class:
@@ -149,16 +151,24 @@ class TestOrbAPIClient:
             client = OrbAPIClient(host="192.168.1.100")
             result = await client.get_scores_1m()
 
-            assert result == sample_scores_data
+            # Check result is a list of ScoreRecord objects
+            assert isinstance(result, list)
+            assert len(result) == len(sample_scores_data)
+            assert all(isinstance(r, ScoreRecord) for r in result)
+
+            # Check data integrity
+            assert result[0].orb_id == sample_scores_data[0]["orb_id"]
+            assert result[0].orb_score == sample_scores_data[0]["orb_score"]
+            assert result[0].isp_name == sample_scores_data[0]["isp_name"]
+
             call_args = mock_client.get.call_args
             assert "scores_1m.json" in call_args[0][0]
-
 
     @pytest.mark.asyncio
     async def test_get_responsiveness_1m(
         self, sample_responsiveness_data, mock_httpx_response
     ):
-        """Test get_responsiveness method with 1m granularity."""
+        """Test get_responsiveness method with 1m granularity returns ResponsivenessRecord objects."""
         mock_httpx_response.json.return_value = sample_responsiveness_data
 
         with patch("httpx.AsyncClient") as mock_client_class:
@@ -169,7 +179,19 @@ class TestOrbAPIClient:
             client = OrbAPIClient(host="192.168.1.100")
             result = await client.get_responsiveness(granularity="1m")
 
-            assert result == sample_responsiveness_data
+            # Check result is a list of ResponsivenessRecord objects
+            assert isinstance(result, list)
+            assert len(result) == len(sample_responsiveness_data)
+            assert all(isinstance(r, ResponsivenessRecord) for r in result)
+
+            # Check data integrity
+            assert result[0].orb_id == sample_responsiveness_data[0]["orb_id"]
+            assert result[0].lag_avg_us == sample_responsiveness_data[0]["lag_avg_us"]
+            assert (
+                result[0].packet_loss_pct
+                == sample_responsiveness_data[0]["packet_loss_pct"]
+            )
+
             call_args = mock_client.get.call_args
             assert "responsiveness_1m.json" in call_args[0][0]
 
@@ -188,7 +210,8 @@ class TestOrbAPIClient:
             client = OrbAPIClient(host="192.168.1.100")
             result = await client.get_responsiveness(granularity="1s")
 
-            assert result == sample_responsiveness_data
+            assert isinstance(result, list)
+            assert all(isinstance(r, ResponsivenessRecord) for r in result)
             call_args = mock_client.get.call_args
             assert "responsiveness_1s.json" in call_args[0][0]
 
@@ -207,7 +230,8 @@ class TestOrbAPIClient:
             client = OrbAPIClient(host="192.168.1.100")
             result = await client.get_responsiveness(granularity="15s")
 
-            assert result == sample_responsiveness_data
+            assert isinstance(result, list)
+            assert all(isinstance(r, ResponsivenessRecord) for r in result)
             call_args = mock_client.get.call_args
             assert "responsiveness_15s.json" in call_args[0][0]
 
@@ -215,7 +239,7 @@ class TestOrbAPIClient:
     async def test_get_web_responsiveness(
         self, sample_web_responsiveness_data, mock_httpx_response
     ):
-        """Test get_web_responsiveness method."""
+        """Test get_web_responsiveness method returns WebResponsivenessRecord objects."""
         mock_httpx_response.json.return_value = sample_web_responsiveness_data
 
         with patch("httpx.AsyncClient") as mock_client_class:
@@ -226,13 +250,22 @@ class TestOrbAPIClient:
             client = OrbAPIClient(host="192.168.1.100")
             result = await client.get_web_responsiveness()
 
-            assert result == sample_web_responsiveness_data
+            # Check result is a list of WebResponsivenessRecord objects
+            assert isinstance(result, list)
+            assert len(result) == len(sample_web_responsiveness_data)
+            assert all(isinstance(r, WebResponsivenessRecord) for r in result)
+
+            # Check data integrity
+            assert result[0].orb_id == sample_web_responsiveness_data[0]["orb_id"]
+            assert result[0].ttfb_us == sample_web_responsiveness_data[0]["ttfb_us"]
+            assert result[0].web_url == sample_web_responsiveness_data[0]["web_url"]
+
             call_args = mock_client.get.call_args
             assert "web_responsiveness_results.json" in call_args[0][0]
 
     @pytest.mark.asyncio
     async def test_get_speed_results(self, sample_speed_data, mock_httpx_response):
-        """Test get_speed_results method."""
+        """Test get_speed_results method returns SpeedRecord objects."""
         mock_httpx_response.json.return_value = sample_speed_data
 
         with patch("httpx.AsyncClient") as mock_client_class:
@@ -243,91 +276,138 @@ class TestOrbAPIClient:
             client = OrbAPIClient(host="192.168.1.100")
             result = await client.get_speed_results()
 
-            assert result == sample_speed_data
+            # Check result is a list of SpeedRecord objects
+            assert isinstance(result, list)
+            assert len(result) == len(sample_speed_data)
+            assert all(isinstance(r, SpeedRecord) for r in result)
+
+            # Check data integrity
+            assert result[0].orb_id == sample_speed_data[0]["orb_id"]
+            assert result[0].download_kbps == sample_speed_data[0]["download_kbps"]
+            assert (
+                result[0].speed_test_server == sample_speed_data[0]["speed_test_server"]
+            )
+
             call_args = mock_client.get.call_args
             assert "speed_results.json" in call_args[0][0]
 
     @pytest.mark.asyncio
-    async def test_get_all_datasets_basic(self, sample_all_datasets_response):
-        """Test get_all_datasets method with basic configuration."""
+    async def test_get_all_datasets_basic(
+        self,
+        sample_scores_data,
+        sample_responsiveness_data,
+        sample_web_responsiveness_data,
+        sample_speed_data,
+    ):
+        """Test get_all_datasets method returns AllDatasetsResponse."""
         with (
             patch.object(
                 OrbAPIClient,
                 "get_scores_1m",
-                return_value=sample_all_datasets_response["scores_1m"],
+                return_value=[ScoreRecord(**r) for r in sample_scores_data],
             ),
             patch.object(
                 OrbAPIClient,
                 "get_responsiveness",
-                return_value=sample_all_datasets_response["responsiveness_1m"],
+                return_value=[
+                    ResponsivenessRecord(**r) for r in sample_responsiveness_data
+                ],
             ),
             patch.object(
                 OrbAPIClient,
                 "get_web_responsiveness",
-                return_value=sample_all_datasets_response["web_responsiveness"],
+                return_value=[
+                    WebResponsivenessRecord(**r) for r in sample_web_responsiveness_data
+                ],
             ),
             patch.object(
                 OrbAPIClient,
                 "get_speed_results",
-                return_value=sample_all_datasets_response["speed_results"],
+                return_value=[SpeedRecord(**r) for r in sample_speed_data],
             ),
         ):
             client = OrbAPIClient(host="192.168.1.100")
             result = await client.get_all_datasets()
 
-            assert "scores_1m" in result
-            assert "responsiveness_1m" in result
-            assert "web_responsiveness" in result
-            assert "speed_results" in result
-            assert result["scores_1m"] == sample_all_datasets_response["scores_1m"]
+            # Check result is AllDatasetsResponse
+            assert isinstance(result, AllDatasetsResponse)
+
+            # Check all required datasets are present
+            assert isinstance(result.scores_1m, list)
+            assert isinstance(result.responsiveness_1m, list)
+            assert isinstance(result.web_responsiveness, list)
+            assert isinstance(result.speed_results, list)
+
+            # Check data types
+            assert all(isinstance(r, ScoreRecord) for r in result.scores_1m)
+            assert all(
+                isinstance(r, ResponsivenessRecord) for r in result.responsiveness_1m
+            )
+            assert all(
+                isinstance(r, WebResponsivenessRecord)
+                for r in result.web_responsiveness
+            )
+            assert all(isinstance(r, SpeedRecord) for r in result.speed_results)
 
     @pytest.mark.asyncio
     async def test_get_all_datasets_with_all_responsiveness(
-        self, sample_all_datasets_response
+        self,
+        sample_scores_data,
+        sample_responsiveness_data,
+        sample_web_responsiveness_data,
+        sample_speed_data,
     ):
         """Test get_all_datasets method with all responsiveness granularities."""
         with (
             patch.object(
                 OrbAPIClient,
                 "get_scores_1m",
-                return_value=sample_all_datasets_response["scores_1m"],
+                return_value=[ScoreRecord(**r) for r in sample_scores_data],
             ),
             patch.object(
                 OrbAPIClient,
                 "get_responsiveness",
-                return_value=sample_all_datasets_response["responsiveness_1m"],
+                return_value=[
+                    ResponsivenessRecord(**r) for r in sample_responsiveness_data
+                ],
             ),
             patch.object(
                 OrbAPIClient,
                 "get_web_responsiveness",
-                return_value=sample_all_datasets_response["web_responsiveness"],
+                return_value=[
+                    WebResponsivenessRecord(**r) for r in sample_web_responsiveness_data
+                ],
             ),
             patch.object(
                 OrbAPIClient,
                 "get_speed_results",
-                return_value=sample_all_datasets_response["speed_results"],
+                return_value=[SpeedRecord(**r) for r in sample_speed_data],
             ),
         ):
             client = OrbAPIClient(host="192.168.1.100")
             result = await client.get_all_datasets(include_all_responsiveness=True)
 
-            assert "scores_1m" in result
-            assert "responsiveness_1m" in result
-            assert "responsiveness_15s" in result
-            assert "responsiveness_1s" in result
-            assert "web_responsiveness" in result
-            assert "speed_results" in result
+            assert isinstance(result, AllDatasetsResponse)
+            assert isinstance(result.scores_1m, list)
+            assert isinstance(result.responsiveness_1m, list)
+            assert isinstance(result.responsiveness_15s, list)
+            assert isinstance(result.responsiveness_1s, list)
+            assert isinstance(result.web_responsiveness, list)
+            assert isinstance(result.speed_results, list)
 
     @pytest.mark.asyncio
     async def test_get_all_datasets_with_error(
-        self, sample_all_datasets_response, sample_error_response
+        self,
+        sample_scores_data,
+        sample_web_responsiveness_data,
+        sample_speed_data,
     ):
         """Test get_all_datasets method with one dataset failing."""
         with (
             patch.object(
                 OrbAPIClient,
                 "get_scores_1m",
-                return_value=sample_all_datasets_response["scores_1m"],
+                return_value=[ScoreRecord(**r) for r in sample_scores_data],
             ),
             patch.object(
                 OrbAPIClient,
@@ -337,27 +417,30 @@ class TestOrbAPIClient:
             patch.object(
                 OrbAPIClient,
                 "get_web_responsiveness",
-                return_value=sample_all_datasets_response["web_responsiveness"],
+                return_value=[
+                    WebResponsivenessRecord(**r) for r in sample_web_responsiveness_data
+                ],
             ),
             patch.object(
                 OrbAPIClient,
                 "get_speed_results",
-                return_value=sample_all_datasets_response["speed_results"],
+                return_value=[SpeedRecord(**r) for r in sample_speed_data],
             ),
         ):
             client = OrbAPIClient(host="192.168.1.100")
             result = await client.get_all_datasets()
 
-            assert "scores_1m" in result
-            assert "responsiveness_1m" in result
-            assert "error" in result["responsiveness_1m"]
-            assert result["responsiveness_1m"]["error"] == "Connection error"
-            assert "web_responsiveness" in result
-            assert "speed_results" in result
+            assert isinstance(result, AllDatasetsResponse)
+            assert isinstance(result.scores_1m, list)
+            assert isinstance(result.responsiveness_1m, dict)
+            assert "error" in result.responsiveness_1m
+            assert result.responsiveness_1m["error"] == "Connection error"
+            assert isinstance(result.web_responsiveness, list)
+            assert isinstance(result.speed_results, list)
 
     @pytest.mark.asyncio
     async def test_poll_dataset_success(self, sample_scores_data, mock_httpx_response):
-        """Test poll_dataset method with successful polling."""
+        """Test poll_dataset method with successful polling returns Pydantic objects."""
         mock_httpx_response.json.return_value = sample_scores_data
 
         with patch("httpx.AsyncClient") as mock_client_class:
@@ -375,7 +458,9 @@ class TestOrbAPIClient:
                 results.append(records)
 
             assert len(results) == 2
-            assert all(result == sample_scores_data for result in results)
+            # Check all results are lists of ScoreRecord objects
+            assert all(isinstance(r, list) for r in results)
+            assert all(isinstance(rec, ScoreRecord) for r in results for rec in r)
 
     @pytest.mark.asyncio
     async def test_poll_dataset_with_callback(
@@ -405,7 +490,8 @@ class TestOrbAPIClient:
             assert len(results) == 1
             assert len(callback_calls) == 1
             assert callback_calls[0][0] == "scores_1m"
-            assert callback_calls[0][1] == sample_scores_data
+            # Check callback received Pydantic objects
+            assert all(isinstance(r, ScoreRecord) for r in callback_calls[0][1])
 
     @pytest.mark.asyncio
     async def test_poll_dataset_with_async_callback(
@@ -438,7 +524,8 @@ class TestOrbAPIClient:
             assert len(results) == 1
             assert len(callback_calls) == 1
             assert callback_calls[0][0] == "scores_1m"
-            assert callback_calls[0][1] == sample_scores_data
+            # Check callback received Pydantic objects
+            assert all(isinstance(r, ScoreRecord) for r in callback_calls[0][1])
 
     @pytest.mark.asyncio
     async def test_poll_dataset_with_error(self, mock_httpx_response):
@@ -468,6 +555,17 @@ class TestOrbAPIClient:
             assert len(results) == 0
 
     @pytest.mark.asyncio
+    async def test_poll_dataset_invalid_dataset_name(self):
+        """Test poll_dataset method with invalid dataset name."""
+        client = OrbAPIClient(host="192.168.1.100")
+
+        with pytest.raises(ValueError, match="Unknown dataset"):
+            async for _ in client.poll_dataset(
+                "invalid_dataset", interval=0.01, max_iterations=1
+            ):
+                pass
+
+    @pytest.mark.asyncio
     async def test_poll_dataset_infinite(self, sample_scores_data, mock_httpx_response):
         """Test poll_dataset method with infinite polling (max_iterations=None)."""
         mock_httpx_response.json.return_value = sample_scores_data
@@ -492,4 +590,5 @@ class TestOrbAPIClient:
                     break
 
             assert len(results) == 3
-            assert all(result == sample_scores_data for result in results)
+            assert all(isinstance(r, list) for r in results)
+            assert all(isinstance(rec, ScoreRecord) for r in results for rec in r)

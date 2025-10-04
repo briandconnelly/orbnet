@@ -2,7 +2,6 @@
 Test utilities and helpers for orbnet tests.
 """
 
-import json
 from typing import Any, Dict, List
 
 
@@ -91,7 +90,7 @@ def create_mock_orb_response(
             record = {
                 **base_record,
                 "network_name": f"Test Network {i}",
-                "speed_test_engine": f"test-engine-{i}",
+                "speed_test_engine": i % 2,  # Alternate between 0 (orb) and 1 (iperf)
                 "speed_test_server": f"test-server-{i}",
                 "download_kbps": 50000 + (i * 1000),
                 "upload_kbps": 10000 + (i * 500),
@@ -102,8 +101,6 @@ def create_mock_orb_response(
         records.append(record)
 
     return records
-
-
 
 
 def assert_valid_orb_score_record(record: Dict[str, Any]) -> None:
@@ -280,3 +277,97 @@ def validate_client_config(config: Dict[str, Any]) -> None:
     assert isinstance(config["caller_id"], str), "caller_id must be string"
     assert isinstance(config["timeout"], (int, float)), "timeout must be numeric"
     assert config["timeout"] > 0, "timeout must be positive"
+
+
+def assert_valid_score_record_object(record) -> None:
+    """
+    Assert that a ScoreRecord Pydantic object is valid.
+
+    Args:
+        record: ScoreRecord object to validate
+
+    Raises:
+        AssertionError: If record is invalid
+    """
+    from orbnet.models import ScoreRecord
+
+    assert isinstance(record, ScoreRecord), "record must be ScoreRecord instance"
+
+    # Validate score ranges
+    assert 0 <= record.orb_score <= 100, "orb_score must be 0-100"
+    assert 0 <= record.responsiveness_score <= 100, "responsiveness_score must be 0-100"
+    assert 0 <= record.reliability_score <= 100, "reliability_score must be 0-100"
+    assert 0 <= record.speed_score <= 100, "speed_score must be 0-100"
+
+    # Validate numeric ranges
+    assert record.timestamp > 0, "timestamp must be positive"
+    assert record.lag_avg_us >= 0, "lag_avg_us must be non-negative"
+
+
+def assert_valid_responsiveness_record_object(record) -> None:
+    """
+    Assert that a ResponsivenessRecord Pydantic object is valid.
+
+    Args:
+        record: ResponsivenessRecord object to validate
+
+    Raises:
+        AssertionError: If record is invalid
+    """
+    from orbnet.models import ResponsivenessRecord
+
+    assert isinstance(record, ResponsivenessRecord), (
+        "record must be ResponsivenessRecord instance"
+    )
+
+    # Validate numeric ranges
+    assert record.lag_avg_us >= 0, "lag_avg_us must be non-negative"
+    assert record.latency_avg_us >= 0, "latency_avg_us must be non-negative"
+    assert record.jitter_avg_us >= 0, "jitter_avg_us must be non-negative"
+    assert 0 <= record.packet_loss_pct <= 100, "packet_loss_pct must be 0-100"
+
+
+def assert_valid_web_responsiveness_record_object(record) -> None:
+    """
+    Assert that a WebResponsivenessRecord Pydantic object is valid.
+
+    Args:
+        record: WebResponsivenessRecord object to validate
+
+    Raises:
+        AssertionError: If record is invalid
+    """
+    from orbnet.models import WebResponsivenessRecord
+
+    assert isinstance(record, WebResponsivenessRecord), (
+        "record must be WebResponsivenessRecord instance"
+    )
+
+    # Validate numeric ranges
+    assert record.ttfb_us >= 0, "ttfb_us must be non-negative"
+    assert record.dns_us >= 0, "dns_us must be non-negative"
+    assert record.web_url.startswith(("http://", "https://")), (
+        "web_url must be valid URL"
+    )
+
+
+def assert_valid_speed_record_object(record) -> None:
+    """
+    Assert that a SpeedRecord Pydantic object is valid.
+
+    Args:
+        record: SpeedRecord object to validate
+
+    Raises:
+        AssertionError: If record is invalid
+    """
+    from orbnet.models import SpeedRecord
+
+    assert isinstance(record, SpeedRecord), "record must be SpeedRecord instance"
+
+    # Validate numeric ranges
+    assert record.download_kbps >= 0, "download_kbps must be non-negative"
+    assert record.upload_kbps >= 0, "upload_kbps must be non-negative"
+    assert record.speed_test_engine in [0, 1], (
+        "speed_test_engine must be 0 (orb) or 1 (iperf)"
+    )
