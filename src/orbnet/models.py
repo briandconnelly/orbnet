@@ -84,11 +84,12 @@ class ScoreIdentifiers(BaseModel):
     """Identifiers in the Scores dataset"""
 
     orb_id: str = Field(description="Orb Sensor identifier")
-    orb_name: str = Field(
-        description="Current Orb friendly name (masked unless identifiable=true)"
+    orb_name: Optional[str] = Field(
+        default=None, description="Current Orb friendly name (may not be included)"
     )
-    device_name: str = Field(
-        description="Hostname or name of the device as identified by the OS"
+    device_name: Optional[str] = Field(
+        default=None,
+        description="Hostname or name of the device as identified by the OS (may not be included)",  # noqa: E501
     )
     timestamp: int = Field(description="Interval start timestamp in epoch milliseconds")
     score_version: str = Field(description="Semantic version of scoring methodology")
@@ -132,27 +133,40 @@ class NetworkDimensions(BaseModel):
     network_type: int = Field(
         description="Network interface type: 0=unknown, 1=wifi, 2=ethernet, 3=other"
     )
-    country_code: str = Field(description="Geocoded 2-digit ISO country code")
-    city_name: str = Field(description="Geocoded city name")
-    isp_name: str = Field(description="ISP name from GeoIP lookup")
-    public_ip: str = Field(
-        description="Public IP address (masked unless identifiable=true)"
+    country_code: Optional[str] = Field(
+        default=None,
+        description="Geocoded 2-digit ISO country code (may not be included)",
     )
-    latitude: float = Field(
-        description="Orb location latitude (max 2-decimals, unless identifiable=true)"
+    city_name: Optional[str] = Field(
+        default=None, description="Geocoded city name (may not be included)"
     )
-    longitude: float = Field(
-        description="Orb location longitude (max 2-decimals, unless identifiable=true)"
+    isp_name: Optional[str] = Field(
+        default=None, description="ISP name from GeoIP lookup (may not be included)"
     )
-    location_source: int = Field(description="Location Source: 0=unknown, 1=geoip")
+    public_ip: Optional[str] = Field(
+        default=None, description="Public IP address (not be included)"
+    )
+    latitude: Optional[float] = Field(
+        default=None,
+        description="Orb location latitude",
+    )
+    longitude: Optional[float] = Field(
+        default=None,
+        description="Orb location longitude",
+    )
+    location_source: Optional[int] = Field(
+        default=None,
+        description="Location Source: 0=unknown, 1=geoip (may not be included)",
+    )
 
 
 class ScoreDimensions(NetworkDimensions):
     """Dimensions specific to the Scores dataset"""
 
-    network_state: int = Field(
+    network_state: Optional[int] = Field(
+        default=None,
         description="Speed test load state: 0=unknown, 1=idle, 2=content upload, "
-        "3=peak upload, 4=content download, 5=peak download, 6=content, 7=peak"
+        "3=peak upload, 4=content download, 5=peak download, 6=content, 7=peak (may not be included)"
     )
 
 
@@ -160,11 +174,12 @@ class ResponsivenessIdentifiers(BaseModel):
     """Identifiers in the Responsiveness dataset"""
 
     orb_id: str = Field(description="Orb Sensor identifier")
-    orb_name: str = Field(
-        description="Current Orb friendly name (masked unless identifiable=true)"
+    orb_name: Optional[str] = Field(
+        default=None, description="Current Orb friendly name (may not be included)"
     )
-    device_name: str = Field(
-        description="Hostname or name of the device as identified by the OS"
+    device_name: Optional[str] = Field(
+        default=None,
+        description="Hostname or name of the device as identified by the OS (may not be included)",  # noqa: E501
     )
     orb_version: str = Field(description="Semantic version of collecting Orb")
     timestamp: int = Field(description="Timestamp in epoch milliseconds")
@@ -208,25 +223,30 @@ class ResponsivenessMeasures(BaseModel):
 class ResponsivenessDimensions(NetworkDimensions):
     """Dimensions specific to the Responsiveness dataset"""
 
-    network_name: str = Field(
-        description="Network name (SSID, if available, masked unless identifiable=true)"
+    network_name: Optional[str] = Field(
+        default=None, description="Network name (SSID, if available)"
     )
-    network_state: int = Field(
+    network_state: Optional[int] = Field(
+        default=None,
         description="Speed test load state: 0=unknown, 1=idle, 2=content upload, "
-        "3=peak upload, 4=content download, 5=peak download, 6=content, 7=peak"
+        "3=peak upload, 4=content download, 5=peak download, 6=content, 7=peak (may not be included)"
     )
-    pingers: str = Field(description="List (CSV) of {protocol}|{endpoint}")
+    pingers: Optional[str] = Field(
+        default=None,
+        description="List (CSV) of {protocol}|{endpoint} (may not be included)",
+    )
 
 
 class WebResponsivenessIdentifiers(BaseModel):
     """Identifiers in the Web Responsiveness dataset"""
 
     orb_id: str = Field(description="Orb Sensor identifier")
-    orb_name: str = Field(
-        description="Current Orb friendly name (masked unless identifiable=true)"
+    orb_name: Optional[str] = Field(
+        default=None, description="Current Orb friendly name (may not be included)"
     )
-    device_name: str = Field(
-        description="Hostname or name of the device as identified by the OS"
+    device_name: Optional[str] = Field(
+        default=None,
+        description="Hostname or name of the device as identified by the OS (may not be included)",  # noqa: E501
     )
     orb_version: str = Field(description="Semantic version of collecting Orb")
     timestamp: int = Field(description="Timestamp in epoch milliseconds")
@@ -246,25 +266,29 @@ class WebResponsivenessMeasures(BaseModel):
 class WebResponsivenessDimensions(NetworkDimensions):
     """Dimensions specific to the Web Responsiveness dataset"""
 
-    network_name: str = Field(
-        description="Network name (SSID, if available, masked unless identifiable=true)"
+    network_name: Optional[str] = Field(
+        default=None, description="Network name (SSID, if available)"
     )
-    network_state: int = Field(
+    network_state: Optional[int] = Field(
+        default=None,
         description="Speed test load state: 0=unknown, 1=idle, 2=content upload, "
-        "3=peak upload, 4=content download, 5=peak download, 6=content, 7=peak"
+        "3=peak upload, 4=content download, 5=peak download, 6=content, 7=peak (may not be included)"
     )
-    web_url: str = Field(description="URL endpoint for web test")
+    web_url: Optional[str] = Field(
+        default=None, description="URL endpoint for web test (may not be included)"
+    )
 
 
 class SpeedIdentifiers(BaseModel):
     """Identifiers in the Speed dataset"""
 
     orb_id: str = Field(description="Orb Sensor identifier")
-    orb_name: str = Field(
-        description="Current Orb friendly name (masked unless identifiable=true)"
+    orb_name: Optional[str] = Field(
+        default=None, description="Current Orb friendly name (may not be included)"
     )
-    device_name: str = Field(
-        description="Hostname or name of the device as identified by the OS"
+    device_name: Optional[str] = Field(
+        default=None,
+        description="Hostname or name of the device as identified by the OS (may not be included)",  # noqa: E501
     )
     orb_version: str = Field(description="Semantic version of collecting Orb")
     timestamp: int = Field(description="Timestamp in epoch milliseconds")
@@ -280,15 +304,20 @@ class SpeedMeasures(BaseModel):
 class SpeedDimensions(NetworkDimensions):
     """Dimensions specific to the Speed dataset"""
 
-    network_name: str = Field(
-        description="Network name (SSID, if available, masked unless identifiable=true)"
+    network_name: Optional[str] = Field(
+        default=None, description="Network name (SSID, if available)"
     )
-    network_state: int = Field(
+    network_state: Optional[int] = Field(
+        default=None,
         description="Speed test load state: 0=unknown, 1=idle, 2=content upload, "
-        "3=peak upload, 4=content download, 5=peak download, 6=content, 7=peak"
+        "3=peak upload, 4=content download, 5=peak download, 6=content, 7=peak (may not be included)"
     )
-    speed_test_engine: int = Field(description="Testing engine: 0=orb, 1=iperf")
-    speed_test_server: str = Field(description="Server URL or identifier")
+    speed_test_engine: Optional[int] = Field(
+        default=None, description="Testing engine: 0=orb, 1=iperf (may not be included)"
+    )
+    speed_test_server: Optional[str] = Field(
+        default=None, description="Server URL or identifier (may not be included)"
+    )
 
 
 # ============================================================================
@@ -306,11 +335,12 @@ class ScoreRecord(BaseModel):
 
     # Identifiers
     orb_id: str = Field(description="Orb Sensor identifier")
-    orb_name: str = Field(
-        description="Current Orb friendly name (masked unless identifiable=true)"
+    orb_name: Optional[str] = Field(
+        default=None, description="Current Orb friendly name (may not be included)"
     )
-    device_name: str = Field(
-        description="Hostname or name of the device as identified by the OS"
+    device_name: Optional[str] = Field(
+        default=None,
+        description="Hostname or name of the device as identified by the OS (may not be included)",  # noqa: E501
     )
     timestamp: int = Field(description="Interval start timestamp in epoch milliseconds")
     score_version: str = Field(description="Semantic version of scoring methodology")
@@ -348,23 +378,36 @@ class ScoreRecord(BaseModel):
     network_type: int = Field(
         description="Network interface type: 0=unknown, 1=wifi, 2=ethernet, 3=other"
     )
-    network_state: int = Field(
+    network_state: Optional[int] = Field(
+        default=None,
         description="Speed test load state: 0=unknown, 1=idle, 2=content upload, "
-        "3=peak upload, 4=content download, 5=peak download, 6=content, 7=peak"
+        "3=peak upload, 4=content download, 5=peak download, 6=content, 7=peak (may not be included)"
     )
-    country_code: str = Field(description="Geocoded 2-digit ISO country code")
-    city_name: str = Field(description="Geocoded city name")
-    isp_name: str = Field(description="ISP name from GeoIP lookup")
-    public_ip: str = Field(
-        description="Public IP address (masked unless identifiable=true)"
+    country_code: Optional[str] = Field(
+        default=None,
+        description="Geocoded 2-digit ISO country code (may not be included)",
     )
-    latitude: float = Field(
-        description="Orb location latitude (max 2-decimals, unless identifiable=true)"
+    city_name: Optional[str] = Field(
+        default=None, description="Geocoded city name (may not be included)"
     )
-    longitude: float = Field(
-        description="Orb location longitude (max 2-decimals, unless identifiable=true)"
+    isp_name: Optional[str] = Field(
+        default=None, description="ISP name from GeoIP lookup (may not be included)"
     )
-    location_source: int = Field(description="Location Source: 0=unknown, 1=geoip")
+    public_ip: Optional[str] = Field(
+        default=None, description="Public IP address (may not be included)"
+    )
+    latitude: Optional[float] = Field(
+        default=None,
+        description="Orb location latitude",
+    )
+    longitude: Optional[float] = Field(
+        default=None,
+        description="Orb location longitude",
+    )
+    location_source: Optional[int] = Field(
+        default=None,
+        description="Location Source: 0=unknown, 1=geoip (may not be included)",
+    )
 
     class Config:
         extra = "allow"  # Allow additional fields that may be added in future versions
@@ -380,11 +423,12 @@ class ResponsivenessRecord(BaseModel):
 
     # Identifiers
     orb_id: str = Field(description="Orb Sensor identifier")
-    orb_name: str = Field(
-        description="Current Orb friendly name (masked unless identifiable=true)"
+    orb_name: Optional[str] = Field(
+        default=None, description="Current Orb friendly name (may not be included)"
     )
-    device_name: str = Field(
-        description="Hostname or name of the device as identified by the OS"
+    device_name: Optional[str] = Field(
+        default=None,
+        description="Hostname or name of the device as identified by the OS (may not be included)",  # noqa: E501
     )
     orb_version: str = Field(description="Semantic version of collecting Orb")
     timestamp: int = Field(description="Timestamp in epoch milliseconds")
@@ -422,30 +466,46 @@ class ResponsivenessRecord(BaseModel):
     router_lag_count: int = Field(description="Router lag sample count")
 
     # Dimensions
-    network_name: str = Field(
-        description="Network name (SSID, if available, masked unless identifiable=true)"
+    network_name: Optional[str] = Field(
+        default=None, description="Network name (SSID, if available)"
     )
     network_type: int = Field(
         description="Network interface type: 0=unknown, 1=wifi, 2=ethernet, 3=other"
     )
-    network_state: int = Field(
+    network_state: Optional[int] = Field(
+        default=None,
         description="Speed test load state: 0=unknown, 1=idle, 2=content upload, "
-        "3=peak upload, 4=content download, 5=peak download, 6=content, 7=peak"
+        "3=peak upload, 4=content download, 5=peak download, 6=content, 7=peak (may not be included)"
     )
-    country_code: str = Field(description="Geocoded 2-digit ISO country code")
-    city_name: str = Field(description="Geocoded city name")
-    isp_name: str = Field(description="ISP name from GeoIP lookup")
-    public_ip: str = Field(
-        description="Public IP address (masked unless identifiable=true)"
+    country_code: Optional[str] = Field(
+        default=None,
+        description="Geocoded 2-digit ISO country code (may not be included)",
     )
-    latitude: float = Field(
-        description="Orb location latitude (max 2-decimals, unless identifiable=true)"
+    city_name: Optional[str] = Field(
+        default=None, description="Geocoded city name (may not be included)"
     )
-    longitude: float = Field(
-        description="Orb location longitude (max 2-decimals, unless identifiable=true)"
+    isp_name: Optional[str] = Field(
+        default=None, description="ISP name from GeoIP lookup (may not be included)"
     )
-    location_source: int = Field(description="Location Source: 0=unknown, 1=geoip")
-    pingers: str = Field(description="List (CSV) of {protocol}|{endpoint}")
+    public_ip: Optional[str] = Field(
+        default=None, description="Public IP address (may not be included)"
+    )
+    latitude: Optional[float] = Field(
+        default=None,
+        description="Orb location latitude",
+    )
+    longitude: Optional[float] = Field(
+        default=None,
+        description="Orb location longitude",
+    )
+    location_source: Optional[int] = Field(
+        default=None,
+        description="Location Source: 0=unknown, 1=geoip (may not be included)",
+    )
+    pingers: Optional[str] = Field(
+        default=None,
+        description="List (CSV) of {protocol}|{endpoint} (may not be included)",
+    )
 
     class Config:
         extra = "allow"  # Allow additional fields that may be added in future versions
@@ -461,11 +521,12 @@ class WebResponsivenessRecord(BaseModel):
 
     # Identifiers
     orb_id: str = Field(description="Orb Sensor identifier")
-    orb_name: str = Field(
-        description="Current Orb friendly name (masked unless identifiable=true)"
+    orb_name: Optional[str] = Field(
+        default=None, description="Current Orb friendly name (may not be included)"
     )
-    device_name: str = Field(
-        description="Hostname or name of the device as identified by the OS"
+    device_name: Optional[str] = Field(
+        default=None,
+        description="Hostname or name of the device as identified by the OS (may not be included)",  # noqa: E501
     )
     orb_version: str = Field(description="Semantic version of collecting Orb")
     timestamp: int = Field(description="Timestamp in epoch milliseconds")
@@ -479,30 +540,45 @@ class WebResponsivenessRecord(BaseModel):
     )
 
     # Dimensions
-    network_name: str = Field(
-        description="Network name (SSID, if available, masked unless identifiable=true)"
+    network_name: Optional[str] = Field(
+        default=None, description="Network name (SSID, if available)"
     )
     network_type: int = Field(
         description="Network interface type: 0=unknown, 1=wifi, 2=ethernet, 3=other"
     )
-    network_state: int = Field(
+    network_state: Optional[int] = Field(
+        default=None,
         description="Speed test load state: 0=unknown, 1=idle, 2=content upload, "
-        "3=peak upload, 4=content download, 5=peak download, 6=content, 7=peak"
+        "3=peak upload, 4=content download, 5=peak download, 6=content, 7=peak (may not be included)"
     )
-    country_code: str = Field(description="Geocoded 2-digit ISO country code")
-    city_name: str = Field(description="Geocoded city name")
-    isp_name: str = Field(description="ISP name from GeoIP lookup")
-    public_ip: str = Field(
-        description="Public IP address (masked unless identifiable=true)"
+    country_code: Optional[str] = Field(
+        default=None,
+        description="Geocoded 2-digit ISO country code (may not be included)",
     )
-    latitude: float = Field(
-        description="Orb location latitude (max 2-decimals, unless identifiable=true)"
+    city_name: Optional[str] = Field(
+        default=None, description="Geocoded city name (may not be included)"
     )
-    longitude: float = Field(
-        description="Orb location longitude (max 2-decimals, unless identifiable=true)"
+    isp_name: Optional[str] = Field(
+        default=None, description="ISP name from GeoIP lookup (may not be included)"
     )
-    location_source: int = Field(description="Location Source: 0=unknown, 1=geoip")
-    web_url: str = Field(description="URL endpoint for web test")
+    public_ip: Optional[str] = Field(
+        default=None, description="Public IP address (may not be included)"
+    )
+    latitude: Optional[float] = Field(
+        default=None,
+        description="Orb location latitude",
+    )
+    longitude: Optional[float] = Field(
+        default=None,
+        description="Orb location longitude",
+    )
+    location_source: Optional[int] = Field(
+        default=None,
+        description="Location Source: 0=unknown, 1=geoip (may not be included)",
+    )
+    web_url: Optional[str] = Field(
+        default=None, description="URL endpoint for web test (may not be included)"
+    )
 
     class Config:
         extra = "allow"  # Allow additional fields that may be added in future versions
@@ -518,11 +594,12 @@ class SpeedRecord(BaseModel):
 
     # Identifiers
     orb_id: str = Field(description="Orb Sensor identifier")
-    orb_name: str = Field(
-        description="Current Orb friendly name (masked unless identifiable=true)"
+    orb_name: Optional[str] = Field(
+        default=None, description="Current Orb friendly name (may not be included)"
     )
-    device_name: str = Field(
-        description="Hostname or name of the device as identified by the OS"
+    device_name: Optional[str] = Field(
+        default=None,
+        description="Hostname or name of the device as identified by the OS (may not be included)",  # noqa: E501
     )
     orb_version: str = Field(description="Semantic version of collecting Orb")
     timestamp: int = Field(description="Timestamp in epoch milliseconds")
@@ -532,31 +609,48 @@ class SpeedRecord(BaseModel):
     upload_kbps: int = Field(description="Upload speed in Kbps")
 
     # Dimensions
-    network_name: str = Field(
-        description="Network name (SSID, if available, masked unless identifiable=true)"
+    network_name: Optional[str] = Field(
+        default=None, description="Network name (SSID, if available)"
     )
     network_type: int = Field(
         description="Network interface type: 0=unknown, 1=wifi, 2=ethernet, 3=other"
     )
-    network_state: int = Field(
+    network_state: Optional[int] = Field(
+        default=None,
         description="Speed test load state: 0=unknown, 1=idle, 2=content upload, "
-        "3=peak upload, 4=content download, 5=peak download, 6=content, 7=peak"
+        "3=peak upload, 4=content download, 5=peak download, 6=content, 7=peak (may not be included)"
     )
-    country_code: str = Field(description="Geocoded 2-digit ISO country code")
-    city_name: str = Field(description="Geocoded city name")
-    isp_name: str = Field(description="ISP name from GeoIP lookup")
-    public_ip: str = Field(
-        description="Public IP address (masked unless identifiable=true)"
+    country_code: Optional[str] = Field(
+        default=None,
+        description="Geocoded 2-digit ISO country code (may not be included)",
     )
-    latitude: float = Field(
-        description="Orb location latitude (max 2-decimals, unless identifiable=true)"
+    city_name: Optional[str] = Field(
+        default=None, description="Geocoded city name (may not be included)"
     )
-    longitude: float = Field(
-        description="Orb location longitude (max 2-decimals, unless identifiable=true)"
+    isp_name: Optional[str] = Field(
+        default=None, description="ISP name from GeoIP lookup (may not be included)"
     )
-    location_source: int = Field(description="Location Source: 0=unknown, 1=geoip")
-    speed_test_engine: int = Field(description="Testing engine: 0=orb, 1=iperf")
-    speed_test_server: str = Field(description="Server URL or identifier")
+    public_ip: Optional[str] = Field(
+        default=None, description="Public IP address (may not be included)"
+    )
+    latitude: Optional[float] = Field(
+        default=None,
+        description="Orb location latitude",
+    )
+    longitude: Optional[float] = Field(
+        default=None,
+        description="Orb location longitude",
+    )
+    location_source: Optional[int] = Field(
+        default=None,
+        description="Location Source: 0=unknown, 1=geoip (may not be included)",
+    )
+    speed_test_engine: Optional[int] = Field(
+        default=None, description="Testing engine: 0=orb, 1=iperf (may not be included)"
+    )
+    speed_test_server: Optional[str] = Field(
+        default=None, description="Server URL or identifier (may not be included)"
+    )
 
     class Config:
         extra = "allow"  # Allow additional fields that may be added in future versions
