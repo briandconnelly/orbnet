@@ -17,12 +17,19 @@ Stateful Polling:
 
 import os
 import uuid
-from typing import Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from fastmcp import Context, FastMCP
 from pydantic import BaseModel, Field
 
 from .client import OrbAPIClient
+from .models import (
+    AllDatasetsResponse,
+    ResponsivenessRecord,
+    ScoreRecord,
+    SpeedRecord,
+    WebResponsivenessRecord,
+)
 
 # Initialize FastMCP server
 mcp = FastMCP(
@@ -129,7 +136,7 @@ async def get_scores_1m(
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
-):
+) -> List[ScoreRecord]:
     """
     Retrieve 1-minute granularity Scores dataset from an Orb sensor.
 
@@ -222,7 +229,7 @@ async def get_responsiveness(
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
-):
+) -> List[ResponsivenessRecord]:
     """
     Retrieve Responsiveness dataset from an Orb sensor.
 
@@ -293,7 +300,7 @@ async def get_web_responsiveness(
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
-):
+) -> List[WebResponsivenessRecord]:
     """
     Retrieve Web Responsiveness dataset from an Orb sensor.
 
@@ -341,7 +348,7 @@ async def get_speed_results(
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
-):
+) -> List[SpeedRecord]:
     """
     Retrieve Speed test results dataset from an Orb sensor.
 
@@ -390,7 +397,7 @@ async def get_all_datasets(
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
-):
+) -> AllDatasetsResponse:
     """
     Retrieve all available datasets from an Orb sensor concurrently.
 
@@ -438,7 +445,7 @@ def _get_client_info_impl(
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
-):
+) -> Dict[str, Any]:
     """
     Get information about the Orb API client configuration.
 
@@ -484,7 +491,7 @@ def get_client_info(
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
-):
+) -> Dict[str, Any]:
     """Get information about the Orb API client configuration."""
     return _get_client_info_impl(host, port, caller_id, timeout)
 
@@ -518,7 +525,7 @@ def troubleshoot_slow_internet() -> str:
     """
 
 
-def main():
+def main() -> None:
     """Entry point for running the MCP server."""
     mcp.run()
 

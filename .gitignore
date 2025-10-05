@@ -10,3 +10,7 @@ wheels/
 .venv
 
 NOTES.md
+
+# pytest-cov db
+.coverage
+.coverage.xml
