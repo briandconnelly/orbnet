@@ -17,7 +17,7 @@ Stateful Polling:
 
 import os
 import uuid
-from typing import Any, Dict, List, Literal, Optional
+from typing import Literal, Optional
 
 from fastmcp import Context, FastMCP
 from pydantic import BaseModel, Field
@@ -127,7 +127,7 @@ async def get_scores_1m(
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
-) -> List[Dict[str, Any]]:
+):
     """
     Retrieve 1-minute granularity Scores dataset from an Orb sensor.
 
@@ -202,8 +202,7 @@ async def get_scores_1m(
     """
     await ctx.info(f"Getting 1m scores from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)
-    records = await client.get_scores_1m()
-    return [record.model_dump() for record in records]
+    return await client.get_scores_1m()
 
 
 @mcp.tool(
@@ -221,7 +220,7 @@ async def get_responsiveness(
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
-) -> List[Dict[str, Any]]:
+):
     """
     Retrieve Responsiveness dataset from an Orb sensor.
 
@@ -275,8 +274,7 @@ async def get_responsiveness(
     """
     await ctx.info(f"Getting responsiveness data from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)
-    records = await client.get_responsiveness(granularity=granularity)
-    return [record.model_dump() for record in records]
+    return await client.get_responsiveness(granularity=granularity)
 
 
 @mcp.tool(
@@ -293,7 +291,7 @@ async def get_web_responsiveness(
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
-) -> List[Dict[str, Any]]:
+):
     """
     Retrieve Web Responsiveness dataset from an Orb sensor.
 
@@ -324,8 +322,7 @@ async def get_web_responsiveness(
     """
     await ctx.info(f"Getting web responsiveness data from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)
-    records = await client.get_web_responsiveness()
-    return [record.model_dump() for record in records]
+    return await client.get_web_responsiveness()
 
 
 @mcp.tool(
@@ -342,7 +339,7 @@ async def get_speed_results(
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
-) -> List[Dict[str, Any]]:
+):
     """
     Retrieve Speed test results dataset from an Orb sensor.
 
@@ -373,8 +370,7 @@ async def get_speed_results(
     """
     await ctx.info(f"Getting speed test data from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)
-    records = await client.get_speed_results()
-    return [record.model_dump() for record in records]
+    return await client.get_speed_results()
 
 
 @mcp.tool(
@@ -392,7 +388,7 @@ async def get_all_datasets(
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
-) -> Dict[str, List[Dict[str, Any]]]:
+):
     """
     Retrieve all available datasets from an Orb sensor concurrently.
 
@@ -430,19 +426,9 @@ async def get_all_datasets(
     """
     await ctx.info(f"Getting all datasets from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)
-    response = await client.get_all_datasets(
+    return await client.get_all_datasets(
         include_all_responsiveness=include_all_responsiveness
     )
-
-    # Convert AllDatasetsResponse to dictionary with lists of dicts
-    result = {}
-    for key, value in response.model_dump().items():
-        if value is None:
-            continue
-        # If it's a list of records, keep it; if it's an error dict, keep it
-        result[key] = value
-
-    return result
 
 
 def _get_client_info_impl(
@@ -450,7 +436,7 @@ def _get_client_info_impl(
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
-) -> Dict[str, Any]:
+):
     """
     Get information about the Orb API client configuration.
 
@@ -496,7 +482,7 @@ def get_client_info(
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
-) -> Dict[str, Any]:
+):
     """Get information about the Orb API client configuration."""
     return _get_client_info_impl(host, port, caller_id, timeout)
 
