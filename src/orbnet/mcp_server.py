@@ -39,20 +39,22 @@ mcp = FastMCP(
     ✓ "Summarize network quality across all of my orbs"
     
     **Primary Metrics:**
-    • Orb Score (0-100): Overall network health
-    • Responsiveness: Latency, jitter, packet loss
-    • Speed: Download/upload bandwidth
-    • Web Performance: Page load times, DNS speed
+    - Orb Score (0-100): Overall network health
+    - Responsiveness: Latency, jitter, packet loss
+    - Speed: Download/upload bandwidth
+    - Web Performance: Page load times, DNS speed
     
     **Data Availability:**
     - 1-second granularity for recent detailed analysis
     - 1-minute aggregates for trends
     - Historical data depends on sensor configuration
-    
-    **Key Tools:**
-    • get_scores_1m() - Quick health check
-    • get_all_datasets() - Complete snapshot
-    • get_responsiveness() - Good for realtime applications
+
+    **Tool Selection Guide:**
+    - Quick check? → get_scores_1m() (fastest, gives overall picture)
+    - Detailed troubleshooting? → get_all_datasets() (comprehensive)
+    - Video call problems? → get_responsiveness() (latency/jitter focus)
+    - Slow downloads? → get_speed_results() (bandwidth focus)
+    - Web browsing issues? → get_web_responsiveness() (page load focus)
     
     **Built-in Workflows:**
     Use prompts like 'analyze_network_quality' or 'troubleshoot_slow_internet'
