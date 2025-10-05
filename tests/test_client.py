@@ -168,7 +168,8 @@ class TestOrbAPIClient:
     async def test_get_responsiveness_1m(
         self, sample_responsiveness_data, mock_httpx_response
     ):
-        """Test get_responsiveness method with 1m granularity returns ResponsivenessRecord objects."""
+        """Test get_responsiveness method with 1m granularity returns
+        ResponsivenessRecord objects."""
         mock_httpx_response.json.return_value = sample_responsiveness_data
 
         with patch("httpx.AsyncClient") as mock_client_class:
@@ -239,7 +240,8 @@ class TestOrbAPIClient:
     async def test_get_web_responsiveness(
         self, sample_web_responsiveness_data, mock_httpx_response
     ):
-        """Test get_web_responsiveness method returns WebResponsivenessRecord objects."""
+        """Test get_web_responsiveness method returns WebResponsivenessRecord
+        objects."""
         mock_httpx_response.json.return_value = sample_web_responsiveness_data
 
         with patch("httpx.AsyncClient") as mock_client_class:

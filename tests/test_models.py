@@ -466,7 +466,7 @@ class TestResponsivenessRecord:
         assert record.pingers == "test-pinger-1,test-pinger-2"
 
     def test_minimal_data_identifiable_false(self):
-        """Test responsiveness record with minimal fields (identifiable=false scenario)."""
+        """Test responsiveness record with minimal fields (identifiable=false)."""
         data = {
             "orb_id": "test-orb-123",
             "timestamp": 1700000000000,
@@ -528,7 +528,7 @@ class TestWebResponsivenessRecord:
         assert record.web_url == "https://example.com"
 
     def test_minimal_data_identifiable_false(self):
-        """Test web responsiveness record with minimal fields (identifiable=false scenario)."""
+        """Test web responsiveness record with minimal fields (identifiable=false)."""
         data = {
             "orb_id": "test-orb-123",
             "timestamp": 1700000000000,
