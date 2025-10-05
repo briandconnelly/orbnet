@@ -2,9 +2,10 @@
 
 `orbnet` provides a simple, async Python interface to the [Orb Local API](https://orb.net/docs/deploy-and-configure/datasets-configuration#local-api) and [Datasets](https://orb.net/docs/deploy-and-configure/datasets), allowing you to easily retrieve comprehensive network quality metrics from your Orb sensors.
 
-[![Python Version](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/orbnet)
+![PyPI - License](https://img.shields.io/pypi/l/orbnet)
 ![PyPI - Version](https://img.shields.io/pypi/v/orbnet)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![codecov](https://codecov.io/gh/briandconnelly/orbnet/graph/badge.svg?token=htSRmR6n2s)](https://codecov.io/gh/briandconnelly/orbnet)
 
 
 ## What is Orb?
