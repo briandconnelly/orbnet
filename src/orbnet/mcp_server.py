@@ -17,7 +17,7 @@ Stateful Polling:
 
 import os
 import uuid
-from typing import Any, Dict, List, Literal, Optional
+from typing import Literal, Optional
 
 from fastmcp import Context, FastMCP
 from pydantic import BaseModel, Field
@@ -39,20 +39,22 @@ mcp = FastMCP(
     ✓ "Summarize network quality across all of my orbs"
     
     **Primary Metrics:**
-    • Orb Score (0-100): Overall network health
-    • Responsiveness: Latency, jitter, packet loss
-    • Speed: Download/upload bandwidth
-    • Web Performance: Page load times, DNS speed
+    - Orb Score (0-100): Overall network health
+    - Responsiveness: Latency, jitter, packet loss
+    - Speed: Download/upload bandwidth
+    - Web Performance: Page load times, DNS speed
     
     **Data Availability:**
     - 1-second granularity for recent detailed analysis
     - 1-minute aggregates for trends
     - Historical data depends on sensor configuration
-    
-    **Key Tools:**
-    • get_scores_1m() - Quick health check
-    • get_all_datasets() - Complete snapshot
-    • get_responsiveness() - Good for realtime applications
+
+    **Tool Selection Guide:**
+    - Quick check? → get_scores_1m() (fastest, gives overall picture)
+    - Detailed troubleshooting? → get_all_datasets() (comprehensive)
+    - Video call problems? → get_responsiveness() (latency/jitter focus)
+    - Slow downloads? → get_speed_results() (bandwidth focus)
+    - Web browsing issues? → get_web_responsiveness() (page load focus)
     
     **Built-in Workflows:**
     Use prompts like 'analyze_network_quality' or 'troubleshoot_slow_internet'
@@ -127,7 +129,7 @@ async def get_scores_1m(
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
-) -> List[Dict[str, Any]]:
+):
     """
     Retrieve 1-minute granularity Scores dataset from an Orb sensor.
 
@@ -202,7 +204,7 @@ async def get_scores_1m(
     """
     await ctx.info(f"Getting 1m scores from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)
-    return await client.get_scores_1m(format="json")
+    return await client.get_scores_1m()
 
 
 @mcp.tool(
@@ -220,7 +222,7 @@ async def get_responsiveness(
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
-) -> List[Dict[str, Any]]:
+):
     """
     Retrieve Responsiveness dataset from an Orb sensor.
 
@@ -274,7 +276,7 @@ async def get_responsiveness(
     """
     await ctx.info(f"Getting responsiveness data from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)
-    return await client.get_responsiveness(granularity=granularity, format="json")
+    return await client.get_responsiveness(granularity=granularity)
 
 
 @mcp.tool(
@@ -291,7 +293,7 @@ async def get_web_responsiveness(
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
-) -> List[Dict[str, Any]]:
+):
     """
     Retrieve Web Responsiveness dataset from an Orb sensor.
 
@@ -322,7 +324,7 @@ async def get_web_responsiveness(
     """
     await ctx.info(f"Getting web responsiveness data from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)
-    return await client.get_web_responsiveness(format="json")
+    return await client.get_web_responsiveness()
 
 
 @mcp.tool(
@@ -339,7 +341,7 @@ async def get_speed_results(
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
-) -> List[Dict[str, Any]]:
+):
     """
     Retrieve Speed test results dataset from an Orb sensor.
 
@@ -370,7 +372,7 @@ async def get_speed_results(
     """
     await ctx.info(f"Getting speed test data from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)
-    return await client.get_speed_results(format="json")
+    return await client.get_speed_results()
 
 
 @mcp.tool(
@@ -388,7 +390,7 @@ async def get_all_datasets(
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
-) -> Dict[str, List[Dict[str, Any]]]:
+):
     """
     Retrieve all available datasets from an Orb sensor concurrently.
 
@@ -427,7 +429,7 @@ async def get_all_datasets(
     await ctx.info(f"Getting all datasets from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)
     return await client.get_all_datasets(
-        format="json", include_all_responsiveness=include_all_responsiveness
+        include_all_responsiveness=include_all_responsiveness
     )
 
 
@@ -436,7 +438,7 @@ def _get_client_info_impl(
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
-) -> Dict[str, Any]:
+):
     """
     Get information about the Orb API client configuration.
 
@@ -482,7 +484,7 @@ def get_client_info(
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
-) -> Dict[str, Any]:
+):
     """Get information about the Orb API client configuration."""
     return _get_client_info_impl(host, port, caller_id, timeout)
 

@@ -118,7 +118,6 @@ The test suite includes comprehensive fixtures in `conftest.py`:
 - `sample_responsiveness_data`: Mock responsiveness dataset response
 - `sample_web_responsiveness_data`: Mock web responsiveness dataset response
 - `sample_speed_data`: Mock speed test dataset response
-- `sample_jsonl_data`: Mock JSONL response data
 - `sample_all_datasets_response`: Mock response for get_all_datasets
 - `sample_error_response`: Mock error response
 
@@ -137,7 +136,6 @@ The `test_utils.py` module provides helper functions:
 
 ### Mock Data Creation
 - `create_mock_orb_response()`: Create mock Orb API response data
-- `create_mock_jsonl_response()`: Convert records to JSONL format
 - `create_mock_error_response()`: Create mock error responses
 
 ### Validation Functions

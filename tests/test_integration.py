@@ -5,7 +5,6 @@ These tests verify that the components work together correctly,
 but may require actual network connectivity or external services.
 """
 
-
 import pytest
 
 from orbnet.client import OrbAPIClient
@@ -68,16 +67,16 @@ class TestIntegration:
         )
 
         # Test dataset request with config values
-        dataset_params = DatasetRequestParams(format="json", caller_id=config.caller_id)
+        dataset_params = DatasetRequestParams(caller_id=config.caller_id)
 
         # Test responsiveness request
         resp_params = ResponsivenessRequestParams(
-            granularity="1s", format="jsonl", caller_id=config.caller_id
+            granularity="1s", caller_id=config.caller_id
         )
 
         # Test all datasets request
         all_params = AllDatasetsRequestParams(
-            format="json", caller_id=config.caller_id, include_all_responsiveness=True
+            caller_id=config.caller_id, include_all_responsiveness=True
         )
 
         # Verify all parameters are valid
@@ -97,7 +96,6 @@ class TestIntegration:
         config = PollingConfig(
             dataset_name="scores_1m",
             interval=10.0,
-            format="json",
             callback=test_callback,
             max_iterations=5,
         )
@@ -107,7 +105,6 @@ class TestIntegration:
         # Test that polling config can be used with client
         assert config.dataset_name == "scores_1m"
         assert config.interval == 10.0
-        assert config.format == "json"
         assert config.callback == test_callback
         assert config.max_iterations == 5
 
@@ -151,7 +148,14 @@ class TestIntegration:
         # Test that main classes are available
         from orbnet.client import OrbAPIClient
         from orbnet.mcp_server import _get_client_info_impl
-        from orbnet.models import OrbClientConfig
+        from orbnet.models import (
+            AllDatasetsResponse,
+            OrbClientConfig,
+            ResponsivenessRecord,
+            ScoreRecord,
+            SpeedRecord,
+            WebResponsivenessRecord,
+        )
 
         # Test that they can be instantiated
         client = OrbAPIClient(host="192.168.1.100")
@@ -161,3 +165,10 @@ class TestIntegration:
         assert client is not None
         assert config is not None
         assert info is not None
+
+        # Verify record types are available
+        assert ScoreRecord is not None
+        assert ResponsivenessRecord is not None
+        assert WebResponsivenessRecord is not None
+        assert SpeedRecord is not None
+        assert AllDatasetsResponse is not None

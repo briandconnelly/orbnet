@@ -7,8 +7,8 @@ and generate test reports.
 """
 
 import argparse
-import sys
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -100,13 +100,13 @@ def main():
     success = run_command(cmd, "Running tests")
 
     if args.coverage and success:
-        print(f"\nCoverage report generated in htmlcov/index.html")
+        print("\nCoverage report generated in htmlcov/index.html")
 
     if success:
-        print(f"\n✅ All tests passed!")
+        print("\n✅ All tests passed!")
         return 0
     else:
-        print(f"\n❌ Some tests failed!")
+        print("\n❌ Some tests failed!")
         return 1
 
 

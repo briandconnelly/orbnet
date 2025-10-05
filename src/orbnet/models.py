@@ -1,6 +1,13 @@
-from typing import Callable, Literal, Optional
+from typing import Callable, List, Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+
+NETWORK_STATE_DESC = (
+    "Speed test load state: 0=unknown, 1=idle, 2=content upload, "
+    "3=peak upload, 4=content download, 5=peak download, 6=content, 7=peak (may not be included)"  # noqa: E501
+)
+
+LOCATION_SOURCE_DESC = "Location Source: 0=unknown, 1=geoip (may not be included)"
 
 
 class OrbClientConfig(BaseModel):
@@ -29,10 +36,6 @@ class OrbClientConfig(BaseModel):
 class DatasetRequestParams(BaseModel):
     """Parameters for dataset requests"""
 
-    format: Literal["json", "jsonl"] = Field(
-        default="json",
-        description="Response format - 'json' for array or 'jsonl' for NDJSON",
-    )
     caller_id: Optional[str] = Field(
         default=None, description="Override the default caller_id for this request"
     )
@@ -67,10 +70,6 @@ class PollingConfig(BaseModel):
     interval: float = Field(
         default=60.0, gt=0, description="Seconds to wait between polls"
     )
-    format: Literal["json", "jsonl"] = Field(
-        default="json",
-        description="Response format - 'json' for array or 'jsonl' for NDJSON",
-    )
     callback: Optional[Callable] = Field(
         default=None,
         description="Optional function to call with each batch of new records",
@@ -83,19 +82,38 @@ class PollingConfig(BaseModel):
         arbitrary_types_allowed = True
 
 
-class ScoreIdentifiers(BaseModel):
-    """Identifiers in the Scores dataset"""
+# ============================================================================
+# Base Classes
+# ============================================================================
+
+
+class BaseIdentifiers(BaseModel):
+    """Base identifiers common across most datasets"""
 
     orb_id: str = Field(description="Orb Sensor identifier")
-    orb_name: str = Field(
-        description="Current Orb friendly name (masked unless identifiable=true)"
+    orb_name: Optional[str] = Field(
+        default=None, description="Current Orb friendly name (may not be included)"
     )
-    device_name: str = Field(
-        description="Hostname or name of the device as identified by the OS"
+    device_name: Optional[str] = Field(
+        default=None,
+        description="Hostname or name of the device as identified by the OS (may not be included)",  # noqa: E501
     )
-    timestamp: int = Field(description="Interval start timestamp in epoch milliseconds")
-    score_version: str = Field(description="Semantic version of scoring methodology")
     orb_version: str = Field(description="Semantic version of collecting Orb")
+    timestamp: int = Field(description="Timestamp in epoch milliseconds")
+
+
+# ============================================================================
+# Dataset Models - Identifiers, Measures, and Dimensions
+# ============================================================================
+
+
+class ScoreIdentifiers(BaseIdentifiers):
+    """Identifiers in the Scores dataset"""
+
+    timestamp: int = Field(
+        description="Interval start timestamp in epoch milliseconds"
+    )  # Override for different description
+    score_version: str = Field(description="Semantic version of scoring methodology")
 
 
 class ScoreMeasures(BaseModel):
@@ -135,23 +153,37 @@ class NetworkDimensions(BaseModel):
     network_type: int = Field(
         description="Network interface type: 0=unknown, 1=wifi, 2=ethernet, 3=other"
     )
-    network_state: int = Field(
-        description="Speed test load state: 0=unknown, 1=idle, 2=content upload, "
-        "3=peak upload, 4=content download, 5=peak download, 6=content, 7=peak"
+    country_code: Optional[str] = Field(
+        default=None,
+        description="Geocoded 2-digit ISO country code (may not be included)",
     )
-    country_code: str = Field(description="Geocoded 2-digit ISO country code")
-    city_name: str = Field(description="Geocoded city name")
-    isp_name: str = Field(description="ISP name from GeoIP lookup")
-    public_ip: str = Field(
-        description="Public IP address (masked unless identifiable=true)"
+    city_name: Optional[str] = Field(
+        default=None, description="Geocoded city name (may not be included)"
     )
-    latitude: float = Field(
-        description="Orb location latitude (max 2-decimals, unless identifiable=true)"
+    isp_name: Optional[str] = Field(
+        default=None, description="ISP name from GeoIP lookup (may not be included)"
     )
-    longitude: float = Field(
-        description="Orb location longitude (max 2-decimals, unless identifiable=true)"
+    public_ip: Optional[str] = Field(
+        default=None, description="Public IP address (may not be included)"
     )
-    location_source: int = Field(description="Location Source: 0=unknown, 1=geoip")
+    latitude: Optional[float] = Field(
+        default=None,
+        description="Orb location latitude",
+    )
+    longitude: Optional[float] = Field(
+        default=None,
+        description="Orb location longitude",
+    )
+    location_source: Optional[int] = Field(
+        default=None,
+        description=LOCATION_SOURCE_DESC,
+    )
+
+
+class ScoreDimensions(NetworkDimensions):
+    """Dimensions specific to the Scores dataset"""
+
+    network_state: Optional[int] = Field(default=None, description=NETWORK_STATE_DESC)
 
 
 class ResponsivenessMeasures(BaseModel):
@@ -189,6 +221,19 @@ class ResponsivenessMeasures(BaseModel):
     router_lag_count: int = Field(description="Router lag sample count")
 
 
+class ResponsivenessDimensions(NetworkDimensions):
+    """Dimensions specific to the Responsiveness dataset"""
+
+    network_name: Optional[str] = Field(
+        default=None, description="Network name (SSID, if available)"
+    )
+    network_state: Optional[int] = Field(default=None, description=NETWORK_STATE_DESC)
+    pingers: Optional[str] = Field(
+        default=None,
+        description="List (CSV) of {protocol}|{endpoint} (may not be included)",
+    )
+
+
 class WebResponsivenessMeasures(BaseModel):
     """Measures in the Web Responsiveness dataset"""
 
@@ -200,8 +245,124 @@ class WebResponsivenessMeasures(BaseModel):
     )
 
 
+class WebResponsivenessDimensions(NetworkDimensions):
+    """Dimensions specific to the Web Responsiveness dataset"""
+
+    network_name: Optional[str] = Field(
+        default=None, description="Network name (SSID, if available)"
+    )
+    network_state: Optional[int] = Field(default=None, description=NETWORK_STATE_DESC)
+    web_url: Optional[str] = Field(
+        default=None, description="URL endpoint for web test (may not be included)"
+    )
+
+
 class SpeedMeasures(BaseModel):
     """Measures in the Speed dataset"""
 
     download_kbps: int = Field(description="Download speed in Kbps")
     upload_kbps: int = Field(description="Upload speed in Kbps")
+
+
+class SpeedDimensions(NetworkDimensions):
+    """Dimensions specific to the Speed dataset"""
+
+    network_name: Optional[str] = Field(
+        default=None, description="Network name (SSID, if available)"
+    )
+    network_state: Optional[int] = Field(default=None, description=NETWORK_STATE_DESC)
+    speed_test_engine: Optional[int] = Field(
+        default=None, description="Testing engine: 0=orb, 1=iperf (may not be included)"
+    )
+    speed_test_server: Optional[str] = Field(
+        default=None, description="Server URL or identifier (may not be included)"
+    )
+
+
+# ============================================================================
+# Complete Dataset Records
+# ============================================================================
+
+
+class BaseRecord(BaseModel):
+    """Base record with common configuration"""
+
+    model_config = ConfigDict(extra="allow")
+
+
+class ScoreRecord(BaseRecord, ScoreIdentifiers, ScoreMeasures, ScoreDimensions):
+    """
+    Complete record from the Scores dataset (scores_1m).
+
+    Combines identifiers, measures, and dimensions into a single flat structure
+    matching the API response format.
+    """
+
+    timestamp: int = Field(description="Interval start timestamp in epoch milliseconds")
+
+
+class ResponsivenessRecord(
+    BaseRecord,
+    BaseIdentifiers,
+    ResponsivenessMeasures,
+    ResponsivenessDimensions,
+):
+    """
+    Complete record from the Responsiveness dataset (responsiveness_1s/15s/1m).
+
+    Combines identifiers, measures, and dimensions into a single flat structure
+    matching the API response format.
+    """
+
+    pass
+
+
+class WebResponsivenessRecord(
+    BaseRecord,
+    BaseIdentifiers,
+    WebResponsivenessMeasures,
+    WebResponsivenessDimensions,
+):
+    """
+    Complete record from the Web Responsiveness dataset (web_responsiveness_results).
+
+    Combines identifiers, measures, and dimensions into a single flat structure
+    matching the API response format.
+    """
+
+    pass
+
+
+class SpeedRecord(BaseRecord, BaseIdentifiers, SpeedMeasures, SpeedDimensions):
+    """
+    Complete record from the Speed dataset (speed_results).
+
+    Combines identifiers, measures, and dimensions into a single flat structure
+    matching the API response format.
+    """
+
+    pass
+
+
+# ============================================================================
+# All Datasets Response
+# ============================================================================
+
+
+class AllDatasetsResponse(BaseModel):
+    """
+    Response containing all datasets.
+
+    Each dataset field contains either a list of records or an error dict
+    if that dataset failed to fetch.
+    """
+
+    scores_1m: List[ScoreRecord] | dict
+    responsiveness_1m: List[ResponsivenessRecord] | dict
+    responsiveness_15s: Optional[List[ResponsivenessRecord] | dict] = None
+    responsiveness_1s: Optional[List[ResponsivenessRecord] | dict] = None
+    web_responsiveness: List[WebResponsivenessRecord] | dict
+    speed_results: List[SpeedRecord] | dict
+
+    class Config:
+        extra = "allow"

@@ -161,17 +161,10 @@ def sample_speed_data() -> List[Dict[str, Any]]:
             "longitude": -122.4194,
             "location_source": 1,
             "network_name": "Test Network",
-            "speed_test_engine": "test-engine",
+            "speed_test_engine": 0,  # 0=orb, 1=iperf
             "speed_test_server": "test-server-1",
         }
     ]
-
-
-@pytest.fixture
-def sample_jsonl_data() -> str:
-    """Sample JSONL response data."""
-    return """{"orb_id": "test-orb-123", "orb_score": 85.5, "timestamp": 1700000000000}
-{"orb_id": "test-orb-123", "orb_score": 88.2, "timestamp": 1700000060000}"""
 
 
 @pytest.fixture
