@@ -258,6 +258,8 @@ if wifi_data:
         print("Weak signal — consider moving closer to the access point")
 ```
 
+> **Orb Cloud API:** Subscribers on [Cloud Plus, Business, or Enterprise](https://orb.net/plans) plans have access to the [Orb Cloud API](https://orb.net/docs/integrations/api), which enables more powerful device management, real-time data streaming, and more.
+
 ## Configuration
 
 ### Client Options
