@@ -68,8 +68,8 @@ mcp = FastMCP(
     - Weak Wi-Fi signal? → get_wifi_link() (RSSI, SNR, link rates)
     
     **Built-in Workflows:**
-    Use prompts like 'analyze_network_quality' or 'troubleshoot_slow_internet'
-    for guided analysis.
+    Use prompts like 'analyze_network_quality', 'troubleshoot_slow_internet', or
+    'troubleshoot_wifi' for guided analysis.
 
     **Troubleshooting:**
     If an Orb sensor cannot be reached, check the following:
@@ -501,8 +501,10 @@ async def get_all_datasets(
         Dictionary with keys for each dataset type:
         - scores_1m: 1-minute scores dataset
         - responsiveness_1m: 1-minute responsiveness dataset
-        - responsiveness_15s: 15-second responsiveness (if include_all_responsiveness=True)
-        - responsiveness_1s: 1-second responsiveness (if include_all_responsiveness=True)
+        - responsiveness_15s: 15-second responsiveness
+          (if include_all_responsiveness=True)
+        - responsiveness_1s: 1-second responsiveness
+          (if include_all_responsiveness=True)
         - web_responsiveness: Web responsiveness results
         - speed_results: Speed test results
         - wifi_link_1m: 1-minute Wi-Fi link dataset (empty list if not on Wi-Fi)
@@ -601,6 +603,38 @@ def troubleshoot_slow_internet() -> str:
        - Good jitter: < 10ms
        - Acceptable packet loss: < 1%
     5. Identify which metric is problematic and explain to the user
+    """
+
+
+@mcp.prompt()
+def troubleshoot_wifi() -> str:
+    """Diagnose Wi-Fi-specific issues by correlating signal metrics with performance"""
+    return """
+    To diagnose Wi-Fi-specific network issues:
+    1. Call get_wifi_link(granularity="1m") to get signal and link metrics
+    2. Examine key signal indicators:
+       - rssi_avg: Signal strength in dBm (good: > -65, poor: < -75)
+       - snr_avg: Signal-to-noise ratio in dB (good: > 25, poor: < 15)
+       - noise_avg: Background RF noise in dBm (lower/more negative is better)
+       - tx_rate_mbps / rx_rate_mbps: Link rates (low rates suggest poor signal)
+    3. Check channel and band info:
+       - channel_band: 2.4 GHz has longer range but more interference;
+         5 GHz is faster but shorter range
+       - channel_number: Overlapping channels cause interference
+       - phy_mode: Older standards (802.11n) have lower max throughput than
+         802.11ac or 802.11ax
+    4. Call get_responsiveness(granularity="1m") to check if poor Wi-Fi signal
+       correlates with high latency or packet loss
+    5. Call get_speed_results() to check if signal weakness is limiting throughput
+    6. Correlate the metrics:
+       - Low RSSI + high latency = device too far from access point
+       - Low SNR + packet loss = RF interference (neighboring networks, appliances)
+       - Low link rate + low speed = signal quality is bottlenecking bandwidth
+       - Good signal but slow speed = likely a WAN or ISP issue, not Wi-Fi
+    7. Note: Wi-Fi Link data is not available on iOS or ethernet-connected Orbs.
+       Some fields are platform-specific (rx_rate_mbps unavailable on macOS;
+       security and channel_width unavailable on Android; mcs and nss Linux only).
+    8. Summarize with specific, actionable recommendations.
     """
 
 

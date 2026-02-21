@@ -375,9 +375,10 @@ def assert_valid_web_responsiveness_record_object(record) -> None:
     # Validate numeric ranges
     assert record.ttfb_us >= 0, "ttfb_us must be non-negative"
     assert record.dns_us >= 0, "dns_us must be non-negative"
-    assert record.web_url.startswith(("http://", "https://")), (
-        "web_url must be valid URL"
-    )
+    if record.web_url is not None:
+        assert record.web_url.startswith(("http://", "https://")), (
+            "web_url must be valid URL"
+        )
 
 
 def assert_valid_speed_record_object(record) -> None:

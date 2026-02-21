@@ -9,6 +9,7 @@ import pytest
 
 from orbnet.client import OrbAPIClient
 from orbnet.mcp_server import _get_client_info_impl
+from orbnet.models import WifiLinkRecord
 
 
 class TestIntegration:
@@ -100,7 +101,7 @@ class TestIntegration:
             max_iterations=5,
         )
 
-        client = OrbAPIClient(host="192.168.1.100")
+        OrbAPIClient(host="192.168.1.100")
 
         # Test that polling config can be used with client
         assert config.dataset_name == "scores_1m"
@@ -141,6 +142,89 @@ class TestIntegration:
         # 2. Test that the client times out appropriately
         # 3. Verify error handling
 
+    def test_wifi_link_record_model_integration(self, sample_wifi_link_data):
+        """Test WifiLinkRecord model validates identifiers, measures, and dimensions."""
+        record = WifiLinkRecord(**sample_wifi_link_data[0])
+
+        # Identifiers
+        assert record.orb_id == "test-orb-123"
+        assert record.orb_name == "Test Orb"
+        assert record.device_name == "test-device"
+        assert record.timestamp == 1700000000000
+        assert record.orb_version == "2.1.0"
+
+        # Measures
+        assert record.rssi_avg == -55.0
+        assert record.rssi_count == 60
+        assert record.snr_avg == 40.0
+        assert record.noise_avg == -95.0
+        assert record.tx_rate_mbps == 300.0
+        assert record.rx_rate_mbps == 270.0
+        assert record.phy_mode == "802.11ac"
+        assert record.channel_number == 36
+        assert record.channel_band == "5 GHz"
+        assert record.frequency_mhz == 5180
+
+        # Dimensions
+        assert record.bssid == "aa:bb:cc:dd:ee:ff"
+        assert record.network_name == "Test Network"
+        assert record.network_type == 1
+
+    def test_wifi_link_record_optional_fields_integration(self):
+        """Test WifiLinkRecord with minimal data; optional fields default to None."""
+        minimal_data = {
+            "orb_id": "test-orb-123",
+            "orb_name": "Test Orb",
+            "device_name": "test-device",
+            "timestamp": 1700000000000,
+            "orb_version": "2.1.0",
+            "rssi_avg": -60.0,
+            "rssi_count": 60,
+            "tx_rate_mbps": 200.0,
+            "tx_rate_count": 60,
+            "rx_rate_count": 60,
+            "snr_avg": 30.0,
+            "snr_count": 60,
+            "noise_avg": -90.0,
+            "noise_count": 60,
+            "phy_mode": "802.11ac",
+            "channel_number": 6,
+            "channel_band": "2.4 GHz",
+            "network_type": 1,
+        }
+        record = WifiLinkRecord(**minimal_data)
+
+        # Platform-specific optional fields default to None
+        assert record.rx_rate_mbps is None
+        assert record.mcs is None
+        assert record.nss is None
+        assert record.security is None
+        assert record.channel_width is None
+        assert record.frequency_mhz is None
+        assert record.bssid is None
+        assert record.network_name is None
+
+    def test_wifi_link_record_model_dump_integration(self, sample_wifi_link_data):
+        """Test WifiLinkRecord round-trips correctly via model_dump()."""
+        record = WifiLinkRecord(**sample_wifi_link_data[0])
+        dumped = record.model_dump()
+
+        assert dumped["rssi_avg"] == sample_wifi_link_data[0]["rssi_avg"]
+        assert dumped["snr_avg"] == sample_wifi_link_data[0]["snr_avg"]
+        assert dumped["tx_rate_mbps"] == sample_wifi_link_data[0]["tx_rate_mbps"]
+        assert dumped["channel_band"] == sample_wifi_link_data[0]["channel_band"]
+        assert dumped["phy_mode"] == sample_wifi_link_data[0]["phy_mode"]
+        assert dumped["timestamp"] == sample_wifi_link_data[0]["timestamp"]
+
+    def test_wifi_link_record_extra_fields_integration(self, sample_wifi_link_data):
+        """Test WifiLinkRecord accepts extra fields and exposes them via model_extra."""
+        data = {**sample_wifi_link_data[0], "unknown_field": "some_value"}
+        record = WifiLinkRecord(**data)
+
+        assert record.model_extra is not None
+        assert "unknown_field" in record.model_extra
+        assert record.model_extra["unknown_field"] == "some_value"
+
     def test_import_integration(self):
         """Test that all modules can be imported together."""
         # Test that all main modules can be imported
@@ -155,6 +239,7 @@ class TestIntegration:
             ScoreRecord,
             SpeedRecord,
             WebResponsivenessRecord,
+            WifiLinkRecord,
         )
 
         # Test that they can be instantiated
@@ -172,3 +257,4 @@ class TestIntegration:
         assert WebResponsivenessRecord is not None
         assert SpeedRecord is not None
         assert AllDatasetsResponse is not None
+        assert WifiLinkRecord is not None

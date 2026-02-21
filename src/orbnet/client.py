@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import uuid
 from importlib.metadata import version as get_version
 from typing import Any, Callable, Dict, List, Literal, Optional
@@ -18,6 +19,8 @@ from .models import (
     WebResponsivenessRecord,
     WifiLinkRecord,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class OrbAPIClient:
@@ -726,6 +729,6 @@ class OrbAPIClient:
                 iteration += 1
 
             except Exception as e:
-                print(f"Error polling {config.dataset_name}: {e}")
+                logger.warning("Error polling %s: %s", config.dataset_name, e)
                 await asyncio.sleep(config.interval)
                 iteration += 1

@@ -296,7 +296,7 @@ class TestOrbAPIClient:
 
     @pytest.mark.asyncio
     async def test_get_wifi_link_1m(self, sample_wifi_link_data, mock_httpx_response):
-        """Test get_wifi_link method with 1m granularity returns WifiLinkRecord objects."""
+        """Test get_wifi_link with 1m granularity returns WifiLinkRecord objects."""
         mock_httpx_response.json.return_value = sample_wifi_link_data
 
         with patch("httpx.AsyncClient") as mock_client_class:
@@ -684,7 +684,7 @@ class TestOrbAPIClient:
                 results.append(records)
 
             # When an error occurs, the generator doesn't yield anything
-            # The error is printed but no results are yielded
+            # The error is logged but no results are yielded
             assert len(results) == 0
 
     @pytest.mark.asyncio
