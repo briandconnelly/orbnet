@@ -421,6 +421,56 @@ class TestOrbAPIClient:
             assert all(isinstance(r, WifiLinkRecord) for r in result.wifi_link_1m)
 
     @pytest.mark.asyncio
+    async def test_get_all_datasets_with_all_wifi_link(
+        self,
+        sample_scores_data,
+        sample_responsiveness_data,
+        sample_web_responsiveness_data,
+        sample_speed_data,
+        sample_wifi_link_data,
+    ):
+        """Test get_all_datasets method with all Wi-Fi Link granularities."""
+        with (
+            patch.object(
+                OrbAPIClient,
+                "get_scores_1m",
+                return_value=[ScoreRecord(**r) for r in sample_scores_data],
+            ),
+            patch.object(
+                OrbAPIClient,
+                "get_responsiveness",
+                return_value=[
+                    ResponsivenessRecord(**r) for r in sample_responsiveness_data
+                ],
+            ),
+            patch.object(
+                OrbAPIClient,
+                "get_web_responsiveness",
+                return_value=[
+                    WebResponsivenessRecord(**r) for r in sample_web_responsiveness_data
+                ],
+            ),
+            patch.object(
+                OrbAPIClient,
+                "get_speed_results",
+                return_value=[SpeedRecord(**r) for r in sample_speed_data],
+            ),
+            patch.object(
+                OrbAPIClient,
+                "get_wifi_link",
+                return_value=[WifiLinkRecord(**r) for r in sample_wifi_link_data],
+            ),
+        ):
+            client = OrbAPIClient(host="192.168.1.100")
+            result = await client.get_all_datasets(include_all_wifi_link=True)
+
+            assert isinstance(result, AllDatasetsResponse)
+            assert isinstance(result.wifi_link_1m, list)
+            assert isinstance(result.wifi_link_15s, list)
+            assert isinstance(result.wifi_link_1s, list)
+            assert all(isinstance(r, WifiLinkRecord) for r in result.wifi_link_1m)
+
+    @pytest.mark.asyncio
     async def test_get_all_datasets_with_all_responsiveness(
         self,
         sample_scores_data,

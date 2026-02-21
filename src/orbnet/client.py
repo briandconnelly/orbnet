@@ -483,6 +483,7 @@ class OrbAPIClient:
         self,
         caller_id: Optional[str] = None,
         include_all_responsiveness: bool = False,
+        include_all_wifi_link: bool = False,
     ) -> AllDatasetsResponse:
         """
         Retrieve all datasets concurrently.
@@ -492,6 +493,8 @@ class OrbAPIClient:
             include_all_responsiveness: If True, fetches all responsiveness
                                        granularities (1s, 15s, 1m). If False,
                                        only fetches 1m granularity.
+            include_all_wifi_link: If True, fetches all Wi-Fi Link granularities
+                                   (1s, 15s, 1m). If False, only fetches 1m.
 
         Returns:
             AllDatasetsResponse object with fields for each dataset type
@@ -505,6 +508,7 @@ class OrbAPIClient:
             >>> print(f"Responsiveness: {len(datasets.responsiveness_1m)} records")
             >>> print(f"Web: {len(datasets.web_responsiveness)} records")
             >>> print(f"Speed: {len(datasets.speed_results)} records")
+            >>> print(f"Wi-Fi Link: {len(datasets.wifi_link_1m)} records")
 
             Fetch with all responsiveness granularities:
 
@@ -514,6 +518,13 @@ class OrbAPIClient:
             >>> print(f"1s: {len(datasets.responsiveness_1s)} records")
             >>> print(f"15s: {len(datasets.responsiveness_15s)} records")
             >>> print(f"1m: {len(datasets.responsiveness_1m)} records")
+
+            Fetch with all Wi-Fi Link granularities:
+
+            >>> datasets = await client.get_all_datasets(include_all_wifi_link=True)
+            >>> print(f"1s: {len(datasets.wifi_link_1s)} records")
+            >>> print(f"15s: {len(datasets.wifi_link_15s)} records")
+            >>> print(f"1m: {len(datasets.wifi_link_1m)} records")
 
             Create a comprehensive network report:
 
@@ -541,6 +552,7 @@ class OrbAPIClient:
         request = AllDatasetsRequestParams(
             caller_id=caller_id,
             include_all_responsiveness=include_all_responsiveness,
+            include_all_wifi_link=include_all_wifi_link,
         )
 
         tasks = {
@@ -558,6 +570,10 @@ class OrbAPIClient:
             tasks["responsiveness_1s"] = self.get_responsiveness(
                 "1s", request.caller_id
             )
+
+        if request.include_all_wifi_link:
+            tasks["wifi_link_15s"] = self.get_wifi_link("15s", request.caller_id)
+            tasks["wifi_link_1s"] = self.get_wifi_link("1s", request.caller_id)
 
         results = await asyncio.gather(*tasks.values(), return_exceptions=True)
 

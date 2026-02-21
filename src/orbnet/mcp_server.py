@@ -29,6 +29,7 @@ from .models import (
     ScoreRecord,
     SpeedRecord,
     WebResponsivenessRecord,
+    WifiLinkRecord,
 )
 
 # Initialize FastMCP server
@@ -50,11 +51,13 @@ mcp = FastMCP(
     - Responsiveness: Latency, jitter, packet loss
     - Speed: Download/upload bandwidth
     - Web Performance: Page load times, DNS speed
-    
+    - Wi-Fi Link: Signal strength, SNR, link rates, channel info (Wi-Fi only)
+
     **Data Availability:**
     - 1-second granularity for recent detailed analysis
     - 1-minute aggregates for trends
     - Historical data depends on sensor configuration
+    - Wi-Fi Link data not available on iOS or ethernet-connected sensors
 
     **Tool Selection Guide:**
     - Quick check? → get_scores_1m() (fastest, gives overall picture)
@@ -62,6 +65,7 @@ mcp = FastMCP(
     - Video call problems? → get_responsiveness() (latency/jitter focus)
     - Slow downloads? → get_speed_results() (bandwidth focus)
     - Web browsing issues? → get_web_responsiveness() (page load focus)
+    - Weak Wi-Fi signal? → get_wifi_link() (RSSI, SNR, link rates)
     
     **Built-in Workflows:**
     Use prompts like 'analyze_network_quality' or 'troubleshoot_slow_internet'
@@ -384,6 +388,75 @@ async def get_speed_results(
 
 @mcp.tool(
     annotations={
+        "title": "Get Wi-Fi Link Dataset",
+        "readOnlyHint": True,
+        "idempotentHint": False,
+        "openWorldHint": True,
+    }
+)
+async def get_wifi_link(
+    ctx: Context,
+    host: Optional[str] = None,
+    granularity: Literal["1s", "15s", "1m"] = "1m",
+    port: Optional[int] = None,
+    caller_id: Optional[str] = None,
+    timeout: Optional[float] = None,
+) -> List[WifiLinkRecord]:
+    """
+    Retrieve Wi-Fi Link dataset from an Orb sensor.
+
+    Includes signal quality and link-layer metrics for the active Wi-Fi
+    connection: signal strength (RSSI), signal-to-noise ratio (SNR), transmit
+    and receive link rates, channel information, and security protocol.
+    Available in 1-second, 15-second, and 1-minute buckets.
+
+    Note: Wi-Fi Link data is not available on iOS or when the sensor is
+    connected via ethernet.
+
+    Note on Stateful Polling:
+        By default, this tool uses a session-specific caller_id. This means your
+        first call returns all available data, and subsequent calls return only
+        new data collected since the last call. This makes it efficient to check
+        for updates without receiving duplicate records.
+
+    Args:
+        granularity: Time bucket size - '1s', '15s', or '1m' (default: '1m')
+        host: Orb sensor hostname or IP (default: from ORB_HOST env var or 'localhost')
+        port: API port number (default: from ORB_PORT env var or 7080)
+        caller_id: Unique ID to track polling state. Leave as None to use the default
+                   session-specific ID, or provide your own for custom polling behavior.
+        timeout: Request timeout in seconds (default: 30.0)
+
+    Returns:
+        List of Wi-Fi link records, each containing:
+        - rssi_avg: Average signal strength in dBm (higher is better, e.g. -50 is good)
+        - snr_avg: Average signal-to-noise ratio in dB (higher is better)
+        - noise_avg: Average background RF noise level in dBm
+        - tx_rate_mbps: Average transmit link rate in Mbps
+        - rx_rate_mbps: Average receive link rate in Mbps (not available on macOS)
+        - phy_mode: Wi-Fi standard (e.g., 802.11ac, 802.11ax)
+        - channel_band: Wi-Fi band (e.g., 2.4 GHz, 5 GHz)
+        - channel_number: Wi-Fi channel number
+        - frequency_mhz: Channel frequency in MHz
+        - security: Security protocol (e.g., WPA2 Personal)
+        - network_name: Network SSID
+        - bssid: Access point MAC address
+        - timestamp: Measurement timestamp in epoch milliseconds
+        - And more...
+
+    **Example Usage:**
+        "Is my Wi-Fi signal strong enough?"
+        "What Wi-Fi channel am I on?"
+        "Why is my Wi-Fi slow even though my internet plan is fast?"
+        "Show me my Wi-Fi signal strength over the last hour"
+    """
+    await ctx.info(f"Getting Wi-Fi link data from Orb sensor {host}...")
+    client = get_client(host, port, caller_id, timeout)
+    return await client.get_wifi_link(granularity=granularity)
+
+
+@mcp.tool(
+    annotations={
         "title": "Get All Datasets",
         "readOnlyHint": True,
         "idempotentHint": False,
@@ -394,6 +467,7 @@ async def get_all_datasets(
     ctx: Context,
     host: Optional[str] = None,
     include_all_responsiveness: bool = False,
+    include_all_wifi_link: bool = False,
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
@@ -401,8 +475,8 @@ async def get_all_datasets(
     """
     Retrieve all available datasets from an Orb sensor concurrently.
 
-    Fetches scores, responsiveness, web responsiveness, and speed test datasets
-    in parallel for efficiency.
+    Fetches scores, responsiveness, web responsiveness, speed test, and Wi-Fi
+    link datasets in parallel for efficiency.
 
     Note on Stateful Polling:
         By default, this tool uses a session-specific caller_id. This means your
@@ -414,6 +488,9 @@ async def get_all_datasets(
         include_all_responsiveness: If True, fetches all responsiveness granularities
                                    (1s, 15s, 1m). If False, only fetches 1m. (default:
                                    False)
+        include_all_wifi_link: If True, fetches all Wi-Fi Link granularities
+                               (1s, 15s, 1m). If False, only fetches 1m. (default:
+                               False)
         host: Orb sensor hostname or IP (default: from ORB_HOST env var or 'localhost')
         port: API port number (default: from ORB_PORT env var or 7080)
         caller_id: Unique ID to track polling state. Leave as None to use the default
@@ -424,19 +501,21 @@ async def get_all_datasets(
         Dictionary with keys for each dataset type:
         - scores_1m: 1-minute scores dataset
         - responsiveness_1m: 1-minute responsiveness dataset
-        - responsiveness_15s: 15-second responsiveness if
-            (include_all_responsiveness=True)
-        - responsiveness_1s: 1-second responsiveness
-            (if include_all_responsiveness=True)
+        - responsiveness_15s: 15-second responsiveness (if include_all_responsiveness=True)
+        - responsiveness_1s: 1-second responsiveness (if include_all_responsiveness=True)
         - web_responsiveness: Web responsiveness results
         - speed_results: Speed test results
+        - wifi_link_1m: 1-minute Wi-Fi link dataset (empty list if not on Wi-Fi)
+        - wifi_link_15s: 15-second Wi-Fi link (if include_all_wifi_link=True)
+        - wifi_link_1s: 1-second Wi-Fi link (if include_all_wifi_link=True)
 
         Each value is either a list of records or an error dict if that dataset failed.
     """
     await ctx.info(f"Getting all datasets from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)
     return await client.get_all_datasets(
-        include_all_responsiveness=include_all_responsiveness
+        include_all_responsiveness=include_all_responsiveness,
+        include_all_wifi_link=include_all_wifi_link,
     )
 
 

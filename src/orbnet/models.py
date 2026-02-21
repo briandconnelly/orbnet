@@ -59,6 +59,10 @@ class AllDatasetsRequestParams(DatasetRequestParams):
         default=False,
         description="If True, fetches all responsiveness granularities (1s, 15s, 1m). If False, only fetches 1m.",  # noqa: E501
     )
+    include_all_wifi_link: bool = Field(
+        default=False,
+        description="If True, fetches all Wi-Fi Link granularities (1s, 15s, 1m). If False, only fetches 1m.",  # noqa: E501
+    )
 
 
 class PollingConfig(BaseModel):
@@ -446,7 +450,9 @@ class AllDatasetsResponse(BaseModel):
     responsiveness_1s: Optional[List[ResponsivenessRecord] | dict] = None
     web_responsiveness: List[WebResponsivenessRecord] | dict
     speed_results: List[SpeedRecord] | dict
-    wifi_link_1m: Optional[List[WifiLinkRecord] | dict] = None
+    wifi_link_1m: List[WifiLinkRecord] | dict
+    wifi_link_15s: Optional[List[WifiLinkRecord] | dict] = None
+    wifi_link_1s: Optional[List[WifiLinkRecord] | dict] = None
 
     class Config:
         extra = "allow"

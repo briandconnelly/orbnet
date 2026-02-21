@@ -130,14 +130,18 @@ class TestAllDatasetsRequestParams:
         params = AllDatasetsRequestParams()
         assert params.caller_id is None
         assert params.include_all_responsiveness is False
+        assert params.include_all_wifi_link is False
 
     def test_custom_values(self):
         """Test custom parameter values."""
         params = AllDatasetsRequestParams(
-            caller_id="test-caller", include_all_responsiveness=True
+            caller_id="test-caller",
+            include_all_responsiveness=True,
+            include_all_wifi_link=True,
         )
         assert params.caller_id == "test-caller"
         assert params.include_all_responsiveness is True
+        assert params.include_all_wifi_link is True
 
 
 class TestPollingConfig:
@@ -791,6 +795,7 @@ class TestAllDatasetsResponse:
         sample_responsiveness_data,
         sample_web_responsiveness_data,
         sample_speed_data,
+        sample_wifi_link_data,
     ):
         """Test valid all datasets response."""
         response = AllDatasetsResponse(
@@ -802,12 +807,14 @@ class TestAllDatasetsResponse:
                 WebResponsivenessRecord(**r) for r in sample_web_responsiveness_data
             ],
             speed_results=[SpeedRecord(**r) for r in sample_speed_data],
+            wifi_link_1m=[WifiLinkRecord(**r) for r in sample_wifi_link_data],
         )
 
         assert isinstance(response.scores_1m, list)
         assert isinstance(response.responsiveness_1m, list)
         assert isinstance(response.web_responsiveness, list)
         assert isinstance(response.speed_results, list)
+        assert isinstance(response.wifi_link_1m, list)
 
         assert len(response.scores_1m) == 2
         assert len(response.responsiveness_1m) == 1
@@ -816,13 +823,14 @@ class TestAllDatasetsResponse:
             isinstance(r, ResponsivenessRecord) for r in response.responsiveness_1m
         )
 
-    def test_response_with_error(self, sample_scores_data):
+    def test_response_with_error(self, sample_scores_data, sample_wifi_link_data):
         """Test all datasets response with error in one dataset."""
         response = AllDatasetsResponse(
             scores_1m=[ScoreRecord(**r) for r in sample_scores_data],
             responsiveness_1m={"error": "Connection timeout"},
             web_responsiveness=[],
             speed_results=[],
+            wifi_link_1m=[WifiLinkRecord(**r) for r in sample_wifi_link_data],
         )
 
         assert isinstance(response.scores_1m, list)
@@ -855,14 +863,15 @@ class TestAllDatasetsResponse:
         assert len(response.wifi_link_1m) == 1
         assert all(isinstance(r, WifiLinkRecord) for r in response.wifi_link_1m)
 
-    def test_wifi_link_1m_optional(
+    def test_wifi_link_granular_optional(
         self,
         sample_scores_data,
         sample_responsiveness_data,
         sample_web_responsiveness_data,
         sample_speed_data,
+        sample_wifi_link_data,
     ):
-        """Test that wifi_link_1m is optional in AllDatasetsResponse."""
+        """Test that wifi_link_15s and wifi_link_1s are optional."""
         response = AllDatasetsResponse(
             scores_1m=[ScoreRecord(**r) for r in sample_scores_data],
             responsiveness_1m=[
@@ -872,9 +881,11 @@ class TestAllDatasetsResponse:
                 WebResponsivenessRecord(**r) for r in sample_web_responsiveness_data
             ],
             speed_results=[SpeedRecord(**r) for r in sample_speed_data],
+            wifi_link_1m=[WifiLinkRecord(**r) for r in sample_wifi_link_data],
         )
 
-        assert response.wifi_link_1m is None
+        assert response.wifi_link_15s is None
+        assert response.wifi_link_1s is None
 
     def test_response_with_all_responsiveness(
         self,
@@ -882,6 +893,7 @@ class TestAllDatasetsResponse:
         sample_responsiveness_data,
         sample_web_responsiveness_data,
         sample_speed_data,
+        sample_wifi_link_data,
     ):
         """Test all datasets response with all responsiveness granularities."""
         response = AllDatasetsResponse(
@@ -899,6 +911,7 @@ class TestAllDatasetsResponse:
                 WebResponsivenessRecord(**r) for r in sample_web_responsiveness_data
             ],
             speed_results=[SpeedRecord(**r) for r in sample_speed_data],
+            wifi_link_1m=[WifiLinkRecord(**r) for r in sample_wifi_link_data],
         )
 
         assert response.responsiveness_1m is not None
@@ -907,6 +920,34 @@ class TestAllDatasetsResponse:
         assert all(
             isinstance(r, ResponsivenessRecord) for r in response.responsiveness_1s
         )
+
+    def test_response_with_all_wifi_link(
+        self,
+        sample_scores_data,
+        sample_responsiveness_data,
+        sample_web_responsiveness_data,
+        sample_speed_data,
+        sample_wifi_link_data,
+    ):
+        """Test all datasets response with all Wi-Fi Link granularities."""
+        response = AllDatasetsResponse(
+            scores_1m=[ScoreRecord(**r) for r in sample_scores_data],
+            responsiveness_1m=[
+                ResponsivenessRecord(**r) for r in sample_responsiveness_data
+            ],
+            web_responsiveness=[
+                WebResponsivenessRecord(**r) for r in sample_web_responsiveness_data
+            ],
+            speed_results=[SpeedRecord(**r) for r in sample_speed_data],
+            wifi_link_1m=[WifiLinkRecord(**r) for r in sample_wifi_link_data],
+            wifi_link_15s=[WifiLinkRecord(**r) for r in sample_wifi_link_data],
+            wifi_link_1s=[WifiLinkRecord(**r) for r in sample_wifi_link_data],
+        )
+
+        assert isinstance(response.wifi_link_1m, list)
+        assert isinstance(response.wifi_link_15s, list)
+        assert isinstance(response.wifi_link_1s, list)
+        assert all(isinstance(r, WifiLinkRecord) for r in response.wifi_link_1s)
 
 
 @pytest.fixture
