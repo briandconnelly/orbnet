@@ -29,8 +29,7 @@ class OrbClientConfig(BaseModel):
     )
     timeout: float = Field(default=30.0, gt=0, description="Request timeout in seconds")
 
-    class Config:
-        validate_assignment = True
+    model_config = ConfigDict(validate_assignment=True)
 
 
 class DatasetRequestParams(BaseModel):
@@ -40,8 +39,7 @@ class DatasetRequestParams(BaseModel):
         default=None, description="Override the default caller_id for this request"
     )
 
-    class Config:
-        extra = "allow"  # Allow additional parameters
+    model_config = ConfigDict(extra="allow")
 
 
 class ResponsivenessRequestParams(DatasetRequestParams):
@@ -82,8 +80,7 @@ class PollingConfig(BaseModel):
         default=None, ge=1, description="Maximum number of polls (None for infinite)"
     )
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 # ============================================================================
@@ -454,5 +451,4 @@ class AllDatasetsResponse(BaseModel):
     wifi_link_15s: Optional[List[WifiLinkRecord] | dict] = None
     wifi_link_1s: Optional[List[WifiLinkRecord] | dict] = None
 
-    class Config:
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
