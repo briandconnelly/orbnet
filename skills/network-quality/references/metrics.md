@@ -6,14 +6,14 @@
 
 | Field | Type | Unit | Description |
 |-------|------|------|-------------|
-| `orb_score` | int | 0–100 | Overall network quality score |
-| `responsiveness_score` | int | 0–100 | Responsiveness component score |
-| `reliability_score` | int | 0–100 | Reliability component score |
-| `speed_score` | int | 0–100 | Speed component score |
-| `lag_avg_us` | int | µs | Average lag in microseconds |
+| `orb_score` | float | 0–100 | Overall network quality score |
+| `responsiveness_score` | float | 0–100 | Responsiveness component score |
+| `reliability_score` | float | 0–100 | Reliability component score |
+| `speed_score` | float | 0–100 | Speed component score |
+| `lag_avg_us` | float | µs | Average lag in microseconds |
 | `download_avg_kbps` | int | kbps | Average download throughput |
 | `upload_avg_kbps` | int | kbps | Average upload throughput |
-| `network_type` | int | enum | 0=Unknown, 1=Wi-Fi, 2=Ethernet |
+| `network_type` | int | enum | 0=Unknown, 1=Wi-Fi, 2=Ethernet, 3=Other |
 | `isp_name` | str | — | Internet service provider name |
 | `country_code` | str | — | Two-letter ISO country code |
 | `timestamp` | int | epoch ms | Measurement timestamp |
@@ -33,7 +33,7 @@ Available granularities: `1s`, `15s`, `1m`.
 | `router_lag_avg_us` | int | µs | Average lag to local router |
 | `router_latency_avg_us` | int | µs | Average round-trip latency to router |
 | `router_packet_loss_pct` | float | % | Packet loss to router |
-| `network_type` | int | enum | 0=Unknown, 1=Wi-Fi, 2=Ethernet |
+| `network_type` | int | enum | 0=Unknown, 1=Wi-Fi, 2=Ethernet, 3=Other |
 | `timestamp` | int | epoch ms | Measurement timestamp |
 
 **Lag vs. Latency:** Lag measures time until the first byte response; latency is the full round-trip time. Lag is typically lower than latency.
@@ -50,7 +50,7 @@ Runs approximately once per hour.
 | `upload_kbps` | int | kbps | Upload speed from speed test |
 | `speed_test_engine` | int | enum | Engine used: 0=orb, 1=iperf |
 | `speed_test_server` | str | — | Server endpoint used |
-| `network_type` | int | enum | 0=Unknown, 1=Wi-Fi, 2=Ethernet |
+| `network_type` | int | enum | 0=Unknown, 1=Wi-Fi, 2=Ethernet, 3=Other |
 | `timestamp` | int | epoch ms | Test timestamp |
 
 **Unit conversion:** Divide kbps by 1,000 for Mbps.
@@ -64,7 +64,7 @@ Runs approximately once per minute.
 | `ttfb_us` | int | µs | Time to First Byte for web page load (max 5,000,000) |
 | `dns_us` | int | µs | DNS resolver response time (max 5,000,000) |
 | `web_url` | str | — | URL tested |
-| `network_type` | int | enum | 0=Unknown, 1=Wi-Fi, 2=Ethernet |
+| `network_type` | int | enum | 0=Unknown, 1=Wi-Fi, 2=Ethernet, 3=Other |
 | `timestamp` | int | epoch ms | Measurement timestamp |
 
 **Max values:** Both `ttfb_us` and `dns_us` cap at 5,000,000 µs (5 seconds), indicating a timeout.
@@ -84,13 +84,13 @@ Available granularities: `1s`, `15s`, `1m`.
 | `channel_band` | str | — | Band (2.4 GHz, 5 GHz, 6 GHz) | All |
 | `channel_number` | int | — | Wi-Fi channel number | All |
 | `frequency_mhz` | int | MHz | Channel center frequency | All |
-| `channel_width` | int | MHz | Channel width | Not Android |
+| `channel_width` | str | MHz | Channel width | Not Android |
 | `security` | str | — | Security protocol (WPA2, WPA3, etc.) | Not Android |
 | `network_name` | str | — | SSID of connected network | All |
 | `bssid` | str | — | Access point MAC address | All |
 | `mcs` | int | — | Modulation coding scheme index | Linux only |
 | `nss` | int | — | Number of spatial streams | Linux only |
-| `network_type` | int | enum | 0=Unknown, 1=Wi-Fi, 2=Ethernet | All |
+| `network_type` | int | enum | 0=Unknown, 1=Wi-Fi, 2=Ethernet, 3=Other | All |
 | `timestamp` | int | epoch ms | Measurement timestamp | All |
 
 ## `get_all_datasets` Response Structure
@@ -118,6 +118,7 @@ Each value may be a list of records or an error dict `{"error": "..."}` if that 
 | 0 | Unknown |
 | 1 | Wi-Fi |
 | 2 | Ethernet |
+| 3 | Other |
 
 ## Unit Conversions Quick Reference
 
