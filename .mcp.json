@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "orbnet": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "orbnet[mcp]",
+        "orbnet-mcp"
+      ]
+    }
+  }
+}

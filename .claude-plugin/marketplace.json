@@ -1,0 +1,22 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "orbnet",
+  "metadata": {
+    "description": "Network quality monitoring via Orb sensors"
+  },
+  "owner": {
+    "name": "Brian Connelly",
+    "email": "bdc@bconnelly.net"
+  },
+  "plugins": [
+    {
+      "name": "orbnet",
+      "description": "Real-time network quality monitoring via Orb sensors. Provides MCP tools to query scores, responsiveness, speed, web performance, and Wi-Fi link metrics, plus skills for guided network analysis and Wi-Fi diagnostics.",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/briandconnelly/orbnet.git"
+      },
+      "category": "monitoring"
+    }
+  ]
+}

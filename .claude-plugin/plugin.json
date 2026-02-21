@@ -1,0 +1,10 @@
+{
+  "name": "orbnet",
+  "version": "0.2.0",
+  "description": "Network quality monitoring via Orb sensors — MCP tools and analysis skills",
+  "author": {
+    "name": "Brian Connelly",
+    "email": "bdc@bconnelly.net"
+  },
+  "homepage": "https://github.com/briandconnelly/orbnet"
+}

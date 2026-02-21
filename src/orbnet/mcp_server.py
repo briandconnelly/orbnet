@@ -376,7 +376,7 @@ async def get_speed_results(
         List of speed test records, each containing:
         - download_kbps: Download speed in kbps
         - upload_kbps: Upload speed in kbps
-        - speed_test_engine: Name of the speed test engine used
+        - speed_test_engine: Speed test engine as integer (0=orb, 1=iperf)
         - speed_test_server: Server used for the speed test
         - timestamp: Test timestamp in epoch milliseconds
         - network_type: Network interface type
