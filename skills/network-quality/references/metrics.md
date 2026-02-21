@@ -48,7 +48,7 @@ Runs approximately once per hour.
 |-------|------|------|-------------|
 | `download_kbps` | int | kbps | Download speed from speed test |
 | `upload_kbps` | int | kbps | Upload speed from speed test |
-| `speed_test_engine` | str | — | Engine used (e.g., "ookla", "ndt7") |
+| `speed_test_engine` | int | enum | Engine used: 0=orb, 1=iperf |
 | `speed_test_server` | str | — | Server endpoint used |
 | `network_type` | int | enum | 0=Unknown, 1=Wi-Fi, 2=Ethernet |
 | `timestamp` | int | epoch ms | Test timestamp |
