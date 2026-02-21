@@ -258,8 +258,6 @@ if wifi_data:
         print("Weak signal — consider moving closer to the access point")
 ```
 
-> **Orb Cloud API:** Subscribers on [Cloud Plus, Business, or Enterprise](https://orb.net/plans) plans have access to the [Orb Cloud API](https://orb.net/docs/integrations/api), which enables more powerful device management, real-time data streaming, and more.
-
 ## Configuration
 
 ### Client Options
@@ -386,39 +384,6 @@ except httpx.HTTPStatusError as e:
 ## MCP Server
 
 `orbnet` includes a [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that allows Claude and other LLM applications to access your Orb network data.
-
-
-### Claude Code
-
-**Step 1 — Install the plugin**
-
-```bash
-claude plugin marketplace add briandconnelly/orbnet
-claude plugin install orbnet@orbnet
-```
-
-This installs the plugin user-wide. Add `--scope project` to limit installation to the current project.
-
-**Step 2 — Configure your Orbs** *(optional, but recommended if you have multiple sensors)*
-
-Create `orbs.json` in your project root to name and address your sensors (this file is gitignored):
-
-```json
-{
-  "default": "home",
-  "orbs": {
-    "home":   { "host": "192.168.1.100", "port": 7080 },
-    "office": { "host": "192.168.1.101", "port": 7080 }
-  }
-}
-```
-
-If you only have one Orb running on the default `localhost:7080`, no configuration file is needed.
-
-**What you get**
-
-- MCP tools (`get_scores_1m`, `get_responsiveness`, `get_wifi_link`, etc.) available in every Claude Code session
-- Skills for guided network analysis and Wi-Fi diagnostics that auto-activate on relevant questions
 
 
 ### Claude Desktop Configuration

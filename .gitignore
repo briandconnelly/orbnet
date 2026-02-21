@@ -14,7 +14,3 @@ NOTES.md
 # pytest-cov db
 .coverage
 .coverage.xml
-
-# Plugin settings (user-specific Orb sensor config)
-.claude/settings.local.json
-orbs.json
