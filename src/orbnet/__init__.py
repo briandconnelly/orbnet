@@ -10,6 +10,7 @@ from .models import (
     ScoreRecord,
     SpeedRecord,
     WebResponsivenessRecord,
+    WifiLinkRecord,
 )
 
 __all__ = [
@@ -18,5 +19,6 @@ __all__ = [
     "ResponsivenessRecord",
     "WebResponsivenessRecord",
     "SpeedRecord",
+    "WifiLinkRecord",
     "AllDatasetsResponse",
 ]

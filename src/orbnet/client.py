@@ -16,6 +16,7 @@ from .models import (
     ScoreRecord,
     SpeedRecord,
     WebResponsivenessRecord,
+    WifiLinkRecord,
 )
 
 
@@ -427,6 +428,57 @@ class OrbAPIClient:
         raw_data = await self._get_dataset("speed_results", request.caller_id, **params)
         return [SpeedRecord(**record) for record in raw_data]
 
+    async def get_wifi_link(
+        self,
+        granularity: Literal["1s", "15s", "1m"] = "1m",
+        caller_id: Optional[str] = None,
+        **params,
+    ) -> List[WifiLinkRecord]:
+        """
+        Retrieve Wi-Fi Link dataset.
+
+        Includes signal quality and link-layer metrics for the active Wi-Fi
+        connection. Available in 1s, 15s, and 1m buckets.
+
+        Note: Wi-Fi Link dataset fields are not available on iOS. Field
+        availability varies by platform.
+
+        Args:
+            granularity: Time bucket size - "1s", "15s", or "1m"
+            caller_id: Override the default caller_id for this request
+            **params: Additional query parameters
+
+        Returns:
+            List of WifiLinkRecord objects, each containing:
+            - identifiers: orb_id, orb_name, device_name, orb_version, timestamp
+            - measures: rssi_avg, frequency_mhz, tx_rate_mbps, snr_avg, etc.
+            - dimensions: bssid, network_name, network_type, etc.
+
+        Examples:
+            Get 1-minute Wi-Fi link quality data:
+
+            >>> client = OrbAPIClient(host="192.168.1.100")
+            >>> data = await client.get_wifi_link()
+            >>> if data:
+            ...     latest = data[-1]
+            ...     print(f"RSSI: {latest.rssi_avg} dBm")
+            ...     print(f"SNR: {latest.snr_avg} dB")
+            ...     print(f"TX rate: {latest.tx_rate_mbps} Mbps")
+
+            Get high-resolution 1-second Wi-Fi data:
+
+            >>> data = await client.get_wifi_link(granularity="1s")
+            >>> for record in data[-5:]:
+            ...     print(f"{record.timestamp}: {record.rssi_avg} dBm "
+            ...           f"on {record.channel_band}")
+        """
+        request = ResponsivenessRequestParams(
+            granularity=granularity, caller_id=caller_id, **params
+        )
+        dataset_name = f"wifi_link_{request.granularity}"
+        raw_data = await self._get_dataset(dataset_name, request.caller_id, **params)
+        return [WifiLinkRecord(**record) for record in raw_data]
+
     async def get_all_datasets(
         self,
         caller_id: Optional[str] = None,
@@ -496,6 +548,7 @@ class OrbAPIClient:
             "responsiveness_1m": self.get_responsiveness("1m", request.caller_id),
             "web_responsiveness": self.get_web_responsiveness(request.caller_id),
             "speed_results": self.get_speed_results(request.caller_id),
+            "wifi_link_1m": self.get_wifi_link("1m", request.caller_id),
         }
 
         if request.include_all_responsiveness:
@@ -626,6 +679,9 @@ class OrbAPIClient:
             "responsiveness_1m": lambda: self.get_responsiveness("1m"),
             "web_responsiveness_results": lambda: self.get_web_responsiveness(),
             "speed_results": lambda: self.get_speed_results(),
+            "wifi_link_1s": lambda: self.get_wifi_link("1s"),
+            "wifi_link_15s": lambda: self.get_wifi_link("15s"),
+            "wifi_link_1m": lambda: self.get_wifi_link("1m"),
         }
 
         if config.dataset_name not in dataset_methods:

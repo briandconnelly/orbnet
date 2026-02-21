@@ -168,6 +168,53 @@ def sample_speed_data() -> List[Dict[str, Any]]:
 
 
 @pytest.fixture
+def sample_wifi_link_data() -> List[Dict[str, Any]]:
+    """Sample Wi-Fi Link dataset response data."""
+    return [
+        {
+            "orb_id": "test-orb-123",
+            "orb_name": "Test Orb",
+            "device_name": "test-device",
+            "timestamp": 1700000000000,
+            "orb_version": "2.1.0",
+            "rssi_avg": -55.0,
+            "rssi_count": 60,
+            "frequency_mhz": 5180,
+            "tx_rate_mbps": 300.0,
+            "tx_rate_count": 60,
+            "rx_rate_mbps": 270.0,
+            "rx_rate_count": 60,
+            "snr_avg": 40.0,
+            "snr_count": 60,
+            "noise_avg": -95.0,
+            "noise_count": 60,
+            "phy_mode": "802.11ac",
+            "security": "WPA2 Personal",
+            "channel_width": "80",
+            "channel_number": 36,
+            "channel_band": "5 GHz",
+            "supported_wlan_channels": "1,6,11,36,40,44,48",
+            "mcs": None,
+            "nss": None,
+            "network_type": 1,
+            "network_state": 1,
+            "country_code": "US",
+            "city_name": "San Francisco",
+            "isp_name": "Test ISP",
+            "public_ip": "192.168.1.100",
+            "latitude": 37.7749,
+            "longitude": -122.4194,
+            "location_source": 1,
+            "bssid": "aa:bb:cc:dd:ee:ff",
+            "mac_address": "11:22:33:44:55:66",
+            "network_name": "Test Network",
+            "private_ip": "192.168.1.42",
+            "speed_test_engine": 0,
+        }
+    ]
+
+
+@pytest.fixture
 def mock_httpx_response():
     """Mock httpx response object."""
     response = MagicMock()
@@ -208,6 +255,7 @@ def sample_all_datasets_response(
     sample_responsiveness_data,
     sample_web_responsiveness_data,
     sample_speed_data,
+    sample_wifi_link_data,
 ):
     """Sample response for get_all_datasets."""
     return {
@@ -215,6 +263,7 @@ def sample_all_datasets_response(
         "responsiveness_1m": sample_responsiveness_data,
         "web_responsiveness": sample_web_responsiveness_data,
         "speed_results": sample_speed_data,
+        "wifi_link_1m": sample_wifi_link_data,
     }
 
 
