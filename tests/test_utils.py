@@ -14,7 +14,8 @@ def create_mock_orb_response(
     Create mock Orb API response data for testing.
 
     Args:
-        dataset_type: Type of dataset ('scores', 'responsiveness', 'web', 'speed')
+        dataset_type: Type of dataset ('scores', 'responsiveness', 'web', 'speed',
+                      'wifi')
         record_count: Number of records to generate
         timestamp_base: Base timestamp for records
 
@@ -94,6 +95,34 @@ def create_mock_orb_response(
                 "speed_test_server": f"test-server-{i}",
                 "download_kbps": 50000 + (i * 1000),
                 "upload_kbps": 10000 + (i * 500),
+            }
+        elif dataset_type == "wifi":
+            record = {
+                **base_record,
+                "bssid": f"aa:bb:cc:dd:ee:{i:02x}",
+                "mac_address": f"11:22:33:44:55:{i:02x}",
+                "network_name": f"Test Network {i}",
+                "private_ip": f"192.168.1.{10 + i}",
+                "speed_test_engine": 0,
+                "rssi_avg": -55.0 - i,
+                "rssi_count": 60,
+                "frequency_mhz": 5180 + (i * 20),
+                "tx_rate_mbps": 300.0 - (i * 10),
+                "tx_rate_count": 60,
+                "rx_rate_mbps": 270.0 - (i * 10),
+                "rx_rate_count": 60,
+                "snr_avg": 40.0 - i,
+                "snr_count": 60,
+                "noise_avg": -95.0,
+                "noise_count": 60,
+                "phy_mode": "802.11ac",
+                "security": "WPA2 Personal",
+                "channel_width": "80",
+                "channel_number": 36 + (i * 4),
+                "channel_band": "5 GHz",
+                "supported_wlan_channels": "36,40,44,48",
+                "mcs": None,
+                "nss": None,
             }
         else:
             raise ValueError(f"Unknown dataset type: {dataset_type}")
@@ -346,9 +375,10 @@ def assert_valid_web_responsiveness_record_object(record) -> None:
     # Validate numeric ranges
     assert record.ttfb_us >= 0, "ttfb_us must be non-negative"
     assert record.dns_us >= 0, "dns_us must be non-negative"
-    assert record.web_url.startswith(("http://", "https://")), (
-        "web_url must be valid URL"
-    )
+    if record.web_url is not None:
+        assert record.web_url.startswith(("http://", "https://")), (
+            "web_url must be valid URL"
+        )
 
 
 def assert_valid_speed_record_object(record) -> None:
@@ -371,3 +401,72 @@ def assert_valid_speed_record_object(record) -> None:
     assert record.speed_test_engine in [0, 1], (
         "speed_test_engine must be 0 (orb) or 1 (iperf)"
     )
+
+
+def assert_valid_wifi_link_record(record: Dict[str, Any]) -> None:
+    """
+    Assert that a record has valid Wi-Fi Link data structure.
+
+    Args:
+        record: Record dict to validate
+
+    Raises:
+        AssertionError: If record is invalid
+    """
+    required_fields = [
+        "orb_id",
+        "timestamp",
+        "orb_version",
+        "rssi_avg",
+        "rssi_count",
+        "tx_rate_mbps",
+        "tx_rate_count",
+        "rx_rate_count",
+        "snr_avg",
+        "snr_count",
+        "noise_avg",
+        "noise_count",
+        "phy_mode",
+        "channel_number",
+        "channel_band",
+        "network_type",
+    ]
+
+    for field in required_fields:
+        assert field in record, f"Missing required field: {field}"
+
+    # Validate numeric ranges (RSSI and noise are negative dBm values)
+    assert record["rssi_avg"] <= 0, "rssi_avg must be non-positive (dBm)"
+    assert record["snr_avg"] >= 0, "snr_avg must be non-negative (dB)"
+    assert record["noise_avg"] <= 0, "noise_avg must be non-positive (dBm)"
+    assert record["rssi_count"] >= 0, "rssi_count must be non-negative"
+    assert record["tx_rate_mbps"] >= 0, "tx_rate_mbps must be non-negative"
+    assert isinstance(record["timestamp"], int), "timestamp must be integer"
+
+
+def assert_valid_wifi_link_record_object(record) -> None:
+    """
+    Assert that a WifiLinkRecord Pydantic object is valid.
+
+    Args:
+        record: WifiLinkRecord object to validate
+
+    Raises:
+        AssertionError: If record is invalid
+    """
+    from orbnet.models import WifiLinkRecord
+
+    assert isinstance(record, WifiLinkRecord), "record must be WifiLinkRecord instance"
+
+    # Validate numeric ranges
+    assert record.rssi_avg <= 0, "rssi_avg must be non-positive (dBm)"
+    assert record.snr_avg >= 0, "snr_avg must be non-negative (dB)"
+    assert record.noise_avg <= 0, "noise_avg must be non-positive (dBm)"
+    assert record.tx_rate_mbps >= 0, "tx_rate_mbps must be non-negative"
+    assert record.timestamp > 0, "timestamp must be positive"
+    if record.rx_rate_mbps is not None:
+        assert record.rx_rate_mbps >= 0, "rx_rate_mbps must be non-negative"
+    if record.mcs is not None:
+        assert record.mcs >= 0, "mcs must be non-negative"
+    if record.nss is not None:
+        assert record.nss >= 0, "nss must be non-negative"

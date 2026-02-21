@@ -20,7 +20,7 @@ Unlike traditional speed tests that provide only momentary snapshots, Orb gives 
 - **Multiple granularities** - 1-second, 15-second, and 1-minute data buckets
 - **Polling support** - Automatically fetch only new records
 - **Flexible formats** - JSON or JSONL output
-- **Comprehensive datasets** - Scores, responsiveness, web performance, and speed tests
+- **Comprehensive datasets** - Scores, responsiveness, web performance, speed tests, and Wi-Fi link metrics
 
 ## Installation
 
@@ -90,6 +90,9 @@ web_data = await client.get_web_responsiveness()
 
 # Get speed test results
 speeds = await client.get_speed_results()
+
+# Get Wi-Fi link metrics (signal strength, SNR, link rates)
+wifi_data = await client.get_wifi_link(granularity="1m")
 
 # Get all datasets at once
 all_data = await client.get_all_datasets()
@@ -226,6 +229,35 @@ Speed test results (once per hour by default):
 - `speed_test_server` - Server used for testing
 - `speed_test_engine` - Testing engine (Orb or iperf)
 
+### Wi-Fi Link (`wifi_link_1s`, `wifi_link_15s`, `wifi_link_1m`)
+
+Signal quality and link-layer metrics for the active Wi-Fi connection at
+1-second, 15-second, or 1-minute granularity:
+
+- `rssi_avg` — Average received signal strength in dBm (e.g., -55 is good; below -75 is poor)
+- `snr_avg` — Average signal-to-noise ratio in dB (higher is better)
+- `noise_avg` — Average background RF noise level in dBm
+- `tx_rate_mbps` — Average transmit link rate in Mbps
+- `rx_rate_mbps` — Average receive link rate in Mbps *(not available on macOS)*
+- `phy_mode` — Wi-Fi standard (e.g., `802.11ac`, `802.11ax`)
+- `channel_band` — Band (e.g., `2.4 GHz`, `5 GHz`)
+- `channel_number` / `frequency_mhz` — Channel and frequency
+- `security` — Security protocol *(not available on Android)*
+- `bssid` / `network_name` — Access point MAC and SSID
+
+> **Platform notes:** Not available on iOS or ethernet-connected Orbs.
+> `mcs` and `nss` (modulation/coding scheme, spatial streams) are Linux only.
+
+```python
+wifi_data = await client.get_wifi_link(granularity="1m")
+if wifi_data:
+    latest = wifi_data[-1]
+    print(f"Signal: {latest.rssi_avg:.1f} dBm, SNR: {latest.snr_avg:.1f} dB")
+    print(f"Link rate: {latest.tx_rate_mbps:.0f} Mbps ({latest.phy_mode})")
+    if latest.rssi_avg < -75:
+        print("Weak signal — consider moving closer to the access point")
+```
+
 ## Configuration
 
 ### Client Options
@@ -289,7 +321,10 @@ client = OrbAPIClient(
 - **`get_speed_results(format="json", caller_id=None)`**  
   Retrieve Speed test results
 
-- **`get_all_datasets(format="json", caller_id=None, include_all_responsiveness=False)`**  
+- **`get_wifi_link(granularity="1m", caller_id=None)`**
+  Retrieve Wi-Fi Link dataset (1s, 15s, or 1m)
+
+- **`get_all_datasets(format="json", caller_id=None, include_all_responsiveness=False)`**
   Retrieve all datasets concurrently
 
 - **`poll_dataset(dataset_name, interval=60.0, format="json", callback=None, max_iterations=None)`**  

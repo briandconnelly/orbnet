@@ -22,6 +22,8 @@ from orbnet.models import (
     SpeedRecord,
     WebResponsivenessMeasures,
     WebResponsivenessRecord,
+    WifiLinkMeasures,
+    WifiLinkRecord,
 )
 
 
@@ -128,14 +130,18 @@ class TestAllDatasetsRequestParams:
         params = AllDatasetsRequestParams()
         assert params.caller_id is None
         assert params.include_all_responsiveness is False
+        assert params.include_all_wifi_link is False
 
     def test_custom_values(self):
         """Test custom parameter values."""
         params = AllDatasetsRequestParams(
-            caller_id="test-caller", include_all_responsiveness=True
+            caller_id="test-caller",
+            include_all_responsiveness=True,
+            include_all_wifi_link=True,
         )
         assert params.caller_id == "test-caller"
         assert params.include_all_responsiveness is True
+        assert params.include_all_wifi_link is True
 
 
 class TestPollingConfig:
@@ -610,6 +616,176 @@ class TestSpeedRecord:
         assert data["speed_test_server"] == "test-server-1"
 
 
+class TestWifiLinkMeasures:
+    """Test WifiLinkMeasures model."""
+
+    def test_valid_data(self):
+        """Test valid Wi-Fi link measures data."""
+        data = {
+            "rssi_avg": -55.0,
+            "rssi_count": 60,
+            "frequency_mhz": 5180,
+            "tx_rate_mbps": 300.0,
+            "tx_rate_count": 60,
+            "rx_rate_mbps": 270.0,
+            "rx_rate_count": 60,
+            "snr_avg": 40.0,
+            "snr_count": 60,
+            "noise_avg": -95.0,
+            "noise_count": 60,
+            "phy_mode": "802.11ac",
+            "security": "WPA2 Personal",
+            "channel_width": "80",
+            "channel_number": 36,
+            "channel_band": "5 GHz",
+            "supported_wlan_channels": "1,6,11,36,40,44,48",
+            "mcs": None,
+            "nss": None,
+        }
+        measures = WifiLinkMeasures(**data)
+        assert measures.rssi_avg == -55.0
+        assert measures.rssi_count == 60
+        assert measures.frequency_mhz == 5180
+        assert measures.tx_rate_mbps == 300.0
+        assert measures.rx_rate_mbps == 270.0
+        assert measures.snr_avg == 40.0
+        assert measures.noise_avg == -95.0
+        assert measures.phy_mode == "802.11ac"
+        assert measures.security == "WPA2 Personal"
+        assert measures.channel_width == "80"
+        assert measures.channel_number == 36
+        assert measures.channel_band == "5 GHz"
+        assert measures.mcs is None
+        assert measures.nss is None
+
+    def test_optional_platform_fields(self):
+        """Test that platform-specific fields are optional."""
+        data = {
+            "rssi_avg": -65.0,
+            "rssi_count": 15,
+            "frequency_mhz": 2412,
+            "tx_rate_mbps": 54.0,
+            "tx_rate_count": 15,
+            "rx_rate_count": 15,
+            "snr_avg": 30.0,
+            "snr_count": 15,
+            "noise_avg": -90.0,
+            "noise_count": 15,
+            "phy_mode": "802.11n",
+            "channel_number": 1,
+            "channel_band": "2.4 GHz",
+        }
+        measures = WifiLinkMeasures(**data)
+        assert measures.rx_rate_mbps is None
+        assert measures.security is None
+        assert measures.channel_width is None
+        assert measures.supported_wlan_channels is None
+        assert measures.mcs is None
+        assert measures.nss is None
+
+    def test_linux_only_fields(self):
+        """Test mcs and nss fields (Linux only)."""
+        data = {
+            "rssi_avg": -50.0,
+            "rssi_count": 60,
+            "frequency_mhz": 5180,
+            "tx_rate_mbps": 600.0,
+            "tx_rate_count": 60,
+            "rx_rate_count": 60,
+            "snr_avg": 45.0,
+            "snr_count": 60,
+            "noise_avg": -95.0,
+            "noise_count": 60,
+            "phy_mode": "802.11ax",
+            "channel_number": 36,
+            "channel_band": "5 GHz",
+            "mcs": 9,
+            "nss": 2,
+        }
+        measures = WifiLinkMeasures(**data)
+        assert measures.mcs == 9
+        assert measures.nss == 2
+
+
+class TestWifiLinkRecord:
+    """Test WifiLinkRecord model."""
+
+    def test_valid_data(self, sample_wifi_link_data):
+        """Test valid Wi-Fi link record data."""
+        record = WifiLinkRecord(**sample_wifi_link_data[0])
+
+        # Check identifiers
+        assert record.orb_id == "test-orb-123"
+        assert record.orb_name == "Test Orb"
+        assert record.timestamp == 1700000000000
+        assert record.orb_version == "2.1.0"
+
+        # Check measures
+        assert record.rssi_avg == -55.0
+        assert record.frequency_mhz == 5180
+        assert record.tx_rate_mbps == 300.0
+        assert record.snr_avg == 40.0
+        assert record.phy_mode == "802.11ac"
+        assert record.channel_band == "5 GHz"
+
+        # Check dimensions
+        assert record.network_type == 1
+        assert record.network_name == "Test Network"
+        assert record.bssid == "aa:bb:cc:dd:ee:ff"
+        assert record.country_code == "US"
+
+    def test_minimal_data_identifiable_false(self):
+        """Test Wi-Fi link record with minimal fields (identifiable=false scenario)."""
+        data = {
+            "orb_id": "test-orb-123",
+            "timestamp": 1700000000000,
+            "orb_version": "2.1.0",
+            "rssi_avg": -65.0,
+            "rssi_count": 60,
+            "frequency_mhz": 2412,
+            "tx_rate_mbps": 54.0,
+            "tx_rate_count": 60,
+            "rx_rate_count": 60,
+            "snr_avg": 30.0,
+            "snr_count": 60,
+            "noise_avg": -90.0,
+            "noise_count": 60,
+            "phy_mode": "802.11n",
+            "channel_number": 1,
+            "channel_band": "2.4 GHz",
+            "network_type": 1,
+        }
+        record = WifiLinkRecord(**data)
+        assert record.orb_id == "test-orb-123"
+        assert record.orb_name is None
+        assert record.device_name is None
+        assert record.bssid is None
+        assert record.mac_address is None
+        assert record.network_name is None
+        assert record.city_name is None
+        assert record.network_state is None
+        assert record.rx_rate_mbps is None
+        assert record.security is None
+        assert record.mcs is None
+        assert record.nss is None
+
+    def test_model_dump(self, sample_wifi_link_data):
+        """Test converting record back to dictionary."""
+        record = WifiLinkRecord(**sample_wifi_link_data[0])
+        data = record.model_dump()
+
+        assert isinstance(data, dict)
+        assert data["orb_id"] == "test-orb-123"
+        assert data["rssi_avg"] == -55.0
+        assert data["channel_band"] == "5 GHz"
+
+    def test_missing_required_field(self):
+        """Test validation error on missing required field."""
+        data = {"orb_id": "test-orb-123"}
+        with pytest.raises(ValidationError):
+            WifiLinkRecord(**data)
+
+
 class TestAllDatasetsResponse:
     """Test AllDatasetsResponse model."""
 
@@ -619,6 +795,7 @@ class TestAllDatasetsResponse:
         sample_responsiveness_data,
         sample_web_responsiveness_data,
         sample_speed_data,
+        sample_wifi_link_data,
     ):
         """Test valid all datasets response."""
         response = AllDatasetsResponse(
@@ -630,12 +807,14 @@ class TestAllDatasetsResponse:
                 WebResponsivenessRecord(**r) for r in sample_web_responsiveness_data
             ],
             speed_results=[SpeedRecord(**r) for r in sample_speed_data],
+            wifi_link_1m=[WifiLinkRecord(**r) for r in sample_wifi_link_data],
         )
 
         assert isinstance(response.scores_1m, list)
         assert isinstance(response.responsiveness_1m, list)
         assert isinstance(response.web_responsiveness, list)
         assert isinstance(response.speed_results, list)
+        assert isinstance(response.wifi_link_1m, list)
 
         assert len(response.scores_1m) == 2
         assert len(response.responsiveness_1m) == 1
@@ -644,13 +823,14 @@ class TestAllDatasetsResponse:
             isinstance(r, ResponsivenessRecord) for r in response.responsiveness_1m
         )
 
-    def test_response_with_error(self, sample_scores_data):
+    def test_response_with_error(self, sample_scores_data, sample_wifi_link_data):
         """Test all datasets response with error in one dataset."""
         response = AllDatasetsResponse(
             scores_1m=[ScoreRecord(**r) for r in sample_scores_data],
             responsiveness_1m={"error": "Connection timeout"},
             web_responsiveness=[],
             speed_results=[],
+            wifi_link_1m=[WifiLinkRecord(**r) for r in sample_wifi_link_data],
         )
 
         assert isinstance(response.scores_1m, list)
@@ -658,12 +838,62 @@ class TestAllDatasetsResponse:
         assert "error" in response.responsiveness_1m
         assert response.responsiveness_1m["error"] == "Connection timeout"
 
+    def test_response_with_wifi_link(
+        self,
+        sample_scores_data,
+        sample_responsiveness_data,
+        sample_web_responsiveness_data,
+        sample_speed_data,
+        sample_wifi_link_data,
+    ):
+        """Test all datasets response includes wifi_link_1m."""
+        response = AllDatasetsResponse(
+            scores_1m=[ScoreRecord(**r) for r in sample_scores_data],
+            responsiveness_1m=[
+                ResponsivenessRecord(**r) for r in sample_responsiveness_data
+            ],
+            web_responsiveness=[
+                WebResponsivenessRecord(**r) for r in sample_web_responsiveness_data
+            ],
+            speed_results=[SpeedRecord(**r) for r in sample_speed_data],
+            wifi_link_1m=[WifiLinkRecord(**r) for r in sample_wifi_link_data],
+        )
+
+        assert isinstance(response.wifi_link_1m, list)
+        assert len(response.wifi_link_1m) == 1
+        assert all(isinstance(r, WifiLinkRecord) for r in response.wifi_link_1m)
+
+    def test_wifi_link_granular_optional(
+        self,
+        sample_scores_data,
+        sample_responsiveness_data,
+        sample_web_responsiveness_data,
+        sample_speed_data,
+        sample_wifi_link_data,
+    ):
+        """Test that wifi_link_15s and wifi_link_1s are optional."""
+        response = AllDatasetsResponse(
+            scores_1m=[ScoreRecord(**r) for r in sample_scores_data],
+            responsiveness_1m=[
+                ResponsivenessRecord(**r) for r in sample_responsiveness_data
+            ],
+            web_responsiveness=[
+                WebResponsivenessRecord(**r) for r in sample_web_responsiveness_data
+            ],
+            speed_results=[SpeedRecord(**r) for r in sample_speed_data],
+            wifi_link_1m=[WifiLinkRecord(**r) for r in sample_wifi_link_data],
+        )
+
+        assert response.wifi_link_15s is None
+        assert response.wifi_link_1s is None
+
     def test_response_with_all_responsiveness(
         self,
         sample_scores_data,
         sample_responsiveness_data,
         sample_web_responsiveness_data,
         sample_speed_data,
+        sample_wifi_link_data,
     ):
         """Test all datasets response with all responsiveness granularities."""
         response = AllDatasetsResponse(
@@ -681,6 +911,7 @@ class TestAllDatasetsResponse:
                 WebResponsivenessRecord(**r) for r in sample_web_responsiveness_data
             ],
             speed_results=[SpeedRecord(**r) for r in sample_speed_data],
+            wifi_link_1m=[WifiLinkRecord(**r) for r in sample_wifi_link_data],
         )
 
         assert response.responsiveness_1m is not None
@@ -689,6 +920,34 @@ class TestAllDatasetsResponse:
         assert all(
             isinstance(r, ResponsivenessRecord) for r in response.responsiveness_1s
         )
+
+    def test_response_with_all_wifi_link(
+        self,
+        sample_scores_data,
+        sample_responsiveness_data,
+        sample_web_responsiveness_data,
+        sample_speed_data,
+        sample_wifi_link_data,
+    ):
+        """Test all datasets response with all Wi-Fi Link granularities."""
+        response = AllDatasetsResponse(
+            scores_1m=[ScoreRecord(**r) for r in sample_scores_data],
+            responsiveness_1m=[
+                ResponsivenessRecord(**r) for r in sample_responsiveness_data
+            ],
+            web_responsiveness=[
+                WebResponsivenessRecord(**r) for r in sample_web_responsiveness_data
+            ],
+            speed_results=[SpeedRecord(**r) for r in sample_speed_data],
+            wifi_link_1m=[WifiLinkRecord(**r) for r in sample_wifi_link_data],
+            wifi_link_15s=[WifiLinkRecord(**r) for r in sample_wifi_link_data],
+            wifi_link_1s=[WifiLinkRecord(**r) for r in sample_wifi_link_data],
+        )
+
+        assert isinstance(response.wifi_link_1m, list)
+        assert isinstance(response.wifi_link_15s, list)
+        assert isinstance(response.wifi_link_1s, list)
+        assert all(isinstance(r, WifiLinkRecord) for r in response.wifi_link_1s)
 
 
 @pytest.fixture
@@ -846,5 +1105,52 @@ def sample_speed_data():
             "network_name": "Test Network",
             "speed_test_engine": 0,  # 0=orb, 1=iperf
             "speed_test_server": "test-server-1",
+        }
+    ]
+
+
+@pytest.fixture
+def sample_wifi_link_data():
+    """Sample Wi-Fi Link dataset data for testing."""
+    return [
+        {
+            "orb_id": "test-orb-123",
+            "orb_name": "Test Orb",
+            "device_name": "test-device",
+            "timestamp": 1700000000000,
+            "orb_version": "2.1.0",
+            "rssi_avg": -55.0,
+            "rssi_count": 60,
+            "frequency_mhz": 5180,
+            "tx_rate_mbps": 300.0,
+            "tx_rate_count": 60,
+            "rx_rate_mbps": 270.0,
+            "rx_rate_count": 60,
+            "snr_avg": 40.0,
+            "snr_count": 60,
+            "noise_avg": -95.0,
+            "noise_count": 60,
+            "phy_mode": "802.11ac",
+            "security": "WPA2 Personal",
+            "channel_width": "80",
+            "channel_number": 36,
+            "channel_band": "5 GHz",
+            "supported_wlan_channels": "1,6,11,36,40,44,48",
+            "mcs": None,
+            "nss": None,
+            "network_type": 1,
+            "network_state": 1,
+            "country_code": "US",
+            "city_name": "San Francisco",
+            "isp_name": "Test ISP",
+            "public_ip": "192.168.1.100",
+            "latitude": 37.7749,
+            "longitude": -122.4194,
+            "location_source": 1,
+            "bssid": "aa:bb:cc:dd:ee:ff",
+            "mac_address": "11:22:33:44:55:66",
+            "network_name": "Test Network",
+            "private_ip": "192.168.1.42",
+            "speed_test_engine": 0,
         }
     ]

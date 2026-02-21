@@ -29,8 +29,7 @@ class OrbClientConfig(BaseModel):
     )
     timeout: float = Field(default=30.0, gt=0, description="Request timeout in seconds")
 
-    class Config:
-        validate_assignment = True
+    model_config = ConfigDict(validate_assignment=True)
 
 
 class DatasetRequestParams(BaseModel):
@@ -40,8 +39,7 @@ class DatasetRequestParams(BaseModel):
         default=None, description="Override the default caller_id for this request"
     )
 
-    class Config:
-        extra = "allow"  # Allow additional parameters
+    model_config = ConfigDict(extra="allow")
 
 
 class ResponsivenessRequestParams(DatasetRequestParams):
@@ -58,6 +56,10 @@ class AllDatasetsRequestParams(DatasetRequestParams):
     include_all_responsiveness: bool = Field(
         default=False,
         description="If True, fetches all responsiveness granularities (1s, 15s, 1m). If False, only fetches 1m.",  # noqa: E501
+    )
+    include_all_wifi_link: bool = Field(
+        default=False,
+        description="If True, fetches all Wi-Fi Link granularities (1s, 15s, 1m). If False, only fetches 1m.",  # noqa: E501
     )
 
 
@@ -78,8 +80,7 @@ class PollingConfig(BaseModel):
         default=None, ge=1, description="Maximum number of polls (None for infinite)"
     )
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 # ============================================================================
@@ -279,6 +280,73 @@ class SpeedDimensions(NetworkDimensions):
     )
 
 
+class WifiLinkMeasures(BaseModel):
+    """Measures in the Wi-Fi Link dataset"""
+
+    rssi_avg: float = Field(description="Average received signal strength in dBm")
+    rssi_count: int = Field(description="Count of successful RSSI measurements")
+    frequency_mhz: Optional[int] = Field(
+        default=None, description="Connected channel frequency in MHz (may not be included)"
+    )
+    tx_rate_mbps: float = Field(description="Average transmit link rate in Mbps")
+    tx_rate_count: int = Field(description="Count of transmit rate measurements")
+    rx_rate_mbps: Optional[float] = Field(
+        default=None,
+        description="Average receive link rate in Mbps (unavailable on macOS)",
+    )
+    rx_rate_count: int = Field(description="Count of receive rate measurements")
+    snr_avg: float = Field(description="Average signal-to-noise ratio in dB")
+    snr_count: int = Field(description="Count of SNR measurements")
+    noise_avg: float = Field(description="Average background RF noise level in dBm")
+    noise_count: int = Field(description="Count of noise measurements")
+    phy_mode: str = Field(
+        description="Wi-Fi standard designation (e.g., 802.11n, 802.11ac, 802.11ax)"
+    )
+    security: Optional[str] = Field(
+        default=None,
+        description="Wi-Fi security protocol (unavailable on Android)",
+    )
+    channel_width: Optional[str] = Field(
+        default=None,
+        description="Channel width in MHz (unavailable on Android)",
+    )
+    channel_number: int = Field(description="Wi-Fi channel number")
+    channel_band: str = Field(description="Wi-Fi band designation")
+    supported_wlan_channels: Optional[str] = Field(
+        default=None,
+        description="Comma-separated list of supported WLAN channels (unavailable on Windows)",  # noqa: E501
+    )
+    mcs: Optional[int] = Field(
+        default=None,
+        description="Modulation and coding scheme index (Linux only)",
+    )
+    nss: Optional[int] = Field(
+        default=None,
+        description="Number of spatial streams (Linux only)",
+    )
+
+
+class WifiLinkDimensions(NetworkDimensions):
+    """Dimensions specific to the Wi-Fi Link dataset"""
+
+    bssid: Optional[str] = Field(
+        default=None, description="Access point MAC address (may not be included)"
+    )
+    mac_address: Optional[str] = Field(
+        default=None, description="Client MAC address (may not be included)"
+    )
+    network_name: Optional[str] = Field(
+        default=None, description="Network name / SSID (may not be included)"
+    )
+    network_state: Optional[int] = Field(default=None, description=NETWORK_STATE_DESC)
+    private_ip: Optional[str] = Field(
+        default=None, description="Local IP address (may not be included)"
+    )
+    speed_test_engine: Optional[int] = Field(
+        default=None, description="Testing engine: 0=orb, 1=iperf (may not be included)"
+    )
+
+
 # ============================================================================
 # Complete Dataset Records
 # ============================================================================
@@ -344,6 +412,22 @@ class SpeedRecord(BaseRecord, BaseIdentifiers, SpeedMeasures, SpeedDimensions):
     pass
 
 
+class WifiLinkRecord(BaseRecord, BaseIdentifiers, WifiLinkMeasures, WifiLinkDimensions):
+    """
+    Complete record from the Wi-Fi Link dataset (wifi_link_1s/15s/1m).
+
+    Combines identifiers, measures, and dimensions into a single flat structure
+    matching the API response format.
+
+    Note: Wi-Fi Link dataset fields are not available on iOS. Field availability
+    varies by platform: macOS does not include rx_rate_mbps; Android does not
+    include security or channel_width; Windows does not include
+    supported_wlan_channels; mcs and nss are Linux only.
+    """
+
+    pass
+
+
 # ============================================================================
 # All Datasets Response
 # ============================================================================
@@ -363,6 +447,8 @@ class AllDatasetsResponse(BaseModel):
     responsiveness_1s: Optional[List[ResponsivenessRecord] | dict] = None
     web_responsiveness: List[WebResponsivenessRecord] | dict
     speed_results: List[SpeedRecord] | dict
+    wifi_link_1m: List[WifiLinkRecord] | dict
+    wifi_link_15s: Optional[List[WifiLinkRecord] | dict] = None
+    wifi_link_1s: Optional[List[WifiLinkRecord] | dict] = None
 
-    class Config:
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")

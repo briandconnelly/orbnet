@@ -14,6 +14,7 @@ from orbnet.models import (
     ScoreRecord,
     SpeedRecord,
     WebResponsivenessRecord,
+    WifiLinkRecord,
 )
 
 
@@ -294,12 +295,73 @@ class TestOrbAPIClient:
             assert "speed_results.json" in call_args[0][0]
 
     @pytest.mark.asyncio
+    async def test_get_wifi_link_1m(self, sample_wifi_link_data, mock_httpx_response):
+        """Test get_wifi_link with 1m granularity returns WifiLinkRecord objects."""
+        mock_httpx_response.json.return_value = sample_wifi_link_data
+
+        with patch("httpx.AsyncClient") as mock_client_class:
+            mock_client = AsyncMock()
+            mock_client_class.return_value.__aenter__.return_value = mock_client
+            mock_client.get.return_value = mock_httpx_response
+
+            client = OrbAPIClient(host="192.168.1.100")
+            result = await client.get_wifi_link(granularity="1m")
+
+            assert isinstance(result, list)
+            assert len(result) == len(sample_wifi_link_data)
+            assert all(isinstance(r, WifiLinkRecord) for r in result)
+
+            assert result[0].orb_id == sample_wifi_link_data[0]["orb_id"]
+            assert result[0].rssi_avg == sample_wifi_link_data[0]["rssi_avg"]
+            assert result[0].channel_band == sample_wifi_link_data[0]["channel_band"]
+
+            call_args = mock_client.get.call_args
+            assert "wifi_link_1m.json" in call_args[0][0]
+
+    @pytest.mark.asyncio
+    async def test_get_wifi_link_1s(self, sample_wifi_link_data, mock_httpx_response):
+        """Test get_wifi_link method with 1s granularity."""
+        mock_httpx_response.json.return_value = sample_wifi_link_data
+
+        with patch("httpx.AsyncClient") as mock_client_class:
+            mock_client = AsyncMock()
+            mock_client_class.return_value.__aenter__.return_value = mock_client
+            mock_client.get.return_value = mock_httpx_response
+
+            client = OrbAPIClient(host="192.168.1.100")
+            result = await client.get_wifi_link(granularity="1s")
+
+            assert isinstance(result, list)
+            assert all(isinstance(r, WifiLinkRecord) for r in result)
+            call_args = mock_client.get.call_args
+            assert "wifi_link_1s.json" in call_args[0][0]
+
+    @pytest.mark.asyncio
+    async def test_get_wifi_link_15s(self, sample_wifi_link_data, mock_httpx_response):
+        """Test get_wifi_link method with 15s granularity."""
+        mock_httpx_response.json.return_value = sample_wifi_link_data
+
+        with patch("httpx.AsyncClient") as mock_client_class:
+            mock_client = AsyncMock()
+            mock_client_class.return_value.__aenter__.return_value = mock_client
+            mock_client.get.return_value = mock_httpx_response
+
+            client = OrbAPIClient(host="192.168.1.100")
+            result = await client.get_wifi_link(granularity="15s")
+
+            assert isinstance(result, list)
+            assert all(isinstance(r, WifiLinkRecord) for r in result)
+            call_args = mock_client.get.call_args
+            assert "wifi_link_15s.json" in call_args[0][0]
+
+    @pytest.mark.asyncio
     async def test_get_all_datasets_basic(
         self,
         sample_scores_data,
         sample_responsiveness_data,
         sample_web_responsiveness_data,
         sample_speed_data,
+        sample_wifi_link_data,
     ):
         """Test get_all_datasets method returns AllDatasetsResponse."""
         with (
@@ -327,6 +389,11 @@ class TestOrbAPIClient:
                 "get_speed_results",
                 return_value=[SpeedRecord(**r) for r in sample_speed_data],
             ),
+            patch.object(
+                OrbAPIClient,
+                "get_wifi_link",
+                return_value=[WifiLinkRecord(**r) for r in sample_wifi_link_data],
+            ),
         ):
             client = OrbAPIClient(host="192.168.1.100")
             result = await client.get_all_datasets()
@@ -339,6 +406,7 @@ class TestOrbAPIClient:
             assert isinstance(result.responsiveness_1m, list)
             assert isinstance(result.web_responsiveness, list)
             assert isinstance(result.speed_results, list)
+            assert isinstance(result.wifi_link_1m, list)
 
             # Check data types
             assert all(isinstance(r, ScoreRecord) for r in result.scores_1m)
@@ -350,6 +418,57 @@ class TestOrbAPIClient:
                 for r in result.web_responsiveness
             )
             assert all(isinstance(r, SpeedRecord) for r in result.speed_results)
+            assert all(isinstance(r, WifiLinkRecord) for r in result.wifi_link_1m)
+
+    @pytest.mark.asyncio
+    async def test_get_all_datasets_with_all_wifi_link(
+        self,
+        sample_scores_data,
+        sample_responsiveness_data,
+        sample_web_responsiveness_data,
+        sample_speed_data,
+        sample_wifi_link_data,
+    ):
+        """Test get_all_datasets method with all Wi-Fi Link granularities."""
+        with (
+            patch.object(
+                OrbAPIClient,
+                "get_scores_1m",
+                return_value=[ScoreRecord(**r) for r in sample_scores_data],
+            ),
+            patch.object(
+                OrbAPIClient,
+                "get_responsiveness",
+                return_value=[
+                    ResponsivenessRecord(**r) for r in sample_responsiveness_data
+                ],
+            ),
+            patch.object(
+                OrbAPIClient,
+                "get_web_responsiveness",
+                return_value=[
+                    WebResponsivenessRecord(**r) for r in sample_web_responsiveness_data
+                ],
+            ),
+            patch.object(
+                OrbAPIClient,
+                "get_speed_results",
+                return_value=[SpeedRecord(**r) for r in sample_speed_data],
+            ),
+            patch.object(
+                OrbAPIClient,
+                "get_wifi_link",
+                return_value=[WifiLinkRecord(**r) for r in sample_wifi_link_data],
+            ),
+        ):
+            client = OrbAPIClient(host="192.168.1.100")
+            result = await client.get_all_datasets(include_all_wifi_link=True)
+
+            assert isinstance(result, AllDatasetsResponse)
+            assert isinstance(result.wifi_link_1m, list)
+            assert isinstance(result.wifi_link_15s, list)
+            assert isinstance(result.wifi_link_1s, list)
+            assert all(isinstance(r, WifiLinkRecord) for r in result.wifi_link_1m)
 
     @pytest.mark.asyncio
     async def test_get_all_datasets_with_all_responsiveness(
@@ -358,6 +477,7 @@ class TestOrbAPIClient:
         sample_responsiveness_data,
         sample_web_responsiveness_data,
         sample_speed_data,
+        sample_wifi_link_data,
     ):
         """Test get_all_datasets method with all responsiveness granularities."""
         with (
@@ -385,6 +505,11 @@ class TestOrbAPIClient:
                 "get_speed_results",
                 return_value=[SpeedRecord(**r) for r in sample_speed_data],
             ),
+            patch.object(
+                OrbAPIClient,
+                "get_wifi_link",
+                return_value=[WifiLinkRecord(**r) for r in sample_wifi_link_data],
+            ),
         ):
             client = OrbAPIClient(host="192.168.1.100")
             result = await client.get_all_datasets(include_all_responsiveness=True)
@@ -403,6 +528,7 @@ class TestOrbAPIClient:
         sample_scores_data,
         sample_web_responsiveness_data,
         sample_speed_data,
+        sample_wifi_link_data,
     ):
         """Test get_all_datasets method with one dataset failing."""
         with (
@@ -427,6 +553,11 @@ class TestOrbAPIClient:
                 OrbAPIClient,
                 "get_speed_results",
                 return_value=[SpeedRecord(**r) for r in sample_speed_data],
+            ),
+            patch.object(
+                OrbAPIClient,
+                "get_wifi_link",
+                return_value=[WifiLinkRecord(**r) for r in sample_wifi_link_data],
             ),
         ):
             client = OrbAPIClient(host="192.168.1.100")
@@ -530,8 +661,10 @@ class TestOrbAPIClient:
             assert all(isinstance(r, ScoreRecord) for r in callback_calls[0][1])
 
     @pytest.mark.asyncio
-    async def test_poll_dataset_with_error(self, mock_httpx_response):
+    async def test_poll_dataset_with_error(self, mock_httpx_response, caplog):
         """Test poll_dataset method with HTTP error."""
+        import logging
+
         mock_httpx_response.raise_for_status.side_effect = httpx.HTTPStatusError(
             "500 Internal Server Error",
             request=MagicMock(),
@@ -547,14 +680,18 @@ class TestOrbAPIClient:
 
             # Test with max_iterations=1 - should handle error gracefully
             results = []
-            async for records in client.poll_dataset(
-                "scores_1m", interval=0.01, max_iterations=1
-            ):
-                results.append(records)
+            with caplog.at_level(logging.WARNING, logger="orbnet.client"):
+                async for records in client.poll_dataset(
+                    "scores_1m", interval=0.01, max_iterations=1
+                ):
+                    results.append(records)
 
             # When an error occurs, the generator doesn't yield anything
-            # The error is printed but no results are yielded
+            # The error is logged but no results are yielded
             assert len(results) == 0
+            assert len(caplog.records) == 1
+            assert caplog.records[0].levelno == logging.WARNING
+            assert "scores_1m" in caplog.records[0].message
 
     @pytest.mark.asyncio
     async def test_poll_dataset_invalid_dataset_name(self):

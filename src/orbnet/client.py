@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import uuid
 from importlib.metadata import version as get_version
 from typing import Any, Callable, Dict, List, Literal, Optional
@@ -16,7 +17,10 @@ from .models import (
     ScoreRecord,
     SpeedRecord,
     WebResponsivenessRecord,
+    WifiLinkRecord,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class OrbAPIClient:
@@ -427,10 +431,62 @@ class OrbAPIClient:
         raw_data = await self._get_dataset("speed_results", request.caller_id, **params)
         return [SpeedRecord(**record) for record in raw_data]
 
+    async def get_wifi_link(
+        self,
+        granularity: Literal["1s", "15s", "1m"] = "1m",
+        caller_id: Optional[str] = None,
+        **params,
+    ) -> List[WifiLinkRecord]:
+        """
+        Retrieve Wi-Fi Link dataset.
+
+        Includes signal quality and link-layer metrics for the active Wi-Fi
+        connection. Available in 1s, 15s, and 1m buckets.
+
+        Note: Wi-Fi Link dataset fields are not available on iOS. Field
+        availability varies by platform.
+
+        Args:
+            granularity: Time bucket size - "1s", "15s", or "1m"
+            caller_id: Override the default caller_id for this request
+            **params: Additional query parameters
+
+        Returns:
+            List of WifiLinkRecord objects, each containing:
+            - identifiers: orb_id, orb_name, device_name, orb_version, timestamp
+            - measures: rssi_avg, frequency_mhz, tx_rate_mbps, snr_avg, etc.
+            - dimensions: bssid, network_name, network_type, etc.
+
+        Examples:
+            Get 1-minute Wi-Fi link quality data:
+
+            >>> client = OrbAPIClient(host="192.168.1.100")
+            >>> data = await client.get_wifi_link()
+            >>> if data:
+            ...     latest = data[-1]
+            ...     print(f"RSSI: {latest.rssi_avg} dBm")
+            ...     print(f"SNR: {latest.snr_avg} dB")
+            ...     print(f"TX rate: {latest.tx_rate_mbps} Mbps")
+
+            Get high-resolution 1-second Wi-Fi data:
+
+            >>> data = await client.get_wifi_link(granularity="1s")
+            >>> for record in data[-5:]:
+            ...     print(f"{record.timestamp}: {record.rssi_avg} dBm "
+            ...           f"on {record.channel_band}")
+        """
+        request = ResponsivenessRequestParams(
+            granularity=granularity, caller_id=caller_id, **params
+        )
+        dataset_name = f"wifi_link_{request.granularity}"
+        raw_data = await self._get_dataset(dataset_name, request.caller_id, **params)
+        return [WifiLinkRecord(**record) for record in raw_data]
+
     async def get_all_datasets(
         self,
         caller_id: Optional[str] = None,
         include_all_responsiveness: bool = False,
+        include_all_wifi_link: bool = False,
     ) -> AllDatasetsResponse:
         """
         Retrieve all datasets concurrently.
@@ -440,6 +496,8 @@ class OrbAPIClient:
             include_all_responsiveness: If True, fetches all responsiveness
                                        granularities (1s, 15s, 1m). If False,
                                        only fetches 1m granularity.
+            include_all_wifi_link: If True, fetches all Wi-Fi Link granularities
+                                   (1s, 15s, 1m). If False, only fetches 1m.
 
         Returns:
             AllDatasetsResponse object with fields for each dataset type
@@ -453,6 +511,7 @@ class OrbAPIClient:
             >>> print(f"Responsiveness: {len(datasets.responsiveness_1m)} records")
             >>> print(f"Web: {len(datasets.web_responsiveness)} records")
             >>> print(f"Speed: {len(datasets.speed_results)} records")
+            >>> print(f"Wi-Fi Link: {len(datasets.wifi_link_1m)} records")
 
             Fetch with all responsiveness granularities:
 
@@ -462,6 +521,13 @@ class OrbAPIClient:
             >>> print(f"1s: {len(datasets.responsiveness_1s)} records")
             >>> print(f"15s: {len(datasets.responsiveness_15s)} records")
             >>> print(f"1m: {len(datasets.responsiveness_1m)} records")
+
+            Fetch with all Wi-Fi Link granularities:
+
+            >>> datasets = await client.get_all_datasets(include_all_wifi_link=True)
+            >>> print(f"1s: {len(datasets.wifi_link_1s)} records")
+            >>> print(f"15s: {len(datasets.wifi_link_15s)} records")
+            >>> print(f"1m: {len(datasets.wifi_link_1m)} records")
 
             Create a comprehensive network report:
 
@@ -489,6 +555,7 @@ class OrbAPIClient:
         request = AllDatasetsRequestParams(
             caller_id=caller_id,
             include_all_responsiveness=include_all_responsiveness,
+            include_all_wifi_link=include_all_wifi_link,
         )
 
         tasks = {
@@ -496,6 +563,7 @@ class OrbAPIClient:
             "responsiveness_1m": self.get_responsiveness("1m", request.caller_id),
             "web_responsiveness": self.get_web_responsiveness(request.caller_id),
             "speed_results": self.get_speed_results(request.caller_id),
+            "wifi_link_1m": self.get_wifi_link("1m", request.caller_id),
         }
 
         if request.include_all_responsiveness:
@@ -505,6 +573,10 @@ class OrbAPIClient:
             tasks["responsiveness_1s"] = self.get_responsiveness(
                 "1s", request.caller_id
             )
+
+        if request.include_all_wifi_link:
+            tasks["wifi_link_15s"] = self.get_wifi_link("15s", request.caller_id)
+            tasks["wifi_link_1s"] = self.get_wifi_link("1s", request.caller_id)
 
         results = await asyncio.gather(*tasks.values(), return_exceptions=True)
 
@@ -626,6 +698,9 @@ class OrbAPIClient:
             "responsiveness_1m": lambda: self.get_responsiveness("1m"),
             "web_responsiveness_results": lambda: self.get_web_responsiveness(),
             "speed_results": lambda: self.get_speed_results(),
+            "wifi_link_1s": lambda: self.get_wifi_link("1s"),
+            "wifi_link_15s": lambda: self.get_wifi_link("15s"),
+            "wifi_link_1m": lambda: self.get_wifi_link("1m"),
         }
 
         if config.dataset_name not in dataset_methods:
@@ -654,6 +729,6 @@ class OrbAPIClient:
                 iteration += 1
 
             except Exception as e:
-                print(f"Error polling {config.dataset_name}: {e}")
+                logger.warning("Error polling %s: %s", config.dataset_name, e)
                 await asyncio.sleep(config.interval)
                 iteration += 1
