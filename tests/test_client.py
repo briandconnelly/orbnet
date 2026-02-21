@@ -661,8 +661,10 @@ class TestOrbAPIClient:
             assert all(isinstance(r, ScoreRecord) for r in callback_calls[0][1])
 
     @pytest.mark.asyncio
-    async def test_poll_dataset_with_error(self, mock_httpx_response):
+    async def test_poll_dataset_with_error(self, mock_httpx_response, caplog):
         """Test poll_dataset method with HTTP error."""
+        import logging
+
         mock_httpx_response.raise_for_status.side_effect = httpx.HTTPStatusError(
             "500 Internal Server Error",
             request=MagicMock(),
@@ -678,14 +680,18 @@ class TestOrbAPIClient:
 
             # Test with max_iterations=1 - should handle error gracefully
             results = []
-            async for records in client.poll_dataset(
-                "scores_1m", interval=0.01, max_iterations=1
-            ):
-                results.append(records)
+            with caplog.at_level(logging.WARNING, logger="orbnet.client"):
+                async for records in client.poll_dataset(
+                    "scores_1m", interval=0.01, max_iterations=1
+                ):
+                    results.append(records)
 
             # When an error occurs, the generator doesn't yield anything
             # The error is logged but no results are yielded
             assert len(results) == 0
+            assert len(caplog.records) == 1
+            assert caplog.records[0].levelno == logging.WARNING
+            assert "scores_1m" in caplog.records[0].message
 
     @pytest.mark.asyncio
     async def test_poll_dataset_invalid_dataset_name(self):
