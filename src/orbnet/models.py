@@ -288,13 +288,19 @@ class WifiLinkMeasures(BaseModel):
     frequency_mhz: Optional[int] = Field(
         default=None, description="Connected channel frequency in MHz (may not be included)"
     )
-    tx_rate_mbps: float = Field(description="Average transmit link rate in Mbps")
-    tx_rate_count: int = Field(description="Count of transmit rate measurements")
+    tx_rate_mbps: Optional[float] = Field(
+        default=None, description="Average transmit link rate in Mbps"
+    )
+    tx_rate_count: Optional[int] = Field(
+        default=None, description="Count of transmit rate measurements"
+    )
     rx_rate_mbps: Optional[float] = Field(
         default=None,
         description="Average receive link rate in Mbps (unavailable on macOS)",
     )
-    rx_rate_count: int = Field(description="Count of receive rate measurements")
+    rx_rate_count: Optional[int] = Field(
+        default=None, description="Count of receive rate measurements"
+    )
     snr_avg: float = Field(description="Average signal-to-noise ratio in dB")
     snr_count: int = Field(description="Count of SNR measurements")
     noise_avg: float = Field(description="Average background RF noise level in dBm")

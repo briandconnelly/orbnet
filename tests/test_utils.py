@@ -419,9 +419,6 @@ def assert_valid_wifi_link_record(record: Dict[str, Any]) -> None:
         "orb_version",
         "rssi_avg",
         "rssi_count",
-        "tx_rate_mbps",
-        "tx_rate_count",
-        "rx_rate_count",
         "snr_avg",
         "snr_count",
         "noise_avg",
@@ -440,7 +437,8 @@ def assert_valid_wifi_link_record(record: Dict[str, Any]) -> None:
     assert record["snr_avg"] >= 0, "snr_avg must be non-negative (dB)"
     assert record["noise_avg"] <= 0, "noise_avg must be non-positive (dBm)"
     assert record["rssi_count"] >= 0, "rssi_count must be non-negative"
-    assert record["tx_rate_mbps"] >= 0, "tx_rate_mbps must be non-negative"
+    if record.get("tx_rate_mbps") is not None:
+        assert record["tx_rate_mbps"] >= 0, "tx_rate_mbps must be non-negative"
     assert isinstance(record["timestamp"], int), "timestamp must be integer"
 
 
@@ -462,7 +460,8 @@ def assert_valid_wifi_link_record_object(record) -> None:
     assert record.rssi_avg <= 0, "rssi_avg must be non-positive (dBm)"
     assert record.snr_avg >= 0, "snr_avg must be non-negative (dB)"
     assert record.noise_avg <= 0, "noise_avg must be non-positive (dBm)"
-    assert record.tx_rate_mbps >= 0, "tx_rate_mbps must be non-negative"
+    if record.tx_rate_mbps is not None:
+        assert record.tx_rate_mbps >= 0, "tx_rate_mbps must be non-negative"
     assert record.timestamp > 0, "timestamp must be positive"
     if record.rx_rate_mbps is not None:
         assert record.rx_rate_mbps >= 0, "rx_rate_mbps must be non-negative"
