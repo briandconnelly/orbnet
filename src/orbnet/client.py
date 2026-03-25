@@ -487,6 +487,7 @@ class OrbAPIClient:
         caller_id: Optional[str] = None,
         include_all_responsiveness: bool = False,
         include_all_wifi_link: bool = False,
+        default_granularity: Literal["1s", "15s", "1m"] = "1m",
     ) -> AllDatasetsResponse:
         """
         Retrieve all datasets concurrently.
@@ -495,9 +496,12 @@ class OrbAPIClient:
             caller_id: Override the default caller_id for this request
             include_all_responsiveness: If True, fetches all responsiveness
                                        granularities (1s, 15s, 1m). If False,
-                                       only fetches 1m granularity.
+                                       only fetches the default granularity.
             include_all_wifi_link: If True, fetches all Wi-Fi Link granularities
-                                   (1s, 15s, 1m). If False, only fetches 1m.
+                                   (1s, 15s, 1m). If False, only fetches the
+                                   default granularity.
+            default_granularity: Base granularity to fetch when not including all
+                                 granularities (default: '1m').
 
         Returns:
             AllDatasetsResponse object with fields for each dataset type
@@ -558,25 +562,29 @@ class OrbAPIClient:
             include_all_wifi_link=include_all_wifi_link,
         )
 
+        gran = default_granularity
         tasks = {
             "scores_1m": self.get_scores_1m(request.caller_id),
-            "responsiveness_1m": self.get_responsiveness("1m", request.caller_id),
+            f"responsiveness_{gran}": self.get_responsiveness(
+                gran, request.caller_id
+            ),
             "web_responsiveness": self.get_web_responsiveness(request.caller_id),
             "speed_results": self.get_speed_results(request.caller_id),
-            "wifi_link_1m": self.get_wifi_link("1m", request.caller_id),
+            f"wifi_link_{gran}": self.get_wifi_link(gran, request.caller_id),
         }
 
+        all_granularities = {"1s", "15s", "1m"}
+        other_granularities = sorted(all_granularities - {gran})
+
         if request.include_all_responsiveness:
-            tasks["responsiveness_15s"] = self.get_responsiveness(
-                "15s", request.caller_id
-            )
-            tasks["responsiveness_1s"] = self.get_responsiveness(
-                "1s", request.caller_id
-            )
+            for g in other_granularities:
+                tasks[f"responsiveness_{g}"] = self.get_responsiveness(
+                    g, request.caller_id
+                )
 
         if request.include_all_wifi_link:
-            tasks["wifi_link_15s"] = self.get_wifi_link("15s", request.caller_id)
-            tasks["wifi_link_1s"] = self.get_wifi_link("1s", request.caller_id)
+            for g in other_granularities:
+                tasks[f"wifi_link_{g}"] = self.get_wifi_link(g, request.caller_id)
 
         results = await asyncio.gather(*tasks.values(), return_exceptions=True)
 

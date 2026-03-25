@@ -229,7 +229,7 @@ async def get_scores_1m(
 async def get_responsiveness(
     ctx: Context,
     host: Optional[str] = None,
-    granularity: Literal["1s", "15s", "1m"] = "1m",
+    granularity: Literal["1s", "15s", "1m"] = "1s",
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
@@ -397,7 +397,7 @@ async def get_speed_results(
 async def get_wifi_link(
     ctx: Context,
     host: Optional[str] = None,
-    granularity: Literal["1s", "15s", "1m"] = "1m",
+    granularity: Literal["1s", "15s", "1m"] = "1s",
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
@@ -486,10 +486,10 @@ async def get_all_datasets(
 
     Args:
         include_all_responsiveness: If True, fetches all responsiveness granularities
-                                   (1s, 15s, 1m). If False, only fetches 1m. (default:
+                                   (1s, 15s, 1m). If False, only fetches 1s. (default:
                                    False)
         include_all_wifi_link: If True, fetches all Wi-Fi Link granularities
-                               (1s, 15s, 1m). If False, only fetches 1m. (default:
+                               (1s, 15s, 1m). If False, only fetches 1s. (default:
                                False)
         host: Orb sensor hostname or IP (default: from ORB_HOST env var or 'localhost')
         port: API port number (default: from ORB_PORT env var or 7080)
@@ -500,16 +500,16 @@ async def get_all_datasets(
     Returns:
         Dictionary with keys for each dataset type:
         - scores_1m: 1-minute scores dataset
-        - responsiveness_1m: 1-minute responsiveness dataset
+        - responsiveness_1s: 1-second responsiveness dataset
         - responsiveness_15s: 15-second responsiveness
           (if include_all_responsiveness=True)
-        - responsiveness_1s: 1-second responsiveness
+        - responsiveness_1m: 1-minute responsiveness
           (if include_all_responsiveness=True)
         - web_responsiveness: Web responsiveness results
         - speed_results: Speed test results
-        - wifi_link_1m: 1-minute Wi-Fi link dataset (empty list if not on Wi-Fi)
+        - wifi_link_1s: 1-second Wi-Fi link dataset (empty list if not on Wi-Fi)
         - wifi_link_15s: 15-second Wi-Fi link (if include_all_wifi_link=True)
-        - wifi_link_1s: 1-second Wi-Fi link (if include_all_wifi_link=True)
+        - wifi_link_1m: 1-minute Wi-Fi link (if include_all_wifi_link=True)
 
         Each value is either a list of records or an error dict if that dataset failed.
     """
@@ -518,6 +518,7 @@ async def get_all_datasets(
     return await client.get_all_datasets(
         include_all_responsiveness=include_all_responsiveness,
         include_all_wifi_link=include_all_wifi_link,
+        default_granularity="1s",
     )
 
 
@@ -596,7 +597,7 @@ def troubleshoot_slow_internet() -> str:
     return """
     To troubleshoot slow internet:
     1. Call get_speed_results() to check recent speed tests
-    2. Call get_responsiveness(granularity="1m") for latency/jitter data
+    2. Call get_responsiveness() for latency/jitter data
     3. Call get_web_responsiveness() to check TTFB and DNS performance
     4. Compare metrics against typical values:
        - Good latency: < 50ms
@@ -611,7 +612,7 @@ def troubleshoot_wifi() -> str:
     """Diagnose Wi-Fi-specific issues by correlating signal metrics with performance"""
     return """
     To diagnose Wi-Fi-specific network issues:
-    1. Call get_wifi_link(granularity="1m") to get signal and link metrics
+    1. Call get_wifi_link() to get signal and link metrics
     2. Examine key signal indicators:
        - rssi_avg: Signal strength in dBm (good: > -65, poor: < -75)
        - snr_avg: Signal-to-noise ratio in dB (good: > 25, poor: < 15)
@@ -623,7 +624,7 @@ def troubleshoot_wifi() -> str:
        - channel_number: Overlapping channels cause interference
        - phy_mode: Older standards (802.11n) have lower max throughput than
          802.11ac or 802.11ax
-    4. Call get_responsiveness(granularity="1m") to check if poor Wi-Fi signal
+    4. Call get_responsiveness() to check if poor Wi-Fi signal
        correlates with high latency or packet loss
     5. Call get_speed_results() to check if signal weakness is limiting throughput
     6. Correlate the metrics:

@@ -459,12 +459,12 @@ class AllDatasetsResponse(BaseModel):
     """
 
     scores_1m: List[ScoreRecord] | dict
-    responsiveness_1m: List[ResponsivenessRecord] | dict
+    responsiveness_1m: Optional[List[ResponsivenessRecord] | dict] = None
     responsiveness_15s: Optional[List[ResponsivenessRecord] | dict] = None
     responsiveness_1s: Optional[List[ResponsivenessRecord] | dict] = None
     web_responsiveness: List[WebResponsivenessRecord] | dict
     speed_results: List[SpeedRecord] | dict
-    wifi_link_1m: List[WifiLinkRecord] | dict
+    wifi_link_1m: Optional[List[WifiLinkRecord] | dict] = None
     wifi_link_15s: Optional[List[WifiLinkRecord] | dict] = None
     wifi_link_1s: Optional[List[WifiLinkRecord] | dict] = None
 
