@@ -58,6 +58,16 @@ mcp = FastMCP(
     - 1-minute aggregates for trends
     - Historical data depends on sensor configuration
     - Wi-Fi Link data not available on iOS or ethernet-connected sensors
+    - Not all granularities may be enabled on a given Orb sensor
+
+    **IMPORTANT — Granularity Fallback:**
+    The responsiveness and Wi-Fi link datasets support multiple granularities
+    (1s, 15s, 1m). Each Orb sensor may only have some of these enabled.
+    If a request for a specific granularity returns an error or empty data,
+    you MUST try the other granularities for that same dataset before moving
+    on to a different dataset. The fallback order is: 1s → 15s → 1m.
+    For example, if get_wifi_link(granularity="1s") fails, try "15s",
+    then "1m" before concluding that Wi-Fi link data is unavailable.
 
     **Tool Selection Guide:**
     - Quick check? → get_scores_1m() (fastest, gives overall picture)
@@ -240,6 +250,10 @@ async def get_responsiveness(
     Includes detailed network responsiveness measures including lag, latency,
     jitter, and packet loss. Available in 1-second, 15-second, and 1-minute buckets.
 
+    IMPORTANT: Not all granularities may be enabled on a given Orb sensor. If a
+    request for a specific granularity returns an error or empty data, try the
+    other granularities (1s → 15s → 1m) before giving up on this dataset.
+
     Note on Stateful Polling:
         By default, this tool uses a session-specific caller_id. This means your
         first call returns all available data, and subsequent calls return only
@@ -247,7 +261,7 @@ async def get_responsiveness(
         for updates without receiving duplicate records.
 
     Args:
-        granularity: Time bucket size - '1s', '15s', or '1m' (default: '1m')
+        granularity: Time bucket size - '1s', '15s', or '1m' (default: '1s')
         host: Orb sensor hostname or IP (default: from ORB_HOST env var or 'localhost')
         port: API port number (default: from ORB_PORT env var or 7080)
         caller_id: Unique ID to track polling state. Leave as None to use the default
@@ -413,6 +427,10 @@ async def get_wifi_link(
     Note: Wi-Fi Link data is not available on iOS or when the sensor is
     connected via ethernet.
 
+    IMPORTANT: Not all granularities may be enabled on a given Orb sensor. If a
+    request for a specific granularity returns an error or empty data, try the
+    other granularities (1s → 15s → 1m) before giving up on this dataset.
+
     Note on Stateful Polling:
         By default, this tool uses a session-specific caller_id. This means your
         first call returns all available data, and subsequent calls return only
@@ -420,7 +438,7 @@ async def get_wifi_link(
         for updates without receiving duplicate records.
 
     Args:
-        granularity: Time bucket size - '1s', '15s', or '1m' (default: '1m')
+        granularity: Time bucket size - '1s', '15s', or '1m' (default: '1s')
         host: Orb sensor hostname or IP (default: from ORB_HOST env var or 'localhost')
         port: API port number (default: from ORB_PORT env var or 7080)
         caller_id: Unique ID to track polling state. Leave as None to use the default
