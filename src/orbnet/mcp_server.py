@@ -245,7 +245,10 @@ async def get_responsiveness(
     timeout: Optional[float] = None,
 ) -> List[ResponsivenessRecord]:
     """
-    Retrieve Responsiveness dataset from an Orb sensor.
+    Retrieve Responsiveness dataset from an Orb sensor at a single granularity.
+
+    This tool fetches ONE granularity at a time. To fetch all granularities at
+    once, use get_all_datasets(include_all_responsiveness=True) instead.
 
     Includes detailed network responsiveness measures including lag, latency,
     jitter, and packet loss. Available in 1-second, 15-second, and 1-minute buckets.
@@ -417,7 +420,10 @@ async def get_wifi_link(
     timeout: Optional[float] = None,
 ) -> List[WifiLinkRecord]:
     """
-    Retrieve Wi-Fi Link dataset from an Orb sensor.
+    Retrieve Wi-Fi Link dataset from an Orb sensor at a single granularity.
+
+    This tool fetches ONE granularity at a time. To fetch all granularities at
+    once, use get_all_datasets(include_all_wifi_link=True) instead.
 
     Includes signal quality and link-layer metrics for the active Wi-Fi
     connection: signal strength (RSSI), signal-to-noise ratio (SNR), transmit
