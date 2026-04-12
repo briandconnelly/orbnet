@@ -2,7 +2,7 @@ import asyncio
 import logging
 import uuid
 from importlib.metadata import version as get_version
-from typing import Any, Callable, Dict, List, Literal, Optional
+from typing import Any, Callable, Dict, List, Literal, Optional, cast
 
 import httpx
 
@@ -114,12 +114,14 @@ class OrbAPIClient:
     @property
     def caller_id(self) -> str:
         """Get the configured caller_id"""
-        return self.config.caller_id
+        # __init__ always resolves caller_id to a non-None value before storing.
+        return cast(str, self.config.caller_id)
 
     @property
     def client_id(self) -> str:
         """Get the configured client_id"""
-        return self.config.client_id
+        # __init__ always resolves client_id to a non-None value before storing.
+        return cast(str, self.config.client_id)
 
     @property
     def timeout(self) -> float:
@@ -133,7 +135,7 @@ class OrbAPIClient:
 
     def _get_headers(self) -> Dict[str, str]:
         """Get common headers for API requests"""
-        return {"Accept": "application/json", "User-Agent": self.config.client_id}
+        return {"Accept": "application/json", "User-Agent": self.client_id}
 
     async def _get_dataset(
         self,
@@ -581,7 +583,9 @@ class OrbAPIClient:
         results = await asyncio.gather(*tasks.values(), return_exceptions=True)
 
         result_dict = {
-            key: result if not isinstance(result, Exception) else {"error": str(result)}
+            key: result
+            if not isinstance(result, BaseException)
+            else {"error": str(result)}
             for key, result in zip(tasks.keys(), results, strict=True)
         }
 
