@@ -35,6 +35,8 @@ dev = [
     "pytest-mock>=3.12.0",
     "fastmcp>=2.12.4",
     "pytest-cov>=7.0.0",
+    "prek>=0.3.8",
+    "ty>=0.0.29",
 ]
 
 [project.scripts]
@@ -68,7 +70,10 @@ addopts = [
     "-v",
     "--tb=short",
     "--strict-markers",
-    "--disable-warnings"
+    "--disable-warnings",
+    "--cov=orbnet",
+    "--cov-report=term-missing",
+    "--cov-fail-under=95",
 ]
 markers = [
     "asyncio: marks tests as async (deselect with '-m \"not asyncio\"')",
@@ -76,3 +81,11 @@ markers = [
     "integration: marks tests as integration tests"
 ]
 
+[tool.coverage.run]
+source = ["src/orbnet"]
+
+[tool.coverage.report]
+exclude_also = [
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+]

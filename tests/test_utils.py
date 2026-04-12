@@ -398,9 +398,10 @@ def assert_valid_speed_record_object(record) -> None:
     # Validate numeric ranges
     assert record.download_kbps >= 0, "download_kbps must be non-negative"
     assert record.upload_kbps >= 0, "upload_kbps must be non-negative"
-    assert record.speed_test_engine in [0, 1], (
-        "speed_test_engine must be 0 (orb) or 1 (iperf)"
-    )
+    assert record.speed_test_engine in [
+        0,
+        1,
+    ], "speed_test_engine must be 0 (orb) or 1 (iperf)"
 
 
 def assert_valid_wifi_link_record(record: Dict[str, Any]) -> None:

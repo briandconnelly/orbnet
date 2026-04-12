@@ -286,7 +286,8 @@ class WifiLinkMeasures(BaseModel):
     rssi_avg: float = Field(description="Average received signal strength in dBm")
     rssi_count: int = Field(description="Count of successful RSSI measurements")
     frequency_mhz: Optional[int] = Field(
-        default=None, description="Connected channel frequency in MHz (may not be included)"
+        default=None,
+        description="Connected channel frequency in MHz (may not be included)",
     )
     tx_rate_mbps: Optional[float] = Field(
         default=None, description="Average transmit link rate in Mbps"

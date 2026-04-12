@@ -218,4 +218,3 @@ Check which tests would be discovered:
 ```bash
 pytest --collect-only
 ```
-

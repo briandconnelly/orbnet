@@ -49,10 +49,10 @@ from orbnet import OrbAPIClient
 async def main():
     # Connect to your Orb sensor
     client = OrbAPIClient(host="192.168.0.20", port=7080)
-    
+
     # Get the latest network quality scores
     scores = await client.get_scores_1m()
-    
+
     if scores:
         latest = scores[-1]
         print(f"Orb Score: {latest['orb_score']:.0f}")
@@ -105,7 +105,7 @@ Monitor your network continuously with automatic polling:
 ```python
 async def monitor_network():
     client = OrbAPIClient(host="192.168.0.20")
-    
+
     # Poll for new data every 10 seconds
     async for records in client.poll_dataset(
         dataset_name="responsiveness_1s",
@@ -125,14 +125,14 @@ def alert_callback(dataset_name, records):
         # Alert on high latency
         if record['latency_avg_us'] > 50000:  # 50ms
             print(f"⚠️  High latency: {record['latency_avg_us']}μs")
-        
+
         # Alert on packet loss
         if record['packet_loss_pct'] > 1.0:  # 1%
             print(f"⚠️  Packet loss: {record['packet_loss_pct']:.2f}%")
 
 async def monitor_with_alerts():
     client = OrbAPIClient(host="192.168.0.20")
-    
+
     async for _ in client.poll_dataset(
         dataset_name="responsiveness_1s",
         interval=5.0,
@@ -147,23 +147,23 @@ async def monitor_with_alerts():
 async def analyze_speeds():
     client = OrbAPIClient(host="192.168.0.20")
     speeds = await client.get_speed_results()
-    
+
     # Convert to Mbps and calculate statistics
     downloads = [s['download_kbps'] / 1000 for s in speeds]
-    
+
     avg_speed = sum(downloads) / len(downloads)
     min_speed = min(downloads)
     max_speed = max(downloads)
-    
+
     print(f"Download Speed Stats:")
     print(f"  Average: {avg_speed:.1f} Mbps")
     print(f"  Minimum: {min_speed:.1f} Mbps")
     print(f"  Maximum: {max_speed:.1f} Mbps")
-    
+
     # Check SLA compliance
     required_mbps = 100
     below_sla = [s for s in downloads if s < required_mbps]
-    
+
     if below_sla:
         pct_below = (len(below_sla) / len(downloads)) * 100
         print(f"⚠️  {pct_below:.1f}% of tests below {required_mbps} Mbps")
@@ -175,7 +175,7 @@ async def analyze_speeds():
 async def compare_by_isp():
     client = OrbAPIClient(host="192.168.0.20")
     scores = await client.get_scores_1m()
-    
+
     # Group scores by ISP
     isp_scores = {}
     for record in scores:
@@ -183,7 +183,7 @@ async def compare_by_isp():
         if isp not in isp_scores:
             isp_scores[isp] = []
         isp_scores[isp].append(record['orb_score'])
-    
+
     # Calculate averages
     for isp, scores_list in isp_scores.items():
         avg = sum(scores_list) / len(scores_list)
@@ -309,16 +309,16 @@ client = OrbAPIClient(
 
 #### Methods
 
-- **`get_scores_1m(format="json", caller_id=None)`**  
+- **`get_scores_1m(format="json", caller_id=None)`**
   Retrieve 1-minute granularity Scores dataset
 
-- **`get_responsiveness(granularity="1m", format="json", caller_id=None)`**  
+- **`get_responsiveness(granularity="1m", format="json", caller_id=None)`**
   Retrieve Responsiveness dataset (1s, 15s, or 1m)
 
-- **`get_web_responsiveness(format="json", caller_id=None)`**  
+- **`get_web_responsiveness(format="json", caller_id=None)`**
   Retrieve Web Responsiveness dataset
 
-- **`get_speed_results(format="json", caller_id=None)`**  
+- **`get_speed_results(format="json", caller_id=None)`**
   Retrieve Speed test results
 
 - **`get_wifi_link(granularity="1m", caller_id=None)`**
@@ -327,7 +327,7 @@ client = OrbAPIClient(
 - **`get_all_datasets(format="json", caller_id=None, include_all_responsiveness=False)`**
   Retrieve all datasets concurrently
 
-- **`poll_dataset(dataset_name, interval=60.0, format="json", callback=None, max_iterations=None)`**  
+- **`poll_dataset(dataset_name, interval=60.0, format="json", callback=None, max_iterations=None)`**
   Continuously poll a dataset at regular intervals
 
 #### Properties

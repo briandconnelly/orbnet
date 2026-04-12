@@ -37,7 +37,7 @@ mcp = FastMCP(
     "Orb Network Quality Data",
     instructions="""
     This server provides real-time network quality monitoring from Orb sensors.
-    
+
     **What You Can Ask:**
     ✓ "What's my current network quality?"
     ✓ "Why is my internet slow right now?"
@@ -45,7 +45,7 @@ mcp = FastMCP(
     ✓ "Is my connection good enough for video calls?"
     ✓ "Compare my network quality from yesterday vs today"
     ✓ "Summarize network quality across all of my orbs"
-    
+
     **Primary Metrics:**
     - Orb Score (0-100): Overall network health
     - Responsiveness: Latency, jitter, packet loss
@@ -66,7 +66,7 @@ mcp = FastMCP(
     - Slow downloads? → get_speed_results() (bandwidth focus)
     - Web browsing issues? → get_web_responsiveness() (page load focus)
     - Weak Wi-Fi signal? → get_wifi_link() (RSSI, SNR, link rates)
-    
+
     **Built-in Workflows:**
     Use prompts like 'analyze_network_quality', 'troubleshoot_slow_internet', or
     'troubleshoot_wifi' for guided analysis.
