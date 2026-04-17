@@ -58,6 +58,16 @@ mcp = FastMCP(
     - 1-minute aggregates for trends
     - Historical data depends on sensor configuration
     - Wi-Fi Link data not available on iOS or ethernet-connected sensors
+    - Not all granularities may be enabled on a given Orb sensor
+
+    **IMPORTANT — Granularity Fallback:**
+    The responsiveness and Wi-Fi link datasets support multiple granularities
+    (1s, 15s, 1m). Each Orb sensor may only have some of these enabled.
+    If a request for a specific granularity returns an error or empty data,
+    you MUST try the other granularities for that same dataset before moving
+    on to a different dataset. The fallback order is: 1s → 15s → 1m.
+    For example, if get_wifi_link(granularity="1s") fails, try "15s",
+    then "1m" before concluding that Wi-Fi link data is unavailable.
 
     **Tool Selection Guide:**
     - Quick check? → get_scores_1m() (fastest, gives overall picture)
@@ -229,16 +239,23 @@ async def get_scores_1m(
 async def get_responsiveness(
     ctx: Context,
     host: Optional[str] = None,
-    granularity: Literal["1s", "15s", "1m"] = "1m",
+    granularity: Literal["1s", "15s", "1m"] = "1s",
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
 ) -> List[ResponsivenessRecord]:
     """
-    Retrieve Responsiveness dataset from an Orb sensor.
+    Retrieve Responsiveness dataset from an Orb sensor at a single granularity.
+
+    This tool fetches ONE granularity at a time. To fetch all granularities at
+    once, use get_all_datasets(include_all_responsiveness=True) instead.
 
     Includes detailed network responsiveness measures including lag, latency,
     jitter, and packet loss. Available in 1-second, 15-second, and 1-minute buckets.
+
+    IMPORTANT: Not all granularities may be enabled on a given Orb sensor. If a
+    request for a specific granularity returns an error or empty data, try the
+    other granularities (1s → 15s → 1m) before giving up on this dataset.
 
     Note on Stateful Polling:
         By default, this tool uses a session-specific caller_id. This means your
@@ -247,7 +264,7 @@ async def get_responsiveness(
         for updates without receiving duplicate records.
 
     Args:
-        granularity: Time bucket size - '1s', '15s', or '1m' (default: '1m')
+        granularity: Time bucket size - '1s', '15s', or '1m' (default: '1s')
         host: Orb sensor hostname or IP (default: from ORB_HOST env var or 'localhost')
         port: API port number (default: from ORB_PORT env var or 7080)
         caller_id: Unique ID to track polling state. Leave as None to use the default
@@ -397,13 +414,16 @@ async def get_speed_results(
 async def get_wifi_link(
     ctx: Context,
     host: Optional[str] = None,
-    granularity: Literal["1s", "15s", "1m"] = "1m",
+    granularity: Literal["1s", "15s", "1m"] = "1s",
     port: Optional[int] = None,
     caller_id: Optional[str] = None,
     timeout: Optional[float] = None,
 ) -> List[WifiLinkRecord]:
     """
-    Retrieve Wi-Fi Link dataset from an Orb sensor.
+    Retrieve Wi-Fi Link dataset from an Orb sensor at a single granularity.
+
+    This tool fetches ONE granularity at a time. To fetch all granularities at
+    once, use get_all_datasets(include_all_wifi_link=True) instead.
 
     Includes signal quality and link-layer metrics for the active Wi-Fi
     connection: signal strength (RSSI), signal-to-noise ratio (SNR), transmit
@@ -413,6 +433,10 @@ async def get_wifi_link(
     Note: Wi-Fi Link data is not available on iOS or when the sensor is
     connected via ethernet.
 
+    IMPORTANT: Not all granularities may be enabled on a given Orb sensor. If a
+    request for a specific granularity returns an error or empty data, try the
+    other granularities (1s → 15s → 1m) before giving up on this dataset.
+
     Note on Stateful Polling:
         By default, this tool uses a session-specific caller_id. This means your
         first call returns all available data, and subsequent calls return only
@@ -420,7 +444,7 @@ async def get_wifi_link(
         for updates without receiving duplicate records.
 
     Args:
-        granularity: Time bucket size - '1s', '15s', or '1m' (default: '1m')
+        granularity: Time bucket size - '1s', '15s', or '1m' (default: '1s')
         host: Orb sensor hostname or IP (default: from ORB_HOST env var or 'localhost')
         port: API port number (default: from ORB_PORT env var or 7080)
         caller_id: Unique ID to track polling state. Leave as None to use the default
@@ -486,10 +510,10 @@ async def get_all_datasets(
 
     Args:
         include_all_responsiveness: If True, fetches all responsiveness granularities
-                                   (1s, 15s, 1m). If False, only fetches 1m. (default:
+                                   (1s, 15s, 1m). If False, only fetches 1s. (default:
                                    False)
         include_all_wifi_link: If True, fetches all Wi-Fi Link granularities
-                               (1s, 15s, 1m). If False, only fetches 1m. (default:
+                               (1s, 15s, 1m). If False, only fetches 1s. (default:
                                False)
         host: Orb sensor hostname or IP (default: from ORB_HOST env var or 'localhost')
         port: API port number (default: from ORB_PORT env var or 7080)
@@ -500,16 +524,16 @@ async def get_all_datasets(
     Returns:
         Dictionary with keys for each dataset type:
         - scores_1m: 1-minute scores dataset
-        - responsiveness_1m: 1-minute responsiveness dataset
+        - responsiveness_1s: 1-second responsiveness dataset
         - responsiveness_15s: 15-second responsiveness
           (if include_all_responsiveness=True)
-        - responsiveness_1s: 1-second responsiveness
+        - responsiveness_1m: 1-minute responsiveness
           (if include_all_responsiveness=True)
         - web_responsiveness: Web responsiveness results
         - speed_results: Speed test results
-        - wifi_link_1m: 1-minute Wi-Fi link dataset (empty list if not on Wi-Fi)
+        - wifi_link_1s: 1-second Wi-Fi link dataset (empty list if not on Wi-Fi)
         - wifi_link_15s: 15-second Wi-Fi link (if include_all_wifi_link=True)
-        - wifi_link_1s: 1-second Wi-Fi link (if include_all_wifi_link=True)
+        - wifi_link_1m: 1-minute Wi-Fi link (if include_all_wifi_link=True)
 
         Each value is either a list of records or an error dict if that dataset failed.
     """
@@ -518,6 +542,7 @@ async def get_all_datasets(
     return await client.get_all_datasets(
         include_all_responsiveness=include_all_responsiveness,
         include_all_wifi_link=include_all_wifi_link,
+        default_granularity="1s",
     )
 
 
@@ -596,7 +621,7 @@ def troubleshoot_slow_internet() -> str:
     return """
     To troubleshoot slow internet:
     1. Call get_speed_results() to check recent speed tests
-    2. Call get_responsiveness(granularity="1m") for latency/jitter data
+    2. Call get_responsiveness() for latency/jitter data
     3. Call get_web_responsiveness() to check TTFB and DNS performance
     4. Compare metrics against typical values:
        - Good latency: < 50ms
@@ -611,7 +636,7 @@ def troubleshoot_wifi() -> str:
     """Diagnose Wi-Fi-specific issues by correlating signal metrics with performance"""
     return """
     To diagnose Wi-Fi-specific network issues:
-    1. Call get_wifi_link(granularity="1m") to get signal and link metrics
+    1. Call get_wifi_link() to get signal and link metrics
     2. Examine key signal indicators:
        - rssi_avg: Signal strength in dBm (good: > -65, poor: < -75)
        - snr_avg: Signal-to-noise ratio in dB (good: > 25, poor: < 15)
@@ -623,7 +648,7 @@ def troubleshoot_wifi() -> str:
        - channel_number: Overlapping channels cause interference
        - phy_mode: Older standards (802.11n) have lower max throughput than
          802.11ac or 802.11ax
-    4. Call get_responsiveness(granularity="1m") to check if poor Wi-Fi signal
+    4. Call get_responsiveness() to check if poor Wi-Fi signal
        correlates with high latency or packet loss
     5. Call get_speed_results() to check if signal weakness is limiting throughput
     6. Correlate the metrics:

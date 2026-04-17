@@ -207,19 +207,30 @@ class ResponsivenessMeasures(BaseModel):
         description="latency_lost_count / (latency_count+latency_loss_count)"
     )
     lag_count: int = Field(description="Lag sample count")
-    router_lag_avg_us: int = Field(description="Avg router lag in microseconds")
-    router_latency_avg_us: int = Field(
-        description="Avg router round trip latency in microseconds"
+    router_lag_avg_us: Optional[int] = Field(
+        default=None, description="Avg router lag in microseconds"
     )
-    router_jitter_avg_us: int = Field(description="Avg router jitter in microseconds")
-    router_latency_count: float = Field(
-        description="Count of router latency measurements that succeeded"
+    router_latency_avg_us: Optional[int] = Field(
+        default=None,
+        description="Avg router round trip latency in microseconds",
     )
-    router_latency_lost_count: int = Field(
-        description="Count of router latency measurements that were lost"
+    router_jitter_avg_us: Optional[int] = Field(
+        default=None, description="Avg router jitter in microseconds"
     )
-    router_packet_loss_pct: float = Field(description="Router packet loss percentage")
-    router_lag_count: int = Field(description="Router lag sample count")
+    router_latency_count: Optional[float] = Field(
+        default=None,
+        description="Count of router latency measurements that succeeded",
+    )
+    router_latency_lost_count: Optional[int] = Field(
+        default=None,
+        description="Count of router latency measurements that were lost",
+    )
+    router_packet_loss_pct: Optional[float] = Field(
+        default=None, description="Router packet loss percentage"
+    )
+    router_lag_count: Optional[int] = Field(
+        default=None, description="Router lag sample count"
+    )
 
 
 class ResponsivenessDimensions(NetworkDimensions):
@@ -449,12 +460,12 @@ class AllDatasetsResponse(BaseModel):
     """
 
     scores_1m: List[ScoreRecord] | dict
-    responsiveness_1m: List[ResponsivenessRecord] | dict
+    responsiveness_1m: Optional[List[ResponsivenessRecord] | dict] = None
     responsiveness_15s: Optional[List[ResponsivenessRecord] | dict] = None
     responsiveness_1s: Optional[List[ResponsivenessRecord] | dict] = None
     web_responsiveness: List[WebResponsivenessRecord] | dict
     speed_results: List[SpeedRecord] | dict
-    wifi_link_1m: List[WifiLinkRecord] | dict
+    wifi_link_1m: Optional[List[WifiLinkRecord] | dict] = None
     wifi_link_15s: Optional[List[WifiLinkRecord] | dict] = None
     wifi_link_1s: Optional[List[WifiLinkRecord] | dict] = None
 

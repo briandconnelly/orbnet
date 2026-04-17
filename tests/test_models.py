@@ -347,6 +347,27 @@ class TestResponsivenessMeasures:
         assert measures.router_packet_loss_pct == 0.0
         assert measures.router_lag_count == 60
 
+    def test_optional_router_fields(self):
+        """Test that router fields are optional (Orb omits them when unavailable)."""
+        data = {
+            "lag_avg_us": 25000,
+            "latency_avg_us": 30000,
+            "jitter_avg_us": 2000,
+            "latency_count": 60.0,
+            "latency_lost_count": 0,
+            "packet_loss_pct": 0.0,
+            "lag_count": 60,
+        }
+        measures = ResponsivenessMeasures(**data)
+        assert measures.lag_avg_us == 25000
+        assert measures.router_lag_avg_us is None
+        assert measures.router_latency_avg_us is None
+        assert measures.router_jitter_avg_us is None
+        assert measures.router_latency_count is None
+        assert measures.router_latency_lost_count is None
+        assert measures.router_packet_loss_pct is None
+        assert measures.router_lag_count is None
+
 
 class TestWebResponsivenessMeasures:
     """Test WebResponsivenessMeasures model."""
