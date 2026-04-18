@@ -71,7 +71,9 @@ async def test_get_all_datasets_tool(mock_client, ctx):
     )
     assert result == {}
     mock_client.get_all_datasets.assert_awaited_once_with(
-        include_all_responsiveness=True, include_all_wifi_link=True
+        include_all_responsiveness=True,
+        include_all_wifi_link=True,
+        default_granularity="1s",
     )
 
 

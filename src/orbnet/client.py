@@ -567,15 +567,13 @@ class OrbAPIClient:
         gran = default_granularity
         tasks = {
             "scores_1m": self.get_scores_1m(request.caller_id),
-            f"responsiveness_{gran}": self.get_responsiveness(
-                gran, request.caller_id
-            ),
+            f"responsiveness_{gran}": self.get_responsiveness(gran, request.caller_id),
             "web_responsiveness": self.get_web_responsiveness(request.caller_id),
             "speed_results": self.get_speed_results(request.caller_id),
             f"wifi_link_{gran}": self.get_wifi_link(gran, request.caller_id),
         }
 
-        all_granularities = {"1s", "15s", "1m"}
+        all_granularities: set[Literal["1s", "15s", "1m"]] = {"1s", "15s", "1m"}
         other_granularities = sorted(all_granularities - {gran})
 
         if request.include_all_responsiveness:
