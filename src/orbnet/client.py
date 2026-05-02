@@ -10,6 +10,7 @@ from .datasets import DATASETS, DatasetSpec
 from .models import (
     AllDatasetsRequestParams,
     AllDatasetsResponse,
+    BaseRecord,
     DatasetRequestParams,
     ErrorPayload,
     OrbClientConfig,
@@ -629,7 +630,7 @@ class OrbAPIClient:
             return_exceptions=True,
         )
 
-        fields: dict[str, Any] = {}
+        fields: dict[str, list[BaseRecord] | ErrorPayload] = {}
         for (spec, g), result in zip(plan, results, strict=True):
             fields[spec.response_field(g)] = (
                 ErrorPayload.of(result) if isinstance(result, BaseException) else result

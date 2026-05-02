@@ -744,6 +744,8 @@ class TestGetAllDatasetsPlan:
     ):
         # Map dataset wire-name -> raw response.
         responses = {
+            # scores only has "1m" granularity — fallback to "1m" even
+            # when caller asks for "1s".
             "scores_1m": sample_scores_data,
             "responsiveness_1s": sample_responsiveness_data,
             "web_responsiveness_results": sample_web_responsiveness_data,
