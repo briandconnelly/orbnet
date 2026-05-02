@@ -10,7 +10,6 @@ from .datasets import DATASETS, DatasetSpec, parse_poll_alias
 from .models import (
     AllDatasetsRequestParams,
     AllDatasetsResponse,
-    BaseRecord,
     DatasetRequestParams,
     ErrorPayload,
     OrbClientConfig,
@@ -630,7 +629,7 @@ class OrbAPIClient:
             return_exceptions=True,
         )
 
-        fields: dict[str, list[BaseRecord] | ErrorPayload] = {}
+        fields: dict[str, Any] = {}
         for (spec, g), result in zip(plan, results, strict=True):
             fields[spec.response_field(g)] = (
                 ErrorPayload.of(result) if isinstance(result, BaseException) else result

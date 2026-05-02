@@ -847,15 +847,15 @@ class TestAllDatasetsResponse:
 
     def test_response_with_error(self, sample_scores_data, sample_wifi_link_data):
         """Test all datasets response with error in one dataset."""
+        from orbnet.models import ErrorPayload
+
         response = AllDatasetsResponse(
             scores_1m=[ScoreRecord(**r) for r in sample_scores_data],
-            responsiveness_1m={"error": "Connection timeout"},
+            responsiveness_1m=ErrorPayload(error="Connection timeout"),
             web_responsiveness=[],
             speed_results=[],
             wifi_link_1m=[WifiLinkRecord(**r) for r in sample_wifi_link_data],
         )
-
-        from orbnet.models import ErrorPayload
 
         assert isinstance(response.scores_1m, list)
         assert isinstance(response.responsiveness_1m, ErrorPayload)
@@ -1252,12 +1252,14 @@ class TestAllDatasetsResponseWireFormat:
     ):
         from orbnet.models import ErrorPayload
 
-        response = AllDatasetsResponse(
-            scores_1m=[ScoreRecord(**r) for r in sample_scores_data],
-            responsiveness_1m={"error": "boom"},
-            web_responsiveness=[],
-            speed_results=[],
-            wifi_link_1m=[WifiLinkRecord(**r) for r in sample_wifi_link_data],
+        response = AllDatasetsResponse.model_validate(
+            {
+                "scores_1m": sample_scores_data,
+                "responsiveness_1m": {"error": "boom"},
+                "web_responsiveness": [],
+                "speed_results": [],
+                "wifi_link_1m": sample_wifi_link_data,
+            }
         )
         assert isinstance(response.responsiveness_1m, ErrorPayload)
         assert response.responsiveness_1m.error == "boom"
