@@ -364,37 +364,18 @@ class TestOrbAPIClient:
         sample_wifi_link_data,
     ):
         """Test get_all_datasets method returns AllDatasetsResponse."""
-        with (
-            patch.object(
-                OrbAPIClient,
-                "get_scores_1m",
-                return_value=[ScoreRecord(**r) for r in sample_scores_data],
-            ),
-            patch.object(
-                OrbAPIClient,
-                "get_responsiveness",
-                return_value=[
-                    ResponsivenessRecord(**r) for r in sample_responsiveness_data
-                ],
-            ),
-            patch.object(
-                OrbAPIClient,
-                "get_web_responsiveness",
-                return_value=[
-                    WebResponsivenessRecord(**r) for r in sample_web_responsiveness_data
-                ],
-            ),
-            patch.object(
-                OrbAPIClient,
-                "get_speed_results",
-                return_value=[SpeedRecord(**r) for r in sample_speed_data],
-            ),
-            patch.object(
-                OrbAPIClient,
-                "get_wifi_link",
-                return_value=[WifiLinkRecord(**r) for r in sample_wifi_link_data],
-            ),
-        ):
+        responses = {
+            "scores_1m": sample_scores_data,
+            "responsiveness_1m": sample_responsiveness_data,
+            "web_responsiveness_results": sample_web_responsiveness_data,
+            "speed_results": sample_speed_data,
+            "wifi_link_1m": sample_wifi_link_data,
+        }
+
+        async def fake_get_dataset(self, dataset_name, caller_id=None, **params):
+            return responses[dataset_name]
+
+        with patch.object(OrbAPIClient, "_get_dataset", new=fake_get_dataset):
             client = OrbAPIClient(host="192.168.1.100")
             result = await client.get_all_datasets()
 
@@ -430,37 +411,20 @@ class TestOrbAPIClient:
         sample_wifi_link_data,
     ):
         """Test get_all_datasets method with all Wi-Fi Link granularities."""
-        with (
-            patch.object(
-                OrbAPIClient,
-                "get_scores_1m",
-                return_value=[ScoreRecord(**r) for r in sample_scores_data],
-            ),
-            patch.object(
-                OrbAPIClient,
-                "get_responsiveness",
-                return_value=[
-                    ResponsivenessRecord(**r) for r in sample_responsiveness_data
-                ],
-            ),
-            patch.object(
-                OrbAPIClient,
-                "get_web_responsiveness",
-                return_value=[
-                    WebResponsivenessRecord(**r) for r in sample_web_responsiveness_data
-                ],
-            ),
-            patch.object(
-                OrbAPIClient,
-                "get_speed_results",
-                return_value=[SpeedRecord(**r) for r in sample_speed_data],
-            ),
-            patch.object(
-                OrbAPIClient,
-                "get_wifi_link",
-                return_value=[WifiLinkRecord(**r) for r in sample_wifi_link_data],
-            ),
-        ):
+        responses = {
+            "scores_1m": sample_scores_data,
+            "responsiveness_1m": sample_responsiveness_data,
+            "web_responsiveness_results": sample_web_responsiveness_data,
+            "speed_results": sample_speed_data,
+            "wifi_link_1m": sample_wifi_link_data,
+            "wifi_link_15s": sample_wifi_link_data,
+            "wifi_link_1s": sample_wifi_link_data,
+        }
+
+        async def fake_get_dataset(self, dataset_name, caller_id=None, **params):
+            return responses[dataset_name]
+
+        with patch.object(OrbAPIClient, "_get_dataset", new=fake_get_dataset):
             client = OrbAPIClient(host="192.168.1.100")
             result = await client.get_all_datasets(include_all_wifi_link=True)
 
@@ -480,37 +444,20 @@ class TestOrbAPIClient:
         sample_wifi_link_data,
     ):
         """Test get_all_datasets method with all responsiveness granularities."""
-        with (
-            patch.object(
-                OrbAPIClient,
-                "get_scores_1m",
-                return_value=[ScoreRecord(**r) for r in sample_scores_data],
-            ),
-            patch.object(
-                OrbAPIClient,
-                "get_responsiveness",
-                return_value=[
-                    ResponsivenessRecord(**r) for r in sample_responsiveness_data
-                ],
-            ),
-            patch.object(
-                OrbAPIClient,
-                "get_web_responsiveness",
-                return_value=[
-                    WebResponsivenessRecord(**r) for r in sample_web_responsiveness_data
-                ],
-            ),
-            patch.object(
-                OrbAPIClient,
-                "get_speed_results",
-                return_value=[SpeedRecord(**r) for r in sample_speed_data],
-            ),
-            patch.object(
-                OrbAPIClient,
-                "get_wifi_link",
-                return_value=[WifiLinkRecord(**r) for r in sample_wifi_link_data],
-            ),
-        ):
+        responses = {
+            "scores_1m": sample_scores_data,
+            "responsiveness_1m": sample_responsiveness_data,
+            "responsiveness_15s": sample_responsiveness_data,
+            "responsiveness_1s": sample_responsiveness_data,
+            "web_responsiveness_results": sample_web_responsiveness_data,
+            "speed_results": sample_speed_data,
+            "wifi_link_1m": sample_wifi_link_data,
+        }
+
+        async def fake_get_dataset(self, dataset_name, caller_id=None, **params):
+            return responses[dataset_name]
+
+        with patch.object(OrbAPIClient, "_get_dataset", new=fake_get_dataset):
             client = OrbAPIClient(host="192.168.1.100")
             result = await client.get_all_datasets(include_all_responsiveness=True)
 
@@ -531,39 +478,23 @@ class TestOrbAPIClient:
         sample_wifi_link_data,
     ):
         """Test get_all_datasets method with one dataset failing."""
-        with (
-            patch.object(
-                OrbAPIClient,
-                "get_scores_1m",
-                return_value=[ScoreRecord(**r) for r in sample_scores_data],
-            ),
-            patch.object(
-                OrbAPIClient,
-                "get_responsiveness",
-                side_effect=Exception("Connection error"),
-            ),
-            patch.object(
-                OrbAPIClient,
-                "get_web_responsiveness",
-                return_value=[
-                    WebResponsivenessRecord(**r) for r in sample_web_responsiveness_data
-                ],
-            ),
-            patch.object(
-                OrbAPIClient,
-                "get_speed_results",
-                return_value=[SpeedRecord(**r) for r in sample_speed_data],
-            ),
-            patch.object(
-                OrbAPIClient,
-                "get_wifi_link",
-                return_value=[WifiLinkRecord(**r) for r in sample_wifi_link_data],
-            ),
-        ):
+        from orbnet.models import ErrorPayload
+
+        responses = {
+            "scores_1m": sample_scores_data,
+            "web_responsiveness_results": sample_web_responsiveness_data,
+            "speed_results": sample_speed_data,
+            "wifi_link_1m": sample_wifi_link_data,
+        }
+
+        async def fake_get_dataset(self, dataset_name, caller_id=None, **params):
+            if dataset_name == "responsiveness_1m":
+                raise Exception("Connection error")
+            return responses[dataset_name]
+
+        with patch.object(OrbAPIClient, "_get_dataset", new=fake_get_dataset):
             client = OrbAPIClient(host="192.168.1.100")
             result = await client.get_all_datasets()
-
-            from orbnet.models import ErrorPayload
 
             assert isinstance(result, AllDatasetsResponse)
             assert isinstance(result.scores_1m, list)
@@ -797,3 +728,70 @@ class TestFetchHelper:
 
             url = mock_client.get.call_args[0][0]
             assert "web_responsiveness_results.json" in url
+
+
+class TestGetAllDatasetsPlan:
+    """Verify get_all_datasets dispatches to the right wire endpoints."""
+
+    @pytest.mark.asyncio
+    async def test_default_granularity_1s_populates_1s_fields(
+        self,
+        sample_scores_data,
+        sample_responsiveness_data,
+        sample_web_responsiveness_data,
+        sample_speed_data,
+        sample_wifi_link_data,
+    ):
+        # Map dataset wire-name -> raw response.
+        responses = {
+            "scores_1m": sample_scores_data,
+            "responsiveness_1s": sample_responsiveness_data,
+            "web_responsiveness_results": sample_web_responsiveness_data,
+            "speed_results": sample_speed_data,
+            "wifi_link_1s": sample_wifi_link_data,
+        }
+
+        async def fake_get_dataset(self, dataset_name, caller_id=None, **params):
+            return responses[dataset_name]
+
+        with patch.object(OrbAPIClient, "_get_dataset", new=fake_get_dataset):
+            client = OrbAPIClient(host="192.168.1.100")
+            result = await client.get_all_datasets(default_granularity="1s")
+
+            assert isinstance(result.scores_1m, list) and len(result.scores_1m) > 0
+            assert isinstance(result.responsiveness_1s, list)
+            assert isinstance(result.wifi_link_1s, list)
+            assert result.responsiveness_1m is None
+            assert result.wifi_link_1m is None
+
+    @pytest.mark.asyncio
+    async def test_include_all_responsiveness_fetches_all_three(
+        self,
+        sample_scores_data,
+        sample_responsiveness_data,
+        sample_web_responsiveness_data,
+        sample_speed_data,
+        sample_wifi_link_data,
+    ):
+        responses = {
+            "scores_1m": sample_scores_data,
+            "responsiveness_1s": sample_responsiveness_data,
+            "responsiveness_15s": sample_responsiveness_data,
+            "responsiveness_1m": sample_responsiveness_data,
+            "web_responsiveness_results": sample_web_responsiveness_data,
+            "speed_results": sample_speed_data,
+            "wifi_link_1m": sample_wifi_link_data,
+        }
+
+        async def fake_get_dataset(self, dataset_name, caller_id=None, **params):
+            return responses[dataset_name]
+
+        with patch.object(OrbAPIClient, "_get_dataset", new=fake_get_dataset):
+            client = OrbAPIClient(host="192.168.1.100")
+            result = await client.get_all_datasets(include_all_responsiveness=True)
+
+            assert isinstance(result.responsiveness_1s, list)
+            assert isinstance(result.responsiveness_15s, list)
+            assert isinstance(result.responsiveness_1m, list)
+            assert result.wifi_link_15s is None
+            assert result.wifi_link_1s is None

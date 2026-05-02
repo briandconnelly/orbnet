@@ -587,14 +587,15 @@ class OrbAPIClient:
 
             Handle errors gracefully:
 
+            >>> from orbnet.models import is_ok
             >>> datasets = await client.get_all_datasets()
             >>> for name in ['scores_1m', 'responsiveness_1m',
             ...              'web_responsiveness', 'speed_results']:
             ...     data = getattr(datasets, name)
-            ...     if isinstance(data, dict) and 'error' in data:
-            ...         print(f"Failed to fetch {name}: {data['error']}")
-            ...     else:
+            ...     if is_ok(data):
             ...         print(f"{name}: {len(data)} records")
+            ...     else:
+            ...         print(f"Failed to fetch {name}: {data.error}")
         """
         request = AllDatasetsRequestParams(
             caller_id=caller_id,
@@ -602,38 +603,38 @@ class OrbAPIClient:
             include_all_wifi_link=include_all_wifi_link,
         )
 
-        gran = default_granularity
-        tasks = {
-            "scores_1m": self.get_scores_1m(request.caller_id),
-            f"responsiveness_{gran}": self.get_responsiveness(gran, request.caller_id),
-            "web_responsiveness": self.get_web_responsiveness(request.caller_id),
-            "speed_results": self.get_speed_results(request.caller_id),
-            f"wifi_link_{gran}": self.get_wifi_link(gran, request.caller_id),
+        include_all_map = {
+            "responsiveness": request.include_all_responsiveness,
+            "wifi_link": request.include_all_wifi_link,
         }
 
-        all_granularities: set[Literal["1s", "15s", "1m"]] = {"1s", "15s", "1m"}
-        other_granularities = sorted(all_granularities - {gran})
+        plan: list[tuple[DatasetSpec, Optional[str]]] = []
+        for spec in DATASETS.values():
+            if not spec.granularities:
+                plan.append((spec, None))
+                continue
+            chosen = (
+                default_granularity
+                if default_granularity in spec.granularities
+                else spec.default_granularity
+            )
+            plan.append((spec, chosen))
+            if include_all_map.get(spec.family):
+                for g in spec.granularities:
+                    if g != chosen:
+                        plan.append((spec, g))
 
-        if request.include_all_responsiveness:
-            for g in other_granularities:
-                tasks[f"responsiveness_{g}"] = self.get_responsiveness(
-                    g, request.caller_id
-                )
+        results = await asyncio.gather(
+            *[self._fetch(spec, g, request.caller_id) for spec, g in plan],
+            return_exceptions=True,
+        )
 
-        if request.include_all_wifi_link:
-            for g in other_granularities:
-                tasks[f"wifi_link_{g}"] = self.get_wifi_link(g, request.caller_id)
-
-        results = await asyncio.gather(*tasks.values(), return_exceptions=True)
-
-        result_dict = {
-            key: result
-            if not isinstance(result, BaseException)
-            else ErrorPayload.of(result)
-            for key, result in zip(tasks.keys(), results, strict=True)
-        }
-
-        return AllDatasetsResponse(**result_dict)
+        fields: dict[str, Any] = {}
+        for (spec, g), result in zip(plan, results, strict=True):
+            fields[spec.response_field(g)] = (
+                ErrorPayload.of(result) if isinstance(result, BaseException) else result
+            )
+        return AllDatasetsResponse(**fields)
 
     async def poll_dataset(
         self,
