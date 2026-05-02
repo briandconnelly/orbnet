@@ -1,35 +1,41 @@
-default_stages = ["pre-commit"]
+default_install_hook_types = ["pre-commit", "pre-push"]
+
+[[repos]]
+repo = "builtin"
+hooks = [
+    { id = "trailing-whitespace" },
+    { id = "end-of-file-fixer" },
+    { id = "check-yaml" },
+    { id = "check-toml" },
+    { id = "check-added-large-files", args = ["--maxkb=500"] },
+    { id = "check-merge-conflict" },
+    { id = "mixed-line-ending", args = ["--fix=lf"] },
+]
 
 [[repos]]
 repo = "https://github.com/pre-commit/pre-commit-hooks"
 rev = "v6.0.0"
 hooks = [
-  { id = "trailing-whitespace" },
-  { id = "end-of-file-fixer" },
-  { id = "check-yaml" },
-  { id = "check-toml" },
-  { id = "check-merge-conflict" },
-  { id = "check-added-large-files" },
-  { id = "mixed-line-ending", args = ["--fix=lf"] },
-]
-
-[[repos]]
-repo = "https://github.com/astral-sh/ruff-pre-commit"
-rev = "v0.15.10"
-hooks = [
-  { id = "ruff-check", args = ["--fix"] },
-  { id = "ruff-format" },
+    { id = "debug-statements" },
 ]
 
 [[repos]]
 repo = "https://github.com/astral-sh/uv-pre-commit"
-rev = "0.11.6"
+rev = "0.11.8"
 hooks = [
-  { id = "uv-lock" },
+    { id = "uv-lock" },
+]
+
+[[repos]]
+repo = "https://github.com/astral-sh/ruff-pre-commit"
+rev = "v0.15.12"
+hooks = [
+    { id = "ruff-check", args = ["--fix"] },
+    { id = "ruff-format" },
 ]
 
 [[repos]]
 repo = "local"
 hooks = [
-  { id = "ty", name = "ty (type check src)", language = "system", entry = "uv run ty check src", pass_filenames = false, types = ["python"] },
+    { id = "ty", name = "ty check", entry = "uv run ty check", language = "system", types_or = ["python", "toml"], pass_filenames = false, files = "^(src/.*\\.py$|tests/.*\\.py$|pyproject\\.toml$)", stages = ["pre-push"] },
 ]

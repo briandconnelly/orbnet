@@ -243,7 +243,7 @@ def mock_httpx_get(mock_httpx_client, mock_httpx_response):
 @pytest.fixture
 def mock_httpx_client_context(mock_httpx_client):
     """Mock httpx.AsyncClient context manager."""
-    with pytest.Mock() as mock_context:
+    with MagicMock() as mock_context:
         mock_context.return_value.__aenter__ = AsyncMock(return_value=mock_httpx_client)
         mock_context.return_value.__aexit__ = AsyncMock(return_value=None)
         return mock_context

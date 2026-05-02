@@ -91,16 +91,19 @@ def test_get_client_info_tool(mock_client):
 
 def test_analyze_network_quality_prompt():
     text = mcp_server.analyze_network_quality.fn()
+    assert isinstance(text, str)
     assert "get_scores_1m" in text
 
 
 def test_troubleshoot_slow_internet_prompt():
     text = mcp_server.troubleshoot_slow_internet.fn()
+    assert isinstance(text, str)
     assert "get_speed_results" in text
 
 
 def test_troubleshoot_wifi_prompt():
     text = mcp_server.troubleshoot_wifi.fn()
+    assert isinstance(text, str)
     assert "get_wifi_link" in text
 
 
