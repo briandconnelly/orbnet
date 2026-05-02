@@ -6,7 +6,7 @@ from typing import Any, Callable, Dict, List, Literal, Optional, cast
 
 import httpx
 
-from .datasets import DatasetSpec
+from .datasets import DATASETS, DatasetSpec
 from .models import (
     AllDatasetsRequestParams,
     AllDatasetsResponse,
@@ -251,8 +251,12 @@ class OrbAPIClient:
             ...     print(f"{isp}: {avg:.1f}")
         """
         request = DatasetRequestParams(caller_id=caller_id, **params)
-        raw_data = await self._get_dataset("scores_1m", request.caller_id, **params)
-        return [ScoreRecord(**record) for record in raw_data]
+        return await self._fetch(
+            DATASETS["scores"],
+            "1m",
+            caller_id=request.caller_id,
+            **params,
+        )
 
     async def get_responsiveness(
         self,
@@ -316,9 +320,12 @@ class OrbAPIClient:
         request = ResponsivenessRequestParams(
             granularity=granularity, caller_id=caller_id, **params
         )
-        dataset_name = f"responsiveness_{request.granularity}"
-        raw_data = await self._get_dataset(dataset_name, request.caller_id, **params)
-        return [ResponsivenessRecord(**record) for record in raw_data]
+        return await self._fetch(
+            DATASETS["responsiveness"],
+            request.granularity,
+            caller_id=request.caller_id,
+            **params,
+        )
 
     async def get_web_responsiveness(
         self,
@@ -381,10 +388,11 @@ class OrbAPIClient:
             ...     print(f"{url}: {avg:.1f}ms avg TTFB")
         """
         request = DatasetRequestParams(caller_id=caller_id, **params)
-        raw_data = await self._get_dataset(
-            "web_responsiveness_results", request.caller_id, **params
+        return await self._fetch(
+            DATASETS["web_responsiveness"],
+            caller_id=request.caller_id,
+            **params,
         )
-        return [WebResponsivenessRecord(**record) for record in raw_data]
 
     async def get_speed_results(
         self,
@@ -454,8 +462,11 @@ class OrbAPIClient:
             ...     print(f"{server}: {avg:.1f} Mbps avg")
         """
         request = DatasetRequestParams(caller_id=caller_id, **params)
-        raw_data = await self._get_dataset("speed_results", request.caller_id, **params)
-        return [SpeedRecord(**record) for record in raw_data]
+        return await self._fetch(
+            DATASETS["speed_results"],
+            caller_id=request.caller_id,
+            **params,
+        )
 
     async def get_wifi_link(
         self,
@@ -504,9 +515,12 @@ class OrbAPIClient:
         request = ResponsivenessRequestParams(
             granularity=granularity, caller_id=caller_id, **params
         )
-        dataset_name = f"wifi_link_{request.granularity}"
-        raw_data = await self._get_dataset(dataset_name, request.caller_id, **params)
-        return [WifiLinkRecord(**record) for record in raw_data]
+        return await self._fetch(
+            DATASETS["wifi_link"],
+            request.granularity,
+            caller_id=request.caller_id,
+            **params,
+        )
 
     async def get_all_datasets(
         self,
