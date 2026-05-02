@@ -563,11 +563,12 @@ class TestOrbAPIClient:
             client = OrbAPIClient(host="192.168.1.100")
             result = await client.get_all_datasets()
 
+            from orbnet.models import ErrorPayload
+
             assert isinstance(result, AllDatasetsResponse)
             assert isinstance(result.scores_1m, list)
-            assert isinstance(result.responsiveness_1m, dict)
-            assert "error" in result.responsiveness_1m
-            assert result.responsiveness_1m["error"] == "Connection error"
+            assert isinstance(result.responsiveness_1m, ErrorPayload)
+            assert result.responsiveness_1m.error == "Connection error"
             assert isinstance(result.web_responsiveness, list)
             assert isinstance(result.speed_results, list)
 

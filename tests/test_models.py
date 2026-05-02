@@ -855,10 +855,11 @@ class TestAllDatasetsResponse:
             wifi_link_1m=[WifiLinkRecord(**r) for r in sample_wifi_link_data],
         )
 
+        from orbnet.models import ErrorPayload
+
         assert isinstance(response.scores_1m, list)
-        assert isinstance(response.responsiveness_1m, dict)
-        assert "error" in response.responsiveness_1m
-        assert response.responsiveness_1m["error"] == "Connection timeout"
+        assert isinstance(response.responsiveness_1m, ErrorPayload)
+        assert response.responsiveness_1m.error == "Connection timeout"
 
     def test_response_with_wifi_link(
         self,
@@ -1226,3 +1227,37 @@ def sample_wifi_link_data():
             "speed_test_engine": 0,
         }
     ]
+
+
+class TestAllDatasetsResponseWireFormat:
+    """Verify that AllDatasetsResponse preserves the JSON wire format."""
+
+    def test_error_field_serializes_to_error_dict(
+        self, sample_scores_data, sample_wifi_link_data
+    ):
+        from orbnet.models import ErrorPayload
+
+        response = AllDatasetsResponse(
+            scores_1m=[ScoreRecord(**r) for r in sample_scores_data],
+            responsiveness_1m=ErrorPayload(error="boom"),
+            web_responsiveness=[],
+            speed_results=[],
+            wifi_link_1m=[WifiLinkRecord(**r) for r in sample_wifi_link_data],
+        )
+        dumped = response.model_dump()
+        assert dumped["responsiveness_1m"] == {"error": "boom"}
+
+    def test_error_field_validates_from_error_dict(
+        self, sample_scores_data, sample_wifi_link_data
+    ):
+        from orbnet.models import ErrorPayload
+
+        response = AllDatasetsResponse(
+            scores_1m=[ScoreRecord(**r) for r in sample_scores_data],
+            responsiveness_1m={"error": "boom"},
+            web_responsiveness=[],
+            speed_results=[],
+            wifi_link_1m=[WifiLinkRecord(**r) for r in sample_wifi_link_data],
+        )
+        assert isinstance(response.responsiveness_1m, ErrorPayload)
+        assert response.responsiveness_1m.error == "boom"

@@ -1,4 +1,4 @@
-from typing import Callable, List, Literal, Optional, TypeAlias, TypeVar
+from typing import Callable, Literal, Optional, TypeAlias, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -493,18 +493,18 @@ class AllDatasetsResponse(BaseModel):
     """
     Response containing all datasets.
 
-    Each dataset field contains either a list of records or an error dict
-    if that dataset failed to fetch.
+    Each dataset field contains either a list of records or an ErrorPayload
+    (typed `{"error": "..."}` payload) if that dataset failed to fetch.
     """
 
-    scores_1m: List[ScoreRecord] | dict
-    responsiveness_1m: Optional[List[ResponsivenessRecord] | dict] = None
-    responsiveness_15s: Optional[List[ResponsivenessRecord] | dict] = None
-    responsiveness_1s: Optional[List[ResponsivenessRecord] | dict] = None
-    web_responsiveness: List[WebResponsivenessRecord] | dict
-    speed_results: List[SpeedRecord] | dict
-    wifi_link_1m: Optional[List[WifiLinkRecord] | dict] = None
-    wifi_link_15s: Optional[List[WifiLinkRecord] | dict] = None
-    wifi_link_1s: Optional[List[WifiLinkRecord] | dict] = None
+    scores_1m: list[ScoreRecord] | ErrorPayload
+    responsiveness_1m: list[ResponsivenessRecord] | ErrorPayload | None = None
+    responsiveness_15s: list[ResponsivenessRecord] | ErrorPayload | None = None
+    responsiveness_1s: list[ResponsivenessRecord] | ErrorPayload | None = None
+    web_responsiveness: list[WebResponsivenessRecord] | ErrorPayload
+    speed_results: list[SpeedRecord] | ErrorPayload
+    wifi_link_1m: list[WifiLinkRecord] | ErrorPayload | None = None
+    wifi_link_15s: list[WifiLinkRecord] | ErrorPayload | None = None
+    wifi_link_1s: list[WifiLinkRecord] | ErrorPayload | None = None
 
     model_config = ConfigDict(extra="allow")

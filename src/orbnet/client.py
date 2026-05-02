@@ -10,6 +10,7 @@ from .models import (
     AllDatasetsRequestParams,
     AllDatasetsResponse,
     DatasetRequestParams,
+    ErrorPayload,
     OrbClientConfig,
     PollingConfig,
     ResponsivenessRecord,
@@ -591,7 +592,7 @@ class OrbAPIClient:
         result_dict = {
             key: result
             if not isinstance(result, BaseException)
-            else {"error": str(result)}
+            else ErrorPayload.of(result)
             for key, result in zip(tasks.keys(), results, strict=True)
         }
 
