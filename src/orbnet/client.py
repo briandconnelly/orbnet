@@ -6,6 +6,7 @@ from typing import Any, Callable, Dict, List, Literal, Optional, cast
 
 import httpx
 
+from .datasets import DatasetSpec
 from .models import (
     AllDatasetsRequestParams,
     AllDatasetsResponse,
@@ -167,6 +168,28 @@ class OrbAPIClient:
             response.raise_for_status()
 
             return response.json()
+
+    async def _fetch(
+        self,
+        spec: "DatasetSpec",
+        granularity: Optional[str] = None,
+        caller_id: Optional[str] = None,
+        **params,
+    ) -> List[Any]:
+        """Fetch one dataset and map records to spec.record_class.
+
+        Internal helper. The single place that turns raw JSON dicts into
+        Pydantic record instances. Public methods (get_scores_1m, etc.) are
+        thin shims over this. `granularity` is honored only for granular
+        families; ignored otherwise. Validation of the granularity string
+        is the caller's responsibility (see public-method shims).
+        """
+        raw_data = await self._get_dataset(
+            spec.wire_name(granularity),
+            caller_id=caller_id,
+            **params,
+        )
+        return [spec.record_class(**record) for record in raw_data]
 
     async def get_scores_1m(
         self,

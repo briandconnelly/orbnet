@@ -732,3 +732,68 @@ class TestOrbAPIClient:
             assert len(results) == 3
             assert all(isinstance(r, list) for r in results)
             assert all(isinstance(rec, ScoreRecord) for r in results for rec in r)
+
+
+class TestFetchHelper:
+    """Direct tests for the private _fetch helper on OrbAPIClient."""
+
+    @pytest.mark.asyncio
+    async def test_fetch_passes_wire_name_and_maps_records(
+        self, sample_scores_data, mock_httpx_response
+    ):
+        from orbnet.datasets import DATASETS
+
+        mock_httpx_response.json.return_value = sample_scores_data
+
+        with patch("httpx.AsyncClient") as mock_client_class:
+            mock_client = AsyncMock()
+            mock_client_class.return_value.__aenter__.return_value = mock_client
+            mock_client.get.return_value = mock_httpx_response
+
+            client = OrbAPIClient(host="192.168.1.100")
+            result = await client._fetch(DATASETS["scores"], "1m")
+
+            assert mock_client.get.called
+            url = mock_client.get.call_args[0][0]
+            assert "scores_1m.json" in url
+
+            assert all(isinstance(r, ScoreRecord) for r in result)
+            assert len(result) == len(sample_scores_data)
+
+    @pytest.mark.asyncio
+    async def test_fetch_uses_default_granularity_when_omitted(
+        self, sample_responsiveness_data, mock_httpx_response
+    ):
+        from orbnet.datasets import DATASETS
+
+        mock_httpx_response.json.return_value = sample_responsiveness_data
+
+        with patch("httpx.AsyncClient") as mock_client_class:
+            mock_client = AsyncMock()
+            mock_client_class.return_value.__aenter__.return_value = mock_client
+            mock_client.get.return_value = mock_httpx_response
+
+            client = OrbAPIClient(host="192.168.1.100")
+            await client._fetch(DATASETS["responsiveness"])
+
+            url = mock_client.get.call_args[0][0]
+            assert "responsiveness_1m.json" in url
+
+    @pytest.mark.asyncio
+    async def test_fetch_honors_wire_name_override(
+        self, sample_web_responsiveness_data, mock_httpx_response
+    ):
+        from orbnet.datasets import DATASETS
+
+        mock_httpx_response.json.return_value = sample_web_responsiveness_data
+
+        with patch("httpx.AsyncClient") as mock_client_class:
+            mock_client = AsyncMock()
+            mock_client_class.return_value.__aenter__.return_value = mock_client
+            mock_client.get.return_value = mock_httpx_response
+
+            client = OrbAPIClient(host="192.168.1.100")
+            await client._fetch(DATASETS["web_responsiveness"])
+
+            url = mock_client.get.call_args[0][0]
+            assert "web_responsiveness_results.json" in url
