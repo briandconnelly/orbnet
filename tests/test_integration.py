@@ -117,10 +117,10 @@ class TestIntegration:
 
         # Test invalid configuration
         with pytest.raises(ValidationError):
-            OrbClientConfig(port=0)  # Invalid port
+            OrbClientConfig(host="test-host", port=0)  # Invalid port
 
         with pytest.raises(ValidationError):
-            OrbClientConfig(timeout=-1.0)  # Invalid timeout
+            OrbClientConfig(host="test-host", timeout=-1.0)  # Invalid timeout
 
         # Test valid configuration
         config = OrbClientConfig(host="192.168.1.100", port=8080, timeout=30.0)
@@ -192,7 +192,7 @@ class TestIntegration:
             "channel_band": "2.4 GHz",
             "network_type": 1,
         }
-        record = WifiLinkRecord(**minimal_data)
+        record = WifiLinkRecord.model_validate(minimal_data)
 
         # Platform-specific optional fields default to None
         assert record.rx_rate_mbps is None
@@ -219,7 +219,7 @@ class TestIntegration:
     def test_wifi_link_record_extra_fields_integration(self, sample_wifi_link_data):
         """Test WifiLinkRecord accepts extra fields and exposes them via model_extra."""
         data = {**sample_wifi_link_data[0], "unknown_field": "some_value"}
-        record = WifiLinkRecord(**data)
+        record = WifiLinkRecord.model_validate(data)
 
         assert record.model_extra is not None
         assert "unknown_field" in record.model_extra

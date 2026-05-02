@@ -88,11 +88,12 @@ class TestDatasetRequestParams:
 
     def test_custom_values(self):
         """Test custom parameter values."""
-        params = DatasetRequestParams(
-            caller_id="test-caller", extra_param="extra_value"
+        params = DatasetRequestParams.model_validate(
+            {"caller_id": "test-caller", "extra_param": "extra_value"}
         )
         assert params.caller_id == "test-caller"
-        assert params.extra_param == "extra_value"
+        assert params.model_extra is not None
+        assert params.model_extra["extra_param"] == "extra_value"
 
 
 class TestResponsivenessRequestParams:
@@ -119,7 +120,7 @@ class TestResponsivenessRequestParams:
 
         # Invalid granularity
         with pytest.raises(ValidationError):
-            ResponsivenessRequestParams(granularity="5m")
+            ResponsivenessRequestParams.model_validate({"granularity": "5m"})
 
 
 class TestAllDatasetsRequestParams:
@@ -223,7 +224,7 @@ class TestScoreIdentifiers:
             "score_version": "1.0.0",
             "orb_version": "2.1.0",
         }
-        identifiers = ScoreIdentifiers(**data)
+        identifiers = ScoreIdentifiers.model_validate(data)
         assert identifiers.orb_id == "test-orb-123"
         assert identifiers.orb_name is None
         assert identifiers.device_name is None
@@ -232,7 +233,7 @@ class TestScoreIdentifiers:
     def test_missing_required_fields(self):
         """Test missing required fields."""
         with pytest.raises(ValidationError):
-            ScoreIdentifiers(orb_id="test-orb-123")
+            ScoreIdentifiers.model_validate({"orb_id": "test-orb-123"})
 
 
 class TestScoreMeasures:
@@ -299,7 +300,7 @@ class TestNetworkDimensions:
         data = {
             "network_type": 1,
         }
-        dimensions = NetworkDimensions(**data)
+        dimensions = NetworkDimensions.model_validate(data)
         assert dimensions.network_type == 1
         assert dimensions.country_code is None
         assert dimensions.city_name is None
@@ -358,7 +359,7 @@ class TestResponsivenessMeasures:
             "packet_loss_pct": 0.0,
             "lag_count": 60,
         }
-        measures = ResponsivenessMeasures(**data)
+        measures = ResponsivenessMeasures.model_validate(data)
         assert measures.lag_avg_us == 25000
         assert measures.router_lag_avg_us is None
         assert measures.router_latency_avg_us is None
@@ -444,7 +445,7 @@ class TestScoreRecord:
             "speed_count": 1,
             "network_type": 1,
         }
-        record = ScoreRecord(**data)
+        record = ScoreRecord.model_validate(data)
         assert record.orb_id == "test-orb-123"
         assert record.orb_name is None
         assert record.device_name is None
@@ -467,7 +468,7 @@ class TestScoreRecord:
         """Test validation error on missing required field."""
         data = {"orb_id": "test-orb-123"}
         with pytest.raises(ValidationError):
-            ScoreRecord(**data)
+            ScoreRecord.model_validate(data)
 
 
 class TestResponsivenessRecord:
@@ -514,7 +515,7 @@ class TestResponsivenessRecord:
             "router_lag_count": 60,
             "network_type": 1,
         }
-        record = ResponsivenessRecord(**data)
+        record = ResponsivenessRecord.model_validate(data)
         assert record.orb_id == "test-orb-123"
         assert record.orb_name is None
         assert record.device_name is None
@@ -564,7 +565,7 @@ class TestWebResponsivenessRecord:
             "dns_us": 50000,
             "network_type": 1,
         }
-        record = WebResponsivenessRecord(**data)
+        record = WebResponsivenessRecord.model_validate(data)
         assert record.orb_id == "test-orb-123"
         assert record.orb_name is None
         assert record.device_name is None
@@ -615,7 +616,7 @@ class TestSpeedRecord:
             "upload_kbps": 10000,
             "network_type": 1,
         }
-        record = SpeedRecord(**data)
+        record = SpeedRecord.model_validate(data)
         assert record.orb_id == "test-orb-123"
         assert record.orb_name is None
         assert record.device_name is None
@@ -696,7 +697,7 @@ class TestWifiLinkMeasures:
             "channel_number": 1,
             "channel_band": "2.4 GHz",
         }
-        measures = WifiLinkMeasures(**data)
+        measures = WifiLinkMeasures.model_validate(data)
         assert measures.rx_rate_mbps is None
         assert measures.security is None
         assert measures.channel_width is None
@@ -723,7 +724,7 @@ class TestWifiLinkMeasures:
             "mcs": 9,
             "nss": 2,
         }
-        measures = WifiLinkMeasures(**data)
+        measures = WifiLinkMeasures.model_validate(data)
         assert measures.mcs == 9
         assert measures.nss == 2
 
@@ -776,7 +777,7 @@ class TestWifiLinkRecord:
             "channel_band": "2.4 GHz",
             "network_type": 1,
         }
-        record = WifiLinkRecord(**data)
+        record = WifiLinkRecord.model_validate(data)
         assert record.orb_id == "test-orb-123"
         assert record.orb_name is None
         assert record.device_name is None
@@ -804,7 +805,7 @@ class TestWifiLinkRecord:
         """Test validation error on missing required field."""
         data = {"orb_id": "test-orb-123"}
         with pytest.raises(ValidationError):
-            WifiLinkRecord(**data)
+            WifiLinkRecord.model_validate(data)
 
 
 class TestAllDatasetsResponse:
