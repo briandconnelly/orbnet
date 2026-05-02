@@ -83,3 +83,31 @@ DATASETS: dict[str, DatasetSpec] = {
         default_granularity="1m",
     ),
 }
+
+
+def _build_poll_aliases(
+    datasets: dict[str, DatasetSpec],
+) -> dict[str, tuple[DatasetSpec, str | None]]:
+    aliases: dict[str, tuple[DatasetSpec, str | None]] = {}
+    for spec in datasets.values():
+        if spec.granularities:
+            for g in spec.granularities:
+                aliases[spec.wire_name(g)] = (spec, g)
+        else:
+            aliases[spec.wire_name()] = (spec, None)
+    return aliases
+
+
+POLL_ALIASES: dict[str, tuple[DatasetSpec, str | None]] = _build_poll_aliases(DATASETS)
+
+
+def parse_poll_alias(name: str) -> tuple[DatasetSpec, str | None]:
+    """Resolve a wire-name string (as accepted by poll_dataset) to (spec, granularity).
+
+    Raises ValueError with the list of valid options if `name` is unknown.
+    """
+    if name not in POLL_ALIASES:
+        raise ValueError(
+            f"Unknown dataset: {name}. Valid options: {', '.join(sorted(POLL_ALIASES))}"
+        )
+    return POLL_ALIASES[name]
