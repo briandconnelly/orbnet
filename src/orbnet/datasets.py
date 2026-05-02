@@ -8,7 +8,14 @@ in AllDatasetsResponse.
 
 from dataclasses import dataclass
 
-from .models import BaseRecord
+from .models import (
+    BaseRecord,
+    ResponsivenessRecord,
+    ScoreRecord,
+    SpeedRecord,
+    WebResponsivenessRecord,
+    WifiLinkRecord,
+)
 
 
 @dataclass(frozen=True)
@@ -45,3 +52,34 @@ class DatasetSpec:
         if self.granularities:
             return f"{self.family}_{granularity or self.default_granularity}"
         return self.family
+
+
+DATASETS: dict[str, DatasetSpec] = {
+    "scores": DatasetSpec(
+        family="scores",
+        record_class=ScoreRecord,
+        granularities=("1m",),
+        default_granularity="1m",
+    ),
+    "responsiveness": DatasetSpec(
+        family="responsiveness",
+        record_class=ResponsivenessRecord,
+        granularities=("1s", "15s", "1m"),
+        default_granularity="1m",
+    ),
+    "web_responsiveness": DatasetSpec(
+        family="web_responsiveness",
+        record_class=WebResponsivenessRecord,
+        wire_name_override="web_responsiveness_results",
+    ),
+    "speed_results": DatasetSpec(
+        family="speed_results",
+        record_class=SpeedRecord,
+    ),
+    "wifi_link": DatasetSpec(
+        family="wifi_link",
+        record_class=WifiLinkRecord,
+        granularities=("1s", "15s", "1m"),
+        default_granularity="1m",
+    ),
+}
