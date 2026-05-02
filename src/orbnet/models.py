@@ -1,4 +1,4 @@
-from typing import Callable, List, Literal, Optional
+from typing import Callable, List, Literal, Optional, TypeAlias, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -444,6 +444,44 @@ class WifiLinkRecord(BaseRecord, BaseIdentifiers, WifiLinkMeasures, WifiLinkDime
     """
 
     pass
+
+
+# ============================================================================
+# Result type for partial-failure batch responses
+# ============================================================================
+
+
+class ErrorPayload(BaseModel):
+    """Typed error payload for AllDatasetsResponse fields when a dataset fetch fails.
+
+    Serializes to {"error": "..."} and validates from the same shape,
+    preserving the JSON wire format that previously used a bare dict.
+    """
+
+    error: str
+
+    model_config = ConfigDict(extra="forbid")
+
+    @classmethod
+    def of(cls, exc: BaseException) -> "ErrorPayload":
+        return cls(error=str(exc))
+
+
+T = TypeVar("T")
+
+DatasetResult: TypeAlias = list[T] | ErrorPayload
+
+
+def is_ok(value: list | ErrorPayload) -> bool:
+    """Return True iff `value` is a successful dataset result (a list)."""
+    return not isinstance(value, ErrorPayload)
+
+
+def unwrap(value: list[T] | ErrorPayload) -> list[T]:
+    """Return the list when `value` is ok, else raise ValueError."""
+    if isinstance(value, ErrorPayload):
+        raise ValueError(f"Dataset failed: {value.error}")
+    return value
 
 
 # ============================================================================

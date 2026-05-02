@@ -972,6 +972,56 @@ class TestAllDatasetsResponse:
         assert all(isinstance(r, WifiLinkRecord) for r in response.wifi_link_1s)
 
 
+class TestErrorPayload:
+    """Test ErrorPayload model and is_ok/unwrap helpers."""
+
+    def test_error_payload_basic(self):
+        from orbnet.models import ErrorPayload
+
+        payload = ErrorPayload(error="boom")
+        assert payload.error == "boom"
+
+    def test_error_payload_of_exception(self):
+        from orbnet.models import ErrorPayload
+
+        payload = ErrorPayload.of(ValueError("kaboom"))
+        assert payload.error == "kaboom"
+
+    def test_error_payload_serialization(self):
+        from orbnet.models import ErrorPayload
+
+        payload = ErrorPayload(error="boom")
+        assert payload.model_dump() == {"error": "boom"}
+
+    def test_error_payload_validates_from_dict(self):
+        from orbnet.models import ErrorPayload
+
+        payload = ErrorPayload.model_validate({"error": "boom"})
+        assert payload.error == "boom"
+
+    def test_is_ok_with_list(self):
+        from orbnet.models import is_ok
+
+        assert is_ok([]) is True
+        assert is_ok([1, 2, 3]) is True
+
+    def test_is_ok_with_error_payload(self):
+        from orbnet.models import ErrorPayload, is_ok
+
+        assert is_ok(ErrorPayload(error="boom")) is False
+
+    def test_unwrap_returns_list_when_ok(self):
+        from orbnet.models import unwrap
+
+        assert unwrap([1, 2, 3]) == [1, 2, 3]
+
+    def test_unwrap_raises_on_error_payload(self):
+        from orbnet.models import ErrorPayload, unwrap
+
+        with pytest.raises(ValueError, match="Dataset failed: boom"):
+            unwrap(ErrorPayload(error="boom"))
+
+
 @pytest.fixture
 def sample_scores_data():
     """Sample scores data for testing."""
