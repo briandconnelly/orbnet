@@ -797,3 +797,38 @@ class TestGetAllDatasetsPlan:
             assert isinstance(result.responsiveness_1m, list)
             assert result.wifi_link_15s is None
             assert result.wifi_link_1s is None
+
+
+class TestPollDatasetCallbackContract:
+    """The user-supplied dataset_name string must reach callbacks unchanged.
+
+    Today's callers expect 'web_responsiveness_results' (not 'web_responsiveness'
+    or some other normalization) to flow through to their callback's first arg.
+    """
+
+    @pytest.mark.asyncio
+    async def test_callback_receives_wire_alias_verbatim(
+        self, sample_web_responsiveness_data, mock_httpx_response
+    ):
+        mock_httpx_response.json.return_value = sample_web_responsiveness_data
+
+        captured: list[str] = []
+
+        def callback(dataset_name, records):
+            captured.append(dataset_name)
+
+        with patch("httpx.AsyncClient") as mock_client_class:
+            mock_client = AsyncMock()
+            mock_client_class.return_value.__aenter__.return_value = mock_client
+            mock_client.get.return_value = mock_httpx_response
+
+            client = OrbAPIClient(host="192.168.1.100")
+            async for _ in client.poll_dataset(
+                "web_responsiveness_results",
+                interval=0.01,
+                callback=callback,
+                max_iterations=1,
+            ):
+                pass
+
+        assert captured == ["web_responsiveness_results"]

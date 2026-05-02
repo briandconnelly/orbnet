@@ -6,7 +6,7 @@ from typing import Any, Callable, Dict, List, Literal, Optional, cast
 
 import httpx
 
-from .datasets import DATASETS, DatasetSpec
+from .datasets import DATASETS, DatasetSpec, parse_poll_alias
 from .models import (
     AllDatasetsRequestParams,
     AllDatasetsResponse,
@@ -739,39 +739,18 @@ class OrbAPIClient:
             callback=callback,
             max_iterations=max_iterations,
         )
-
-        # Map dataset names to their respective fetch methods
-        dataset_methods = {
-            "scores_1m": lambda: self.get_scores_1m(),
-            "responsiveness_1s": lambda: self.get_responsiveness("1s"),
-            "responsiveness_15s": lambda: self.get_responsiveness("15s"),
-            "responsiveness_1m": lambda: self.get_responsiveness("1m"),
-            "web_responsiveness_results": lambda: self.get_web_responsiveness(),
-            "speed_results": lambda: self.get_speed_results(),
-            "wifi_link_1s": lambda: self.get_wifi_link("1s"),
-            "wifi_link_15s": lambda: self.get_wifi_link("15s"),
-            "wifi_link_1m": lambda: self.get_wifi_link("1m"),
-        }
-
-        if config.dataset_name not in dataset_methods:
-            raise ValueError(
-                f"Unknown dataset: {config.dataset_name}. "
-                f"Valid options: {', '.join(dataset_methods.keys())}"
-            )
-
-        fetch_method = dataset_methods[config.dataset_name]
+        spec, granularity = parse_poll_alias(config.dataset_name)
 
         iteration = 0
         while config.max_iterations is None or iteration < config.max_iterations:
             try:
-                records = await fetch_method()
+                records = await self._fetch(spec, granularity)
 
                 if config.callback and records:
-                    await config.callback(
-                        config.dataset_name, records
-                    ) if asyncio.iscoroutinefunction(
-                        config.callback
-                    ) else config.callback(config.dataset_name, records)
+                    if asyncio.iscoroutinefunction(config.callback):
+                        await config.callback(config.dataset_name, records)
+                    else:
+                        config.callback(config.dataset_name, records)
 
                 yield records
 
