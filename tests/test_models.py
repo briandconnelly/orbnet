@@ -130,6 +130,7 @@ class TestAllDatasetsRequestParams:
         """Test default parameter values."""
         params = AllDatasetsRequestParams()
         assert params.caller_id is None
+        assert params.default_granularity == "1m"
         assert params.include_all_responsiveness is False
         assert params.include_all_wifi_link is False
 
@@ -137,12 +138,19 @@ class TestAllDatasetsRequestParams:
         """Test custom parameter values."""
         params = AllDatasetsRequestParams(
             caller_id="test-caller",
+            default_granularity="1s",
             include_all_responsiveness=True,
             include_all_wifi_link=True,
         )
         assert params.caller_id == "test-caller"
+        assert params.default_granularity == "1s"
         assert params.include_all_responsiveness is True
         assert params.include_all_wifi_link is True
+
+    def test_invalid_default_granularity_raises(self):
+        """Test that invalid default_granularity raises ValidationError."""
+        with pytest.raises(ValidationError):
+            AllDatasetsRequestParams(default_granularity="5m")  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]  # noqa: E501
 
 
 class TestPollingConfig:
@@ -847,18 +855,19 @@ class TestAllDatasetsResponse:
 
     def test_response_with_error(self, sample_scores_data, sample_wifi_link_data):
         """Test all datasets response with error in one dataset."""
+        from orbnet.models import ErrorPayload
+
         response = AllDatasetsResponse(
             scores_1m=[ScoreRecord(**r) for r in sample_scores_data],
-            responsiveness_1m={"error": "Connection timeout"},
+            responsiveness_1m=ErrorPayload(error="Connection timeout"),
             web_responsiveness=[],
             speed_results=[],
             wifi_link_1m=[WifiLinkRecord(**r) for r in sample_wifi_link_data],
         )
 
         assert isinstance(response.scores_1m, list)
-        assert isinstance(response.responsiveness_1m, dict)
-        assert "error" in response.responsiveness_1m
-        assert response.responsiveness_1m["error"] == "Connection timeout"
+        assert isinstance(response.responsiveness_1m, ErrorPayload)
+        assert response.responsiveness_1m.error == "Connection timeout"
 
     def test_response_with_wifi_link(
         self,
@@ -970,6 +979,67 @@ class TestAllDatasetsResponse:
         assert isinstance(response.wifi_link_15s, list)
         assert isinstance(response.wifi_link_1s, list)
         assert all(isinstance(r, WifiLinkRecord) for r in response.wifi_link_1s)
+
+
+class TestErrorPayload:
+    """Test ErrorPayload model and is_ok/unwrap helpers."""
+
+    def test_error_payload_basic(self):
+        from orbnet.models import ErrorPayload
+
+        payload = ErrorPayload(error="boom")
+        assert payload.error == "boom"
+
+    def test_error_payload_of_exception(self):
+        from orbnet.models import ErrorPayload
+
+        payload = ErrorPayload.of(ValueError("kaboom"))
+        assert payload.error == "kaboom"
+
+    def test_error_payload_serialization(self):
+        from orbnet.models import ErrorPayload
+
+        payload = ErrorPayload(error="boom")
+        assert payload.model_dump() == {"error": "boom"}
+
+    def test_error_payload_validates_from_dict(self):
+        from orbnet.models import ErrorPayload
+
+        payload = ErrorPayload.model_validate({"error": "boom"})
+        assert payload.error == "boom"
+
+    def test_is_ok_with_list(self):
+        from orbnet.models import is_ok
+
+        assert is_ok([]) is True
+        assert is_ok([1, 2, 3]) is True
+
+    def test_is_ok_with_error_payload(self):
+        from orbnet.models import ErrorPayload, is_ok
+
+        assert is_ok(ErrorPayload(error="boom")) is False
+
+    def test_unwrap_returns_list_when_ok(self):
+        from orbnet.models import unwrap
+
+        assert unwrap([1, 2, 3]) == [1, 2, 3]
+
+    def test_unwrap_raises_on_error_payload(self):
+        from orbnet.models import ErrorPayload, unwrap
+
+        with pytest.raises(ValueError, match="Dataset failed: boom"):
+            unwrap(ErrorPayload(error="boom"))
+
+    def test_is_ok_with_none(self):
+        from orbnet.models import is_ok
+
+        assert is_ok(None) is False
+
+    def test_unwrap_raises_on_none(self):
+        from orbnet.models import unwrap
+
+        with pytest.raises(ValueError, match="Dataset result is None"):
+            unwrap(None)
 
 
 @pytest.fixture
@@ -1176,3 +1246,39 @@ def sample_wifi_link_data():
             "speed_test_engine": 0,
         }
     ]
+
+
+class TestAllDatasetsResponseWireFormat:
+    """Verify that AllDatasetsResponse preserves the JSON wire format."""
+
+    def test_error_field_serializes_to_error_dict(
+        self, sample_scores_data, sample_wifi_link_data
+    ):
+        from orbnet.models import ErrorPayload
+
+        response = AllDatasetsResponse(
+            scores_1m=[ScoreRecord(**r) for r in sample_scores_data],
+            responsiveness_1m=ErrorPayload(error="boom"),
+            web_responsiveness=[],
+            speed_results=[],
+            wifi_link_1m=[WifiLinkRecord(**r) for r in sample_wifi_link_data],
+        )
+        dumped = response.model_dump()
+        assert dumped["responsiveness_1m"] == {"error": "boom"}
+
+    def test_error_field_validates_from_error_dict(
+        self, sample_scores_data, sample_wifi_link_data
+    ):
+        from orbnet.models import ErrorPayload
+
+        response = AllDatasetsResponse.model_validate(
+            {
+                "scores_1m": sample_scores_data,
+                "responsiveness_1m": {"error": "boom"},
+                "web_responsiveness": [],
+                "speed_results": [],
+                "wifi_link_1m": sample_wifi_link_data,
+            }
+        )
+        assert isinstance(response.responsiveness_1m, ErrorPayload)
+        assert response.responsiveness_1m.error == "boom"

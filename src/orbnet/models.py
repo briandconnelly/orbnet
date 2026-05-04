@@ -1,4 +1,4 @@
-from typing import Callable, List, Literal, Optional
+from typing import Callable, Literal, Optional, TypeAlias, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -53,6 +53,10 @@ class ResponsivenessRequestParams(DatasetRequestParams):
 class AllDatasetsRequestParams(DatasetRequestParams):
     """Parameters for fetching all datasets"""
 
+    default_granularity: Literal["1s", "15s", "1m"] = Field(
+        default="1m",
+        description="Default time-bucket size for granular datasets (responsiveness, wifi_link).",  # noqa: E501
+    )
     include_all_responsiveness: bool = Field(
         default=False,
         description="If True, fetches all responsiveness granularities (1s, 15s, 1m). If False, only fetches 1m.",  # noqa: E501
@@ -447,6 +451,54 @@ class WifiLinkRecord(BaseRecord, BaseIdentifiers, WifiLinkMeasures, WifiLinkDime
 
 
 # ============================================================================
+# Result type for partial-failure batch responses
+# ============================================================================
+
+
+class ErrorPayload(BaseModel):
+    """Typed error payload for AllDatasetsResponse fields when a dataset fetch fails.
+
+    Serializes to {"error": "..."} and validates from the same shape,
+    preserving the JSON wire format that previously used a bare dict.
+    """
+
+    error: str
+
+    model_config = ConfigDict(extra="forbid")
+
+    @classmethod
+    def of(cls, exc: BaseException) -> "ErrorPayload":
+        return cls(error=str(exc))
+
+
+T = TypeVar("T")
+
+DatasetResult: TypeAlias = list[T] | ErrorPayload
+
+
+def is_ok(value: list | ErrorPayload | None) -> bool:
+    """Return True iff `value` is a successful dataset result (a non-None list).
+
+    None values (optional fields not requested) and ErrorPayload (failed)
+    both return False. Use `value is None` upstream if you need to distinguish
+    "not requested" from "failed".
+    """
+    return isinstance(value, list)
+
+
+def unwrap(value: list[T] | ErrorPayload | None) -> list[T]:
+    """Return the list when `value` is ok, else raise ValueError.
+
+    Raises if `value` is None (field not requested) or an ErrorPayload (failed).
+    """
+    if value is None:
+        raise ValueError("Dataset result is None (not requested)")
+    if isinstance(value, ErrorPayload):
+        raise ValueError(f"Dataset failed: {value.error}")
+    return value
+
+
+# ============================================================================
 # All Datasets Response
 # ============================================================================
 
@@ -455,18 +507,18 @@ class AllDatasetsResponse(BaseModel):
     """
     Response containing all datasets.
 
-    Each dataset field contains either a list of records or an error dict
-    if that dataset failed to fetch.
+    Each dataset field contains either a list of records or an ErrorPayload
+    (typed `{"error": "..."}` payload) if that dataset failed to fetch.
     """
 
-    scores_1m: List[ScoreRecord] | dict
-    responsiveness_1m: Optional[List[ResponsivenessRecord] | dict] = None
-    responsiveness_15s: Optional[List[ResponsivenessRecord] | dict] = None
-    responsiveness_1s: Optional[List[ResponsivenessRecord] | dict] = None
-    web_responsiveness: List[WebResponsivenessRecord] | dict
-    speed_results: List[SpeedRecord] | dict
-    wifi_link_1m: Optional[List[WifiLinkRecord] | dict] = None
-    wifi_link_15s: Optional[List[WifiLinkRecord] | dict] = None
-    wifi_link_1s: Optional[List[WifiLinkRecord] | dict] = None
+    scores_1m: list[ScoreRecord] | ErrorPayload
+    responsiveness_1m: list[ResponsivenessRecord] | ErrorPayload | None = None
+    responsiveness_15s: list[ResponsivenessRecord] | ErrorPayload | None = None
+    responsiveness_1s: list[ResponsivenessRecord] | ErrorPayload | None = None
+    web_responsiveness: list[WebResponsivenessRecord] | ErrorPayload
+    speed_results: list[SpeedRecord] | ErrorPayload
+    wifi_link_1m: list[WifiLinkRecord] | ErrorPayload | None = None
+    wifi_link_15s: list[WifiLinkRecord] | ErrorPayload | None = None
+    wifi_link_1s: list[WifiLinkRecord] | ErrorPayload | None = None
 
     model_config = ConfigDict(extra="allow")

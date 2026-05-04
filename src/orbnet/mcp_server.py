@@ -522,7 +522,7 @@ async def get_all_datasets(
         timeout: Request timeout in seconds (default: 30.0)
 
     Returns:
-        Dictionary with keys for each dataset type:
+        AllDatasetsResponse object with fields for each dataset type:
         - scores_1m: 1-minute scores dataset
         - responsiveness_1s: 1-second responsiveness dataset
         - responsiveness_15s: 15-second responsiveness
@@ -535,7 +535,22 @@ async def get_all_datasets(
         - wifi_link_15s: 15-second Wi-Fi link (if include_all_wifi_link=True)
         - wifi_link_1m: 1-minute Wi-Fi link (if include_all_wifi_link=True)
 
-        Each value is either a list of records or an error dict if that dataset failed.
+        Each field is either a list of records or an ErrorPayload (typed
+        `{"error": "..."}` payload) if that dataset failed to fetch.
+
+        For Python consumers, branch with is_ok() / .error:
+
+        >>> from orbnet.models import is_ok, unwrap
+        >>> result = await get_all_datasets()
+        >>> for field_name in ("scores_1m", "responsiveness_1s", "speed_results"):
+        ...     value = getattr(result, field_name)
+        ...     if is_ok(value):
+        ...         print(f"{field_name}: {len(value)} records")
+        ...     else:
+        ...         print(f"{field_name} failed: {value.error}")
+
+        For LLM/JSON consumers, the wire format is unchanged — successful
+        datasets serialize to a list, failed datasets to {"error": "..."}.
     """
     await ctx.info(f"Getting all datasets from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)

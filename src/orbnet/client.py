@@ -6,10 +6,12 @@ from typing import Any, Callable, Dict, List, Literal, Optional, cast
 
 import httpx
 
+from .datasets import DATASETS, DatasetSpec, parse_poll_alias
 from .models import (
     AllDatasetsRequestParams,
     AllDatasetsResponse,
     DatasetRequestParams,
+    ErrorPayload,
     OrbClientConfig,
     PollingConfig,
     ResponsivenessRecord,
@@ -167,6 +169,28 @@ class OrbAPIClient:
 
             return response.json()
 
+    async def _fetch(
+        self,
+        spec: "DatasetSpec",
+        granularity: Optional[str] = None,
+        caller_id: Optional[str] = None,
+        **params,
+    ) -> List[Any]:
+        """Fetch one dataset and map records to spec.record_class.
+
+        Internal helper. The single place that turns raw JSON dicts into
+        Pydantic record instances. Public methods (get_scores_1m, etc.) are
+        thin shims over this. `granularity` is honored only for granular
+        families; ignored otherwise. Validation of the granularity string
+        is the caller's responsibility (see public-method shims).
+        """
+        raw_data = await self._get_dataset(
+            spec.wire_name(granularity),
+            caller_id=caller_id,
+            **params,
+        )
+        return [spec.record_class(**record) for record in raw_data]
+
     async def get_scores_1m(
         self,
         caller_id: Optional[str] = None,
@@ -227,8 +251,12 @@ class OrbAPIClient:
             ...     print(f"{isp}: {avg:.1f}")
         """
         request = DatasetRequestParams(caller_id=caller_id, **params)
-        raw_data = await self._get_dataset("scores_1m", request.caller_id, **params)
-        return [ScoreRecord(**record) for record in raw_data]
+        return await self._fetch(
+            DATASETS["scores"],
+            "1m",
+            caller_id=request.caller_id,
+            **params,
+        )
 
     async def get_responsiveness(
         self,
@@ -292,9 +320,12 @@ class OrbAPIClient:
         request = ResponsivenessRequestParams(
             granularity=granularity, caller_id=caller_id, **params
         )
-        dataset_name = f"responsiveness_{request.granularity}"
-        raw_data = await self._get_dataset(dataset_name, request.caller_id, **params)
-        return [ResponsivenessRecord(**record) for record in raw_data]
+        return await self._fetch(
+            DATASETS["responsiveness"],
+            request.granularity,
+            caller_id=request.caller_id,
+            **params,
+        )
 
     async def get_web_responsiveness(
         self,
@@ -357,10 +388,11 @@ class OrbAPIClient:
             ...     print(f"{url}: {avg:.1f}ms avg TTFB")
         """
         request = DatasetRequestParams(caller_id=caller_id, **params)
-        raw_data = await self._get_dataset(
-            "web_responsiveness_results", request.caller_id, **params
+        return await self._fetch(
+            DATASETS["web_responsiveness"],
+            caller_id=request.caller_id,
+            **params,
         )
-        return [WebResponsivenessRecord(**record) for record in raw_data]
 
     async def get_speed_results(
         self,
@@ -430,8 +462,11 @@ class OrbAPIClient:
             ...     print(f"{server}: {avg:.1f} Mbps avg")
         """
         request = DatasetRequestParams(caller_id=caller_id, **params)
-        raw_data = await self._get_dataset("speed_results", request.caller_id, **params)
-        return [SpeedRecord(**record) for record in raw_data]
+        return await self._fetch(
+            DATASETS["speed_results"],
+            caller_id=request.caller_id,
+            **params,
+        )
 
     async def get_wifi_link(
         self,
@@ -480,9 +515,12 @@ class OrbAPIClient:
         request = ResponsivenessRequestParams(
             granularity=granularity, caller_id=caller_id, **params
         )
-        dataset_name = f"wifi_link_{request.granularity}"
-        raw_data = await self._get_dataset(dataset_name, request.caller_id, **params)
-        return [WifiLinkRecord(**record) for record in raw_data]
+        return await self._fetch(
+            DATASETS["wifi_link"],
+            request.granularity,
+            caller_id=request.caller_id,
+            **params,
+        )
 
     async def get_all_datasets(
         self,
@@ -549,53 +587,55 @@ class OrbAPIClient:
 
             Handle errors gracefully:
 
+            >>> from orbnet.models import is_ok
             >>> datasets = await client.get_all_datasets()
             >>> for name in ['scores_1m', 'responsiveness_1m',
             ...              'web_responsiveness', 'speed_results']:
             ...     data = getattr(datasets, name)
-            ...     if isinstance(data, dict) and 'error' in data:
-            ...         print(f"Failed to fetch {name}: {data['error']}")
-            ...     else:
+            ...     if is_ok(data):
             ...         print(f"{name}: {len(data)} records")
+            ...     else:
+            ...         print(f"Failed to fetch {name}: {data.error}")
         """
         request = AllDatasetsRequestParams(
             caller_id=caller_id,
+            default_granularity=default_granularity,
             include_all_responsiveness=include_all_responsiveness,
             include_all_wifi_link=include_all_wifi_link,
         )
 
-        gran = default_granularity
-        tasks = {
-            "scores_1m": self.get_scores_1m(request.caller_id),
-            f"responsiveness_{gran}": self.get_responsiveness(gran, request.caller_id),
-            "web_responsiveness": self.get_web_responsiveness(request.caller_id),
-            "speed_results": self.get_speed_results(request.caller_id),
-            f"wifi_link_{gran}": self.get_wifi_link(gran, request.caller_id),
+        include_all_map = {
+            "responsiveness": request.include_all_responsiveness,
+            "wifi_link": request.include_all_wifi_link,
         }
 
-        all_granularities: set[Literal["1s", "15s", "1m"]] = {"1s", "15s", "1m"}
-        other_granularities = sorted(all_granularities - {gran})
+        plan: list[tuple[DatasetSpec, Optional[str]]] = []
+        for spec in DATASETS.values():
+            if not spec.granularities:
+                plan.append((spec, None))
+                continue
+            chosen = (
+                request.default_granularity
+                if request.default_granularity in spec.granularities
+                else spec.default_granularity
+            )
+            plan.append((spec, chosen))
+            if include_all_map.get(spec.family):
+                for g in spec.granularities:
+                    if g != chosen:
+                        plan.append((spec, g))
 
-        if request.include_all_responsiveness:
-            for g in other_granularities:
-                tasks[f"responsiveness_{g}"] = self.get_responsiveness(
-                    g, request.caller_id
-                )
+        results = await asyncio.gather(
+            *[self._fetch(spec, g, request.caller_id) for spec, g in plan],
+            return_exceptions=True,
+        )
 
-        if request.include_all_wifi_link:
-            for g in other_granularities:
-                tasks[f"wifi_link_{g}"] = self.get_wifi_link(g, request.caller_id)
-
-        results = await asyncio.gather(*tasks.values(), return_exceptions=True)
-
-        result_dict = {
-            key: result
-            if not isinstance(result, BaseException)
-            else {"error": str(result)}
-            for key, result in zip(tasks.keys(), results, strict=True)
-        }
-
-        return AllDatasetsResponse(**result_dict)
+        fields: dict[str, Any] = {}
+        for (spec, g), result in zip(plan, results, strict=True):
+            fields[spec.response_field(g)] = (
+                ErrorPayload.of(result) if isinstance(result, BaseException) else result
+            )
+        return AllDatasetsResponse(**fields)
 
     async def poll_dataset(
         self,
@@ -699,39 +739,18 @@ class OrbAPIClient:
             callback=callback,
             max_iterations=max_iterations,
         )
-
-        # Map dataset names to their respective fetch methods
-        dataset_methods = {
-            "scores_1m": lambda: self.get_scores_1m(),
-            "responsiveness_1s": lambda: self.get_responsiveness("1s"),
-            "responsiveness_15s": lambda: self.get_responsiveness("15s"),
-            "responsiveness_1m": lambda: self.get_responsiveness("1m"),
-            "web_responsiveness_results": lambda: self.get_web_responsiveness(),
-            "speed_results": lambda: self.get_speed_results(),
-            "wifi_link_1s": lambda: self.get_wifi_link("1s"),
-            "wifi_link_15s": lambda: self.get_wifi_link("15s"),
-            "wifi_link_1m": lambda: self.get_wifi_link("1m"),
-        }
-
-        if config.dataset_name not in dataset_methods:
-            raise ValueError(
-                f"Unknown dataset: {config.dataset_name}. "
-                f"Valid options: {', '.join(dataset_methods.keys())}"
-            )
-
-        fetch_method = dataset_methods[config.dataset_name]
+        spec, granularity = parse_poll_alias(config.dataset_name)
 
         iteration = 0
         while config.max_iterations is None or iteration < config.max_iterations:
             try:
-                records = await fetch_method()
+                records = await self._fetch(spec, granularity)
 
                 if config.callback and records:
-                    await config.callback(
-                        config.dataset_name, records
-                    ) if asyncio.iscoroutinefunction(
-                        config.callback
-                    ) else config.callback(config.dataset_name, records)
+                    if asyncio.iscoroutinefunction(config.callback):
+                        await config.callback(config.dataset_name, records)
+                    else:
+                        config.callback(config.dataset_name, records)
 
                 yield records
 
