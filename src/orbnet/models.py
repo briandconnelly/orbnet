@@ -53,6 +53,10 @@ class ResponsivenessRequestParams(DatasetRequestParams):
 class AllDatasetsRequestParams(DatasetRequestParams):
     """Parameters for fetching all datasets"""
 
+    default_granularity: Literal["1s", "15s", "1m"] = Field(
+        default="1m",
+        description="Default time-bucket size for granular datasets (responsiveness, wifi_link).",  # noqa: E501
+    )
     include_all_responsiveness: bool = Field(
         default=False,
         description="If True, fetches all responsiveness granularities (1s, 15s, 1m). If False, only fetches 1m.",  # noqa: E501
@@ -472,13 +476,23 @@ T = TypeVar("T")
 DatasetResult: TypeAlias = list[T] | ErrorPayload
 
 
-def is_ok(value: list | ErrorPayload) -> bool:
-    """Return True iff `value` is a successful dataset result (a list)."""
-    return not isinstance(value, ErrorPayload)
+def is_ok(value: list | ErrorPayload | None) -> bool:
+    """Return True iff `value` is a successful dataset result (a non-None list).
+
+    None values (optional fields not requested) and ErrorPayload (failed)
+    both return False. Use `value is None` upstream if you need to distinguish
+    "not requested" from "failed".
+    """
+    return isinstance(value, list)
 
 
-def unwrap(value: list[T] | ErrorPayload) -> list[T]:
-    """Return the list when `value` is ok, else raise ValueError."""
+def unwrap(value: list[T] | ErrorPayload | None) -> list[T]:
+    """Return the list when `value` is ok, else raise ValueError.
+
+    Raises if `value` is None (field not requested) or an ErrorPayload (failed).
+    """
+    if value is None:
+        raise ValueError("Dataset result is None (not requested)")
     if isinstance(value, ErrorPayload):
         raise ValueError(f"Dataset failed: {value.error}")
     return value

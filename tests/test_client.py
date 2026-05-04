@@ -715,6 +715,14 @@ class TestGetAllDatasetsPlan:
             assert result.wifi_link_15s is None
             assert result.wifi_link_1s is None
 
+    @pytest.mark.asyncio
+    async def test_invalid_default_granularity_raises(self):
+        from pydantic import ValidationError
+
+        client = OrbAPIClient(host="192.168.1.100")
+        with pytest.raises(ValidationError):
+            await client.get_all_datasets(default_granularity="bogus")  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]  # noqa: E501
+
 
 class TestPollDatasetCallbackContract:
     """The user-supplied dataset_name string must reach callbacks unchanged.

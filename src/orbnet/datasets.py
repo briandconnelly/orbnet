@@ -24,7 +24,8 @@ class DatasetSpec:
 
     Three name spaces are tracked:
 
-    - `family`: the registry key — also the public-method root (`get_<family>`).
+    - `family`: the registry key. Public-method names follow `get_<family>`,
+      with the historical exception of `get_scores_1m` (family `scores`).
     - `wire_name(granularity)`: the URL-path component used by the Orb API.
       Equals `family` for non-granular datasets, `f"{family}_{granularity}"`
       for granular ones, or `wire_name_override` when set.

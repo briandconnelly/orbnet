@@ -130,6 +130,7 @@ class TestAllDatasetsRequestParams:
         """Test default parameter values."""
         params = AllDatasetsRequestParams()
         assert params.caller_id is None
+        assert params.default_granularity == "1m"
         assert params.include_all_responsiveness is False
         assert params.include_all_wifi_link is False
 
@@ -137,12 +138,19 @@ class TestAllDatasetsRequestParams:
         """Test custom parameter values."""
         params = AllDatasetsRequestParams(
             caller_id="test-caller",
+            default_granularity="1s",
             include_all_responsiveness=True,
             include_all_wifi_link=True,
         )
         assert params.caller_id == "test-caller"
+        assert params.default_granularity == "1s"
         assert params.include_all_responsiveness is True
         assert params.include_all_wifi_link is True
+
+    def test_invalid_default_granularity_raises(self):
+        """Test that invalid default_granularity raises ValidationError."""
+        with pytest.raises(ValidationError):
+            AllDatasetsRequestParams(default_granularity="5m")  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]  # noqa: E501
 
 
 class TestPollingConfig:
@@ -1021,6 +1029,17 @@ class TestErrorPayload:
 
         with pytest.raises(ValueError, match="Dataset failed: boom"):
             unwrap(ErrorPayload(error="boom"))
+
+    def test_is_ok_with_none(self):
+        from orbnet.models import is_ok
+
+        assert is_ok(None) is False
+
+    def test_unwrap_raises_on_none(self):
+        from orbnet.models import unwrap
+
+        with pytest.raises(ValueError, match="Dataset result is None"):
+            unwrap(None)
 
 
 @pytest.fixture

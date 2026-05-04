@@ -599,6 +599,7 @@ class OrbAPIClient:
         """
         request = AllDatasetsRequestParams(
             caller_id=caller_id,
+            default_granularity=default_granularity,
             include_all_responsiveness=include_all_responsiveness,
             include_all_wifi_link=include_all_wifi_link,
         )
@@ -614,8 +615,8 @@ class OrbAPIClient:
                 plan.append((spec, None))
                 continue
             chosen = (
-                default_granularity
-                if default_granularity in spec.granularities
+                request.default_granularity
+                if request.default_granularity in spec.granularities
                 else spec.default_granularity
             )
             plan.append((spec, chosen))

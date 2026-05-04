@@ -522,7 +522,7 @@ async def get_all_datasets(
         timeout: Request timeout in seconds (default: 30.0)
 
     Returns:
-        Dictionary with keys for each dataset type:
+        AllDatasetsResponse object with fields for each dataset type:
         - scores_1m: 1-minute scores dataset
         - responsiveness_1s: 1-second responsiveness dataset
         - responsiveness_15s: 15-second responsiveness
@@ -535,7 +535,8 @@ async def get_all_datasets(
         - wifi_link_15s: 15-second Wi-Fi link (if include_all_wifi_link=True)
         - wifi_link_1m: 1-minute Wi-Fi link (if include_all_wifi_link=True)
 
-        Each value is either a list of records or an error dict if that dataset failed.
+        Each field is either a list of records or an ErrorPayload (typed
+        `{"error": "..."}` payload) if that dataset failed to fetch.
 
         For Python consumers, branch with is_ok() / .error:
 
