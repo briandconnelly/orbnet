@@ -19,7 +19,6 @@ Unlike traditional speed tests that provide only momentary snapshots, Orb gives 
 - **Type safety** - Pydantic models for data validation
 - **Multiple granularities** - 1-second, 15-second, and 1-minute data buckets
 - **Polling support** - Automatically fetch only new records
-- **Flexible formats** - JSON or JSONL output
 - **Comprehensive datasets** - Scores, responsiveness, web performance, speed tests, and Wi-Fi link metrics
 
 ## Installation
