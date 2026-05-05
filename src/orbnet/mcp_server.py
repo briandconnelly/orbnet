@@ -130,10 +130,10 @@ def get_client(
 ) -> OrbAPIClient:
     """Create an OrbAPIClient with config defaults and optional overrides."""
     return OrbAPIClient(
-        host=host or config.host,
-        port=port or config.port,
-        caller_id=caller_id or config.caller_id,
-        timeout=timeout or config.timeout,
+        host=config.host if host is None else host,
+        port=config.port if port is None else port,
+        caller_id=config.caller_id if caller_id is None else caller_id,
+        timeout=config.timeout if timeout is None else timeout,
     )
 
 
@@ -221,8 +221,8 @@ async def get_scores_1m(
             }
         ]
     """
-    await ctx.info(f"Getting 1m scores from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)
+    await ctx.info(f"Getting 1m scores from Orb sensor {client.host}...")
     return await client.get_scores_1m()
 
 
@@ -297,8 +297,8 @@ async def get_responsiveness(
 
     Empty list [] if no new data since last poll.
     """
-    await ctx.info(f"Getting responsiveness data from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)
+    await ctx.info(f"Getting responsiveness data from Orb sensor {client.host}...")
     return await client.get_responsiveness(granularity=granularity)
 
 
@@ -342,8 +342,8 @@ async def get_web_responsiveness(
         - network_type: Network interface type
         - And more...
     """
-    await ctx.info(f"Getting web responsiveness data from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)
+    await ctx.info(f"Getting web responsiveness data from Orb sensor {client.host}...")
     return await client.get_web_responsiveness()
 
 
@@ -387,8 +387,8 @@ async def get_speed_results(
         - timestamp: Test timestamp in epoch milliseconds
         - network_type: Network interface type
     """
-    await ctx.info(f"Getting speed test data from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)
+    await ctx.info(f"Getting speed test data from Orb sensor {client.host}...")
     return await client.get_speed_results()
 
 
@@ -460,8 +460,8 @@ async def get_wifi_link(
         "Why is my Wi-Fi slow even though my internet plan is fast?"
         "Show me my Wi-Fi signal strength over the last hour"
     """
-    await ctx.info(f"Getting Wi-Fi link data from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)
+    await ctx.info(f"Getting Wi-Fi link data from Orb sensor {client.host}...")
     return await client.get_wifi_link(granularity=granularity)
 
 
@@ -535,8 +535,8 @@ async def get_all_datasets(
         For LLM/JSON consumers, the wire format is unchanged — successful
         datasets serialize to a list, failed datasets to {"error": "..."}.
     """
-    await ctx.info(f"Getting all datasets from Orb sensor {host}...")
     client = get_client(host, port, caller_id, timeout)
+    await ctx.info(f"Getting all datasets from Orb sensor {client.host}...")
     return await client.get_all_datasets(
         include_all_responsiveness=include_all_responsiveness,
         include_all_wifi_link=include_all_wifi_link,

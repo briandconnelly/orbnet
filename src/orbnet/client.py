@@ -10,12 +10,10 @@ from .datasets import DATASETS, DatasetSpec, parse_poll_alias
 from .models import (
     AllDatasetsRequestParams,
     AllDatasetsResponse,
-    DatasetRequestParams,
     ErrorPayload,
     OrbClientConfig,
     PollingConfig,
     ResponsivenessRecord,
-    ResponsivenessRequestParams,
     ScoreRecord,
     SpeedRecord,
     WebResponsivenessRecord,
@@ -98,8 +96,10 @@ class OrbAPIClient:
         self.config = OrbClientConfig(
             host=host,
             port=port,
-            caller_id=caller_id or str(uuid.uuid4()),
-            client_id=client_id or f"orbnet/{get_version('orbnet')}",
+            caller_id=str(uuid.uuid4()) if caller_id is None else caller_id,
+            client_id=(
+                f"orbnet/{get_version('orbnet')}" if client_id is None else client_id
+            ),
             timeout=timeout,
         )
 
@@ -250,11 +250,10 @@ class OrbAPIClient:
             ...     avg = sum(scores_list) / len(scores_list)
             ...     print(f"{isp}: {avg:.1f}")
         """
-        request = DatasetRequestParams(caller_id=caller_id, **params)
         return await self._fetch(
             DATASETS["scores"],
             "1m",
-            caller_id=request.caller_id,
+            caller_id=caller_id,
             **params,
         )
 
@@ -317,13 +316,10 @@ class OrbAPIClient:
             >>> max_loss = max(loss_rates)
             >>> print(f"Avg packet loss: {avg_loss:.2f}%, Max: {max_loss:.2f}%")
         """
-        request = ResponsivenessRequestParams(
-            granularity=granularity, caller_id=caller_id, **params
-        )
         return await self._fetch(
             DATASETS["responsiveness"],
-            request.granularity,
-            caller_id=request.caller_id,
+            granularity,
+            caller_id=caller_id,
             **params,
         )
 
@@ -387,10 +383,9 @@ class OrbAPIClient:
             ...     avg = sum(ttfbs) / len(ttfbs)
             ...     print(f"{url}: {avg:.1f}ms avg TTFB")
         """
-        request = DatasetRequestParams(caller_id=caller_id, **params)
         return await self._fetch(
             DATASETS["web_responsiveness"],
-            caller_id=request.caller_id,
+            caller_id=caller_id,
             **params,
         )
 
@@ -461,10 +456,9 @@ class OrbAPIClient:
             ...     avg = sum(speeds_list) / len(speeds_list)
             ...     print(f"{server}: {avg:.1f} Mbps avg")
         """
-        request = DatasetRequestParams(caller_id=caller_id, **params)
         return await self._fetch(
             DATASETS["speed_results"],
-            caller_id=request.caller_id,
+            caller_id=caller_id,
             **params,
         )
 
@@ -512,13 +506,10 @@ class OrbAPIClient:
             ...     print(f"{record.timestamp}: {record.rssi_avg} dBm "
             ...           f"on {record.channel_band}")
         """
-        request = ResponsivenessRequestParams(
-            granularity=granularity, caller_id=caller_id, **params
-        )
         return await self._fetch(
             DATASETS["wifi_link"],
-            request.granularity,
-            caller_id=request.caller_id,
+            granularity,
+            caller_id=caller_id,
             **params,
         )
 
@@ -745,19 +736,19 @@ class OrbAPIClient:
         while config.max_iterations is None or iteration < config.max_iterations:
             try:
                 records = await self._fetch(spec, granularity)
-
-                if config.callback and records:
-                    if asyncio.iscoroutinefunction(config.callback):
-                        await config.callback(config.dataset_name, records)
-                    else:
-                        config.callback(config.dataset_name, records)
-
-                yield records
-
-                await asyncio.sleep(config.interval)
-                iteration += 1
-
-            except Exception as e:
+            except httpx.HTTPError as e:
                 logger.warning("Error polling %s: %s", config.dataset_name, e)
                 await asyncio.sleep(config.interval)
                 iteration += 1
+                continue
+
+            if config.callback and records:
+                if asyncio.iscoroutinefunction(config.callback):
+                    await config.callback(config.dataset_name, records)
+                else:
+                    config.callback(config.dataset_name, records)
+
+            yield records
+
+            await asyncio.sleep(config.interval)
+            iteration += 1

@@ -815,3 +815,82 @@ class TestPublicMethodsParametrized:
             url = mock_client.get.call_args[0][0]
             ds = DATASETS[family]
             assert ds.wire_name(ds.default_granularity) in url
+
+
+class TestExplicitOverrideSemantics:
+    """__init__ uses `is None` checks, not falsy fallbacks, so explicit
+    empty-string overrides are honored rather than silently replaced."""
+
+    def test_empty_caller_id_is_preserved(self):
+        """caller_id="" should be passed through, not replaced with a UUID."""
+        client = OrbAPIClient(host="192.168.1.100", caller_id="")
+        assert client.caller_id == ""
+
+    def test_empty_client_id_is_preserved(self):
+        """client_id="" should be passed through, not replaced with the default."""
+        client = OrbAPIClient(host="192.168.1.100", client_id="")
+        assert client.client_id == ""
+
+    def test_none_caller_id_generates_uuid(self):
+        """caller_id=None still generates a fresh UUID per docstring contract."""
+        client = OrbAPIClient(host="192.168.1.100", caller_id=None)
+        assert client.caller_id is not None
+        assert client.caller_id != ""
+
+    def test_none_client_id_uses_default(self):
+        """client_id=None still uses the default 'orbnet/<version>' string."""
+        client = OrbAPIClient(host="192.168.1.100", client_id=None)
+        assert client.client_id.startswith("orbnet/")
+
+
+class TestPollDatasetPropagatesProgrammingErrors:
+    """poll_dataset only swallows transport (httpx) errors. Programming errors
+    such as pydantic validation failures and callback bugs must propagate so
+    the caller can surface them, instead of polling forever silently."""
+
+    @pytest.mark.asyncio
+    async def test_validation_error_propagates(self, mock_httpx_response):
+        """A malformed API response should raise ValidationError, not be swallowed."""
+        from pydantic import ValidationError
+
+        # Return data missing required fields → pydantic ValidationError
+        mock_httpx_response.json.return_value = [{"orb_id": "x"}]
+
+        with patch("httpx.AsyncClient") as mock_client_class:
+            mock_client = AsyncMock()
+            mock_client_class.return_value.__aenter__.return_value = mock_client
+            mock_client.get.return_value = mock_httpx_response
+
+            client = OrbAPIClient(host="192.168.1.100")
+
+            with pytest.raises(ValidationError):
+                async for _ in client.poll_dataset(
+                    "scores_1m", interval=0.01, max_iterations=1
+                ):
+                    pass
+
+    @pytest.mark.asyncio
+    async def test_callback_error_propagates(
+        self, sample_scores_data, mock_httpx_response
+    ):
+        """A buggy callback should propagate, not be silenced."""
+        mock_httpx_response.json.return_value = sample_scores_data
+
+        def buggy_callback(dataset_name, records):
+            raise RuntimeError("callback bug")
+
+        with patch("httpx.AsyncClient") as mock_client_class:
+            mock_client = AsyncMock()
+            mock_client_class.return_value.__aenter__.return_value = mock_client
+            mock_client.get.return_value = mock_httpx_response
+
+            client = OrbAPIClient(host="192.168.1.100")
+
+            with pytest.raises(RuntimeError, match="callback bug"):
+                async for _ in client.poll_dataset(
+                    "scores_1m",
+                    interval=0.01,
+                    callback=buggy_callback,
+                    max_iterations=1,
+                ):
+                    pass
