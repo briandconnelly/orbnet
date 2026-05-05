@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from orbnet import mcp_server
+from orbnet.models import AllDatasetsResponse, ErrorPayload
 
 
 @pytest.fixture
@@ -201,3 +202,26 @@ async def test_prompt_metadata_troubleshoot_wifi():
     prompt = await mcp_server.mcp.get_prompt("troubleshoot_wifi")
     assert prompt.title == "Troubleshoot Wi-Fi"
     assert prompt.tags == {"orb", "wifi", "troubleshooting"}
+
+
+async def test_get_all_datasets_error_payload_passthrough(mock_client, ctx):
+    error_payload = ErrorPayload(error="connection refused")
+    response = AllDatasetsResponse(
+        scores_1m=[],
+        responsiveness_1s=error_payload,
+        web_responsiveness=[],
+        speed_results=[],
+    )
+    mock_client.get_all_datasets = AsyncMock(return_value=response)
+
+    result = await mcp_server.get_all_datasets(ctx, host="h")
+
+    assert isinstance(result, AllDatasetsResponse)
+    dumped = result.model_dump()
+    assert dumped["responsiveness_1s"] == {"error": "connection refused"}
+    assert dumped["scores_1m"] == []
+    mock_client.get_all_datasets.assert_awaited_once_with(
+        include_all_responsiveness=False,
+        include_all_wifi_link=False,
+        default_granularity="1s",
+    )
