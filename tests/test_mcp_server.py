@@ -261,3 +261,45 @@ async def test_get_all_datasets_error_payload_passthrough(mock_client, ctx):
         include_all_wifi_link=False,
         default_granularity="1s",
     )
+
+
+class TestGetClientOverrideSemantics:
+    """get_client uses `is None` checks so that explicit values like port=0 reach
+    the OrbAPIClient/Pydantic layer (where they get rejected) instead of being
+    silently replaced by the env-derived defaults."""
+
+    def test_port_zero_reaches_pydantic_validation(self):
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            mcp_server.get_client(host="h", port=0)
+
+    def test_timeout_zero_reaches_pydantic_validation(self):
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            mcp_server.get_client(host="h", timeout=0.0)
+
+    def test_explicit_caller_id_empty_string_passes_through(self):
+        client = mcp_server.get_client(host="h", caller_id="")
+        assert client.caller_id == ""
+
+    def test_empty_host_is_rejected(self):
+        """host="" would produce an invalid base URL; reject at validation."""
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            mcp_server.get_client(host="")
+
+
+async def test_log_uses_resolved_host_not_raw_arg(mock_client, ctx):
+    """When host is None, the log message should report the resolved host
+    (from config), not literal 'None'."""
+    mock_client.host = "resolved-host"
+
+    await mcp_server.get_scores_1m(ctx, host=None)
+
+    ctx.info.assert_awaited_once()
+    log_message = ctx.info.await_args.args[0]
+    assert "resolved-host" in log_message
+    assert "None" not in log_message

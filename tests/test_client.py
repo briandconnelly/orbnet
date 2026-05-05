@@ -815,3 +815,120 @@ class TestPublicMethodsParametrized:
             url = mock_client.get.call_args[0][0]
             ds = DATASETS[family]
             assert ds.wire_name(ds.default_granularity) in url
+
+
+class TestExplicitOverrideSemantics:
+    """__init__ uses `is None` checks, not falsy fallbacks, so explicit
+    empty-string overrides are honored rather than silently replaced.
+
+    The one exception is `host`, which has min_length=1 in OrbClientConfig
+    — an empty hostname produces a structurally invalid base URL like
+    `http://:7080`, so it's rejected at construction.
+    """
+
+    def test_empty_host_is_rejected(self):
+        """host="" should raise ValidationError (would yield invalid URL)."""
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            OrbAPIClient(host="")
+
+    def test_empty_caller_id_is_preserved(self):
+        """caller_id="" should be passed through, not replaced with a UUID."""
+        client = OrbAPIClient(host="192.168.1.100", caller_id="")
+        assert client.caller_id == ""
+
+    def test_empty_client_id_is_preserved(self):
+        """client_id="" should be passed through, not replaced with the default."""
+        client = OrbAPIClient(host="192.168.1.100", client_id="")
+        assert client.client_id == ""
+
+    def test_none_caller_id_generates_uuid(self):
+        """caller_id=None still generates a fresh UUID per docstring contract."""
+        client = OrbAPIClient(host="192.168.1.100", caller_id=None)
+        assert client.caller_id is not None
+        assert client.caller_id != ""
+
+    def test_none_client_id_uses_default(self):
+        """client_id=None still uses the default 'orbnet/<version>' string."""
+        client = OrbAPIClient(host="192.168.1.100", client_id=None)
+        assert client.client_id.startswith("orbnet/")
+
+
+class TestPollDatasetPropagatesProgrammingErrors:
+    """poll_dataset only swallows transport (httpx) errors. Programming errors
+    such as pydantic validation failures and callback bugs must propagate so
+    the caller can surface them, instead of polling forever silently."""
+
+    @pytest.mark.asyncio
+    async def test_validation_error_propagates(self, mock_httpx_response):
+        """A malformed API response should raise ValidationError, not be swallowed."""
+        from pydantic import ValidationError
+
+        # Return data missing required fields → pydantic ValidationError
+        mock_httpx_response.json.return_value = [{"orb_id": "x"}]
+
+        with patch("httpx.AsyncClient") as mock_client_class:
+            mock_client = AsyncMock()
+            mock_client_class.return_value.__aenter__.return_value = mock_client
+            mock_client.get.return_value = mock_httpx_response
+
+            client = OrbAPIClient(host="192.168.1.100")
+
+            with pytest.raises(ValidationError):
+                async for _ in client.poll_dataset(
+                    "scores_1m", interval=0.01, max_iterations=1
+                ):
+                    pass
+
+    @pytest.mark.asyncio
+    async def test_callback_error_propagates(
+        self, sample_scores_data, mock_httpx_response
+    ):
+        """A buggy callback should propagate, not be silenced."""
+        mock_httpx_response.json.return_value = sample_scores_data
+
+        def buggy_callback(dataset_name, records):
+            raise RuntimeError("callback bug")
+
+        with patch("httpx.AsyncClient") as mock_client_class:
+            mock_client = AsyncMock()
+            mock_client_class.return_value.__aenter__.return_value = mock_client
+            mock_client.get.return_value = mock_httpx_response
+
+            client = OrbAPIClient(host="192.168.1.100")
+
+            with pytest.raises(RuntimeError, match="callback bug"):
+                async for _ in client.poll_dataset(
+                    "scores_1m",
+                    interval=0.01,
+                    callback=buggy_callback,
+                    max_iterations=1,
+                ):
+                    pass
+
+
+class TestGranularityValidation:
+    """Public client methods used to get granularity validation as a side-effect
+    of constructing a Pydantic request object. After dropping that dead-weight
+    construction, _fetch validates against spec.granularities so dynamic callers
+    still get a clear, local ValueError instead of an opaque HTTP 404."""
+
+    @pytest.mark.asyncio
+    async def test_get_responsiveness_rejects_invalid_granularity(self):
+        client = OrbAPIClient(host="192.168.1.100")
+        with pytest.raises(ValueError, match="Invalid granularity"):
+            await client.get_responsiveness(granularity="2m")  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]  # noqa: E501
+
+    @pytest.mark.asyncio
+    async def test_get_wifi_link_rejects_invalid_granularity(self):
+        client = OrbAPIClient(host="192.168.1.100")
+        with pytest.raises(ValueError, match="Invalid granularity"):
+            await client.get_wifi_link(granularity="2m")  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]  # noqa: E501
+
+    @pytest.mark.asyncio
+    async def test_validation_error_lists_valid_granularities(self):
+        """The error message should tell the caller what granularities are valid."""
+        client = OrbAPIClient(host="192.168.1.100")
+        with pytest.raises(ValueError, match="1s, 15s, 1m"):
+            await client.get_responsiveness(granularity="bogus")  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]  # noqa: E501

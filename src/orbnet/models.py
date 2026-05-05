@@ -14,6 +14,7 @@ class OrbClientConfig(BaseModel):
     """Configuration for the Orb API Client"""
 
     host: str = Field(
+        min_length=1,
         description="Hostname or IP address of the Orb sensor",
     )
     port: int = Field(
