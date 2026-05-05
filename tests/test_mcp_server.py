@@ -120,8 +120,10 @@ def test_main_invokes_mcp_run(mocker):
 
 async def test_tool_metadata_get_scores_1m():
     tool = await mcp_server.mcp.get_tool("get_scores_1m")
+    assert tool is not None
     assert tool.title == "Get Scores Dataset (1m)"
     assert tool.tags == {"orb", "scores"}
+    assert tool.annotations is not None
     assert tool.annotations.readOnlyHint is True
     assert tool.annotations.openWorldHint is True
     assert tool.annotations.idempotentHint is None
@@ -129,8 +131,10 @@ async def test_tool_metadata_get_scores_1m():
 
 async def test_tool_metadata_get_responsiveness():
     tool = await mcp_server.mcp.get_tool("get_responsiveness")
+    assert tool is not None
     assert tool.title == "Get Responsiveness Dataset"
     assert tool.tags == {"orb", "responsiveness"}
+    assert tool.annotations is not None
     assert tool.annotations.readOnlyHint is True
     assert tool.annotations.openWorldHint is True
     assert tool.annotations.idempotentHint is None
@@ -138,8 +142,10 @@ async def test_tool_metadata_get_responsiveness():
 
 async def test_tool_metadata_get_web_responsiveness():
     tool = await mcp_server.mcp.get_tool("get_web_responsiveness")
+    assert tool is not None
     assert tool.title == "Get Web Responsiveness Dataset"
     assert tool.tags == {"orb", "web-performance"}
+    assert tool.annotations is not None
     assert tool.annotations.readOnlyHint is True
     assert tool.annotations.openWorldHint is True
     assert tool.annotations.idempotentHint is None
@@ -147,8 +153,10 @@ async def test_tool_metadata_get_web_responsiveness():
 
 async def test_tool_metadata_get_speed_results():
     tool = await mcp_server.mcp.get_tool("get_speed_results")
+    assert tool is not None
     assert tool.title == "Get Speed Test Results"
     assert tool.tags == {"orb", "speed"}
+    assert tool.annotations is not None
     assert tool.annotations.readOnlyHint is True
     assert tool.annotations.openWorldHint is True
     assert tool.annotations.idempotentHint is None
@@ -156,8 +164,10 @@ async def test_tool_metadata_get_speed_results():
 
 async def test_tool_metadata_get_wifi_link():
     tool = await mcp_server.mcp.get_tool("get_wifi_link")
+    assert tool is not None
     assert tool.title == "Get Wi-Fi Link Dataset"
     assert tool.tags == {"orb", "wifi"}
+    assert tool.annotations is not None
     assert tool.annotations.readOnlyHint is True
     assert tool.annotations.openWorldHint is True
     assert tool.annotations.idempotentHint is None
@@ -165,8 +175,10 @@ async def test_tool_metadata_get_wifi_link():
 
 async def test_tool_metadata_get_all_datasets():
     tool = await mcp_server.mcp.get_tool("get_all_datasets")
+    assert tool is not None
     assert tool.title == "Get All Datasets"
     assert tool.tags == {"orb", "aggregate"}
+    assert tool.annotations is not None
     assert tool.annotations.readOnlyHint is True
     assert tool.annotations.openWorldHint is True
     assert tool.annotations.idempotentHint is None
@@ -174,8 +186,10 @@ async def test_tool_metadata_get_all_datasets():
 
 async def test_tool_metadata_get_client_info():
     tool = await mcp_server.mcp.get_tool("get_client_info")
+    assert tool is not None
     assert tool.title == "Get Client Configuration"
     assert tool.tags == {"orb", "config"}
+    assert tool.annotations is not None
     assert tool.annotations.readOnlyHint is True
     assert tool.annotations.openWorldHint is False
     assert tool.annotations.idempotentHint is None
@@ -188,18 +202,21 @@ async def test_tool_metadata_get_client_info():
 
 async def test_prompt_metadata_analyze_network_quality():
     prompt = await mcp_server.mcp.get_prompt("analyze_network_quality")
+    assert prompt is not None
     assert prompt.title == "Analyze Network Quality"
     assert prompt.tags == {"orb", "analysis"}
 
 
 async def test_prompt_metadata_troubleshoot_slow_internet():
     prompt = await mcp_server.mcp.get_prompt("troubleshoot_slow_internet")
+    assert prompt is not None
     assert prompt.title == "Troubleshoot Slow Internet"
     assert prompt.tags == {"orb", "speed", "troubleshooting"}
 
 
 async def test_prompt_metadata_troubleshoot_wifi():
     prompt = await mcp_server.mcp.get_prompt("troubleshoot_wifi")
+    assert prompt is not None
     assert prompt.title == "Troubleshoot Wi-Fi"
     assert prompt.tags == {"orb", "wifi", "troubleshooting"}
 
