@@ -1,6 +1,12 @@
-from typing import Callable, Literal, Optional, TypeAlias, TypeVar
+from collections.abc import Awaitable, Callable
+from typing import Any, Literal, Optional, TypeAlias, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field
+
+# A polling callback receives (dataset_name, records) and may return either
+# synchronously or as an awaitable (e.g. an async coroutine). The records
+# argument is typed Any because the concrete record class varies by dataset.
+PollingCallback: TypeAlias = Callable[[str, list[Any]], object | Awaitable[object]]
 
 NETWORK_STATE_DESC = (
     "Speed test load state: 0=unknown, 1=idle, 2=content upload, "
@@ -77,9 +83,10 @@ class PollingConfig(BaseModel):
     interval: float = Field(
         default=60.0, gt=0, description="Seconds to wait between polls"
     )
-    callback: Optional[Callable] = Field(
+    callback: Optional[PollingCallback] = Field(
         default=None,
-        description="Optional function to call with each batch of new records",
+        description="Optional function to call with each batch of new records. "
+        "May be sync or async; signature: (dataset_name: str, records: list) -> Any.",
     )
     max_iterations: Optional[int] = Field(
         default=None, ge=1, description="Maximum number of polls (None for infinite)"

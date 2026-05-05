@@ -202,6 +202,25 @@ class TestPollingConfig:
         with pytest.raises(ValidationError):
             PollingConfig(dataset_name="test", max_iterations=0)
 
+    def test_callback_accepts_sync_and_async(self):
+        """The callback alias must accept sync and async callables alike."""
+
+        def sync_cb(name, records):
+            return None
+
+        async def async_cb(name, records):
+            return None
+
+        PollingConfig(dataset_name="test", callback=sync_cb)
+        PollingConfig(dataset_name="test", callback=async_cb)
+
+
+def test_polling_callback_type_alias_is_exported():
+    """PollingCallback should be importable for users typing their own callbacks."""
+    from orbnet.models import PollingCallback
+
+    assert PollingCallback is not None
+
 
 class TestScoreIdentifiers:
     """Test ScoreIdentifiers model."""

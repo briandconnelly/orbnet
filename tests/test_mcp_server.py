@@ -303,3 +303,31 @@ async def test_log_uses_resolved_host_not_raw_arg(mock_client, ctx):
     log_message = ctx.info.await_args.args[0]
     assert "resolved-host" in log_message
     assert "None" not in log_message
+
+
+class TestLazyConfigLoading:
+    """Config is loaded lazily on first access (not at import time), so tests
+    can set ORB_HOST/ORB_PORT/ORB_TIMEOUT before first use without import-order
+    coupling. Cached after first call."""
+
+    def setup_method(self):
+        mcp_server.get_config.cache_clear()
+
+    def teardown_method(self):
+        mcp_server.get_config.cache_clear()
+
+    def test_env_vars_set_before_first_call_are_honored(self, monkeypatch):
+        monkeypatch.setenv("ORB_HOST", "lazy-host.example.com")
+        monkeypatch.setenv("ORB_PORT", "9999")
+        monkeypatch.setenv("ORB_TIMEOUT", "12.5")
+
+        cfg = mcp_server.get_config()
+
+        assert cfg.host == "lazy-host.example.com"
+        assert cfg.port == 9999
+        assert cfg.timeout == 12.5
+
+    def test_repeated_calls_return_same_cached_instance(self):
+        first = mcp_server.get_config()
+        second = mcp_server.get_config()
+        assert first is second

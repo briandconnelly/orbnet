@@ -2,7 +2,7 @@ import asyncio
 import logging
 import uuid
 from importlib.metadata import version as get_version
-from typing import Any, Callable, Dict, List, Literal, Optional, cast
+from typing import Any, Dict, List, Literal, Optional, cast
 
 import httpx
 
@@ -12,6 +12,7 @@ from .models import (
     AllDatasetsResponse,
     ErrorPayload,
     OrbClientConfig,
+    PollingCallback,
     PollingConfig,
     ResponsivenessRecord,
     ScoreRecord,
@@ -642,7 +643,7 @@ class OrbAPIClient:
         self,
         dataset_name: str,
         interval: float = 60.0,
-        callback: Optional[Callable] = None,
+        callback: Optional[PollingCallback] = None,
         max_iterations: Optional[int] = None,
     ):
         """
