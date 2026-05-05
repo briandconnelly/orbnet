@@ -684,6 +684,7 @@ dependencies = [
 [package.optional-dependencies]
 mcp = [
     { name = "fastmcp" },
+    { name = "mcp" },
 ]
 
 [package.dev-dependencies]
@@ -701,6 +702,7 @@ dev = [
 requires-dist = [
     { name = "fastmcp", marker = "extra == 'mcp'", specifier = ">=3.2.0" },
     { name = "httpx", specifier = ">=0.28.1" },
+    { name = "mcp", marker = "extra == 'mcp'", specifier = ">=1.0.0" },
     { name = "pydantic", specifier = ">=2.11.9" },
 ]
 provides-extras = ["mcp"]

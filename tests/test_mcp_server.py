@@ -221,6 +221,25 @@ async def test_prompt_metadata_troubleshoot_wifi():
     assert prompt.tags == {"orb", "wifi", "troubleshooting"}
 
 
+async def test_registered_tools_and_prompts():
+    tools = await mcp_server.mcp.list_tools()
+    prompts = await mcp_server.mcp.list_prompts()
+    assert {t.name for t in tools} == {
+        "get_scores_1m",
+        "get_responsiveness",
+        "get_web_responsiveness",
+        "get_speed_results",
+        "get_wifi_link",
+        "get_all_datasets",
+        "get_client_info",
+    }
+    assert {p.name for p in prompts} == {
+        "analyze_network_quality",
+        "troubleshoot_slow_internet",
+        "troubleshoot_wifi",
+    }
+
+
 async def test_get_all_datasets_error_payload_passthrough(mock_client, ctx):
     error_payload = ErrorPayload(error="connection refused")
     response = AllDatasetsResponse(

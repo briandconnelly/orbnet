@@ -45,6 +45,7 @@ orbnet-mcp = "orbnet.mcp_server:main"
 [project.optional-dependencies]
 mcp = [
     "fastmcp>=3.2.0",
+    "mcp>=1.0.0",
 ]
 
 [build-system]
