@@ -19,7 +19,6 @@ Unlike traditional speed tests that provide only momentary snapshots, Orb gives 
 - **Type safety** - Pydantic models for data validation
 - **Multiple granularities** - 1-second, 15-second, and 1-minute data buckets
 - **Polling support** - Automatically fetch only new records
-- **Flexible formats** - JSON or JSONL output
 - **Comprehensive datasets** - Scores, responsiveness, web performance, speed tests, and Wi-Fi link metrics
 
 ## Installation
@@ -55,10 +54,10 @@ async def main():
 
     if scores:
         latest = scores[-1]
-        print(f"Orb Score: {latest['orb_score']:.0f}")
-        print(f"Responsiveness: {latest['responsiveness_score']:.0f}")
-        print(f"Reliability: {latest['reliability_score']:.0f}")
-        print(f"Speed: {latest['speed_score']:.0f}")
+        print(f"Orb Score: {latest.orb_score:.0f}")
+        print(f"Responsiveness: {latest.responsiveness_score:.0f}")
+        print(f"Reliability: {latest.reliability_score:.0f}")
+        print(f"Speed: {latest.speed_score:.0f}")
 
 asyncio.run(main())
 ```
@@ -113,7 +112,7 @@ async def monitor_network():
     ):
         if records:
             latest = records[-1]
-            latency_ms = latest['latency_avg_us'] / 1000
+            latency_ms = latest.latency_avg_us / 1000
             print(f"Latency: {latency_ms:.1f}ms")
 ```
 
@@ -123,12 +122,12 @@ async def monitor_network():
 def alert_callback(dataset_name, records):
     for record in records:
         # Alert on high latency
-        if record['latency_avg_us'] > 50000:  # 50ms
-            print(f"⚠️  High latency: {record['latency_avg_us']}μs")
+        if record.latency_avg_us > 50000:  # 50ms
+            print(f"⚠️  High latency: {record.latency_avg_us}μs")
 
         # Alert on packet loss
-        if record['packet_loss_pct'] > 1.0:  # 1%
-            print(f"⚠️  Packet loss: {record['packet_loss_pct']:.2f}%")
+        if record.packet_loss_pct > 1.0:  # 1%
+            print(f"⚠️  Packet loss: {record.packet_loss_pct:.2f}%")
 
 async def monitor_with_alerts():
     client = OrbAPIClient(host="192.168.0.20")
@@ -149,7 +148,7 @@ async def analyze_speeds():
     speeds = await client.get_speed_results()
 
     # Convert to Mbps and calculate statistics
-    downloads = [s['download_kbps'] / 1000 for s in speeds]
+    downloads = [s.download_kbps / 1000 for s in speeds]
 
     avg_speed = sum(downloads) / len(downloads)
     min_speed = min(downloads)
@@ -179,10 +178,10 @@ async def compare_by_isp():
     # Group scores by ISP
     isp_scores = {}
     for record in scores:
-        isp = record['isp_name']
+        isp = record.isp_name
         if isp not in isp_scores:
             isp_scores[isp] = []
-        isp_scores[isp].append(record['orb_score'])
+        isp_scores[isp].append(record.orb_score)
 
     # Calculate averages
     for isp, scores_list in isp_scores.items():
@@ -309,25 +308,25 @@ client = OrbAPIClient(
 
 #### Methods
 
-- **`get_scores_1m(format="json", caller_id=None)`**
+- **`get_scores_1m(caller_id=None)`**
   Retrieve 1-minute granularity Scores dataset
 
-- **`get_responsiveness(granularity="1m", format="json", caller_id=None)`**
+- **`get_responsiveness(granularity="1m", caller_id=None)`**
   Retrieve Responsiveness dataset (1s, 15s, or 1m)
 
-- **`get_web_responsiveness(format="json", caller_id=None)`**
+- **`get_web_responsiveness(caller_id=None)`**
   Retrieve Web Responsiveness dataset
 
-- **`get_speed_results(format="json", caller_id=None)`**
+- **`get_speed_results(caller_id=None)`**
   Retrieve Speed test results
 
 - **`get_wifi_link(granularity="1m", caller_id=None)`**
   Retrieve Wi-Fi Link dataset (1s, 15s, or 1m)
 
-- **`get_all_datasets(format="json", caller_id=None, include_all_responsiveness=False)`**
+- **`get_all_datasets(caller_id=None, include_all_responsiveness=False, include_all_wifi_link=False, default_granularity="1m")`**
   Retrieve all datasets concurrently
 
-- **`poll_dataset(dataset_name, interval=60.0, format="json", callback=None, max_iterations=None)`**
+- **`poll_dataset(dataset_name, interval=60.0, callback=None, max_iterations=None)`**
   Continuously poll a dataset at regular intervals
 
 #### Properties
@@ -337,32 +336,6 @@ client = OrbAPIClient(
 - `caller_id` - Configured caller ID
 - `client_id` - Configured client ID
 - `timeout` - Request timeout
-
-## Output Formats
-
-### JSON (default)
-
-Returns a Python list of dictionaries:
-
-```python
-scores = await client.get_scores_1m(format="json")
-# Returns: [{"orb_score": 85.5, ...}, {"orb_score": 87.2, ...}]
-```
-
-### JSONL (JSON Lines)
-
-Returns newline-delimited JSON as a string, useful for streaming:
-
-```python
-scores = await client.get_scores_1m(format="jsonl")
-# Returns: '{"orb_score": 85.5, ...}\n{"orb_score": 87.2, ...}\n'
-
-# Parse it:
-import json
-for line in scores.strip().split('\n'):
-    record = json.loads(line)
-    print(record['orb_score'])
-```
 
 ## Error Handling
 
