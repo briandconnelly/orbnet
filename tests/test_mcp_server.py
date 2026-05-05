@@ -390,3 +390,99 @@ class TestLazyConfigLoading:
         first = mcp_server.get_config()
         second = mcp_server.get_config()
         assert first is second
+
+
+# ---------------------------------------------------------------------------
+# Discoverability surface (PR 2 — F4/F7/F8/F9):
+#   - Server instructions declare transport, auth, ambient state, fingerprint,
+#     and explicit negative scope.
+#   - get_client_info exposes a server fingerprint.
+#   - Prompts list prerequisites and avoid duplicating model-level platform
+#     notes.
+# ---------------------------------------------------------------------------
+
+
+class TestServerInstructions:
+    """The instructions block is what an MCP client reads at cold start —
+    transport, auth, ambient state, negative scope, and the capability
+    fingerprint must all be discoverable from this single text.
+    """
+
+    @pytest.fixture
+    def text(self):
+        return mcp_server.mcp.instructions or ""
+
+    @pytest.mark.parametrize(
+        "anchor",
+        [
+            "Transport:",
+            "Auth:",
+            "Ambient state:",
+            "Server fingerprint:",
+            "Does NOT",
+        ],
+    )
+    def test_declares_section(self, text, anchor):
+        assert anchor in text, f"server instructions should declare '{anchor}'"
+
+    def test_fingerprint_includes_version(self, text):
+        from orbnet import __version__
+
+        assert f"orbnet@{__version__}" in text
+
+    @pytest.mark.parametrize("env_var", ["ORB_HOST", "ORB_PORT", "ORB_TIMEOUT"])
+    def test_lists_ambient_env_vars(self, text, env_var):
+        assert env_var in text
+
+
+class TestGetClientInfoFingerprint:
+    """get_client_info should surface the server fingerprint so agents that
+    skip the instructions block can still discover the version they're against.
+    """
+
+    def test_response_includes_server_fingerprint(self, mock_client):
+        from orbnet import __version__
+
+        mock_client.host = "h"
+        mock_client.port = 7080
+        mock_client.base_url = "http://h:7080"
+        mock_client.caller_id = "cid"
+        mock_client.timeout = 30.0
+
+        info = mcp_server.get_client_info(host="h")
+
+        assert info["server_fingerprint"] == f"orbnet@{__version__}"
+
+
+class TestPromptPrerequisites:
+    """Each prompt should declare its prerequisites so agents can fail fast
+    with a clear message instead of mid-execution.
+    """
+
+    @pytest.mark.parametrize(
+        "prompt_fn",
+        [
+            mcp_server.analyze_network_quality,
+            mcp_server.troubleshoot_slow_internet,
+            mcp_server.troubleshoot_wifi,
+        ],
+    )
+    def test_prompt_declares_prerequisites(self, prompt_fn):
+        text = prompt_fn()
+        assert "Prerequisites:" in text
+
+
+class TestTroubleshootWifiNoPlatformDuplication:
+    """troubleshoot_wifi previously embedded platform-availability notes
+    (macOS / Android / Linux / Windows) that duplicate WifiLinkRecord's
+    docstring. Drop them to keep the prompt as orchestration scaffolding,
+    not a redundant copy of the schema-level contract.
+    """
+
+    @pytest.mark.parametrize("platform", ["macOS", "Android", "Linux", "Windows"])
+    def test_does_not_mention_platform(self, platform):
+        text = mcp_server.troubleshoot_wifi()
+        assert platform not in text, (
+            f"troubleshoot_wifi should not duplicate WifiLinkRecord's "
+            f"platform-availability notes ('{platform}' found in prompt text)"
+        )

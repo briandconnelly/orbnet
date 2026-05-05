@@ -24,6 +24,7 @@ from fastmcp import Context, FastMCP
 from mcp.types import ToolAnnotations
 from pydantic import BaseModel, Field
 
+from . import __version__
 from .client import OrbAPIClient
 from .models import (
     AllDatasetsResponse,
@@ -35,11 +36,23 @@ from .models import (
     WifiLinkRecord,
 )
 
+SERVER_FINGERPRINT = f"orbnet@{__version__}"
+
 # Initialize FastMCP server
 mcp = FastMCP(
     "Orb Network Quality Data",
-    instructions="""
+    instructions=f"""
     This server provides real-time network quality monitoring from Orb sensors.
+
+    **Server fingerprint:** {SERVER_FINGERPRINT}
+    **Transport:** stdio
+    **Auth:** None — sensor must be reachable on the local network with Local API enabled
+    **Ambient state:** Reads ORB_HOST, ORB_PORT, ORB_TIMEOUT env vars (cached
+    after first tool call). Polling state is keyed by a session-specific
+    caller_id: the Orb sensor uses that id to track which records each caller
+    has already seen and returns only new ones on subsequent calls. Because
+    the polling state lives on the sensor (not this MCP server), per-tool
+    readOnlyHint=True remains accurate.
 
     **What You Can Ask:**
     ✓ "What's my current network quality?"
@@ -62,6 +75,13 @@ mcp = FastMCP(
     - Historical data depends on sensor configuration
     - Wi-Fi Link data not available on iOS or ethernet-connected sensors
     - Not all granularities may be enabled on a given Orb sensor
+
+    **Does NOT:**
+    - Provide historical data beyond what the sensor retains
+    - Control or configure the sensor (start, stop, change settings)
+    - Aggregate across multiple sensors in a single call
+    - Provide alerts, notifications, or push updates
+    - Necessarily reflect the user's local network (the sensor may be elsewhere)
 
     **IMPORTANT — Granularity Fallback:**
     The responsiveness and Wi-Fi link datasets support multiple granularities
@@ -586,6 +606,7 @@ def _get_client_info_impl(
         - base_url: Full base URL for API requests
         - caller_id: Caller ID being used for polling state tracking
         - timeout: Request timeout in seconds
+        - server_fingerprint: Versioned MCP server identity (e.g. "orbnet@0.4.0")
     """
     client = get_client(host, port, caller_id, timeout)
     return {
@@ -594,6 +615,7 @@ def _get_client_info_impl(
         "base_url": client.base_url,
         "caller_id": client.caller_id,
         "timeout": client.timeout,
+        "server_fingerprint": SERVER_FINGERPRINT,
     }
 
 
@@ -616,6 +638,8 @@ def get_client_info(
 def analyze_network_quality() -> str:
     """Analyze current network quality for the configured Orb and provide insights"""
     return """
+    **Prerequisites:** Orb sensor reachable on the network with Local API enabled.
+
     Analyze the network quality using these steps:
     1. Call get_scores_1m() to get the latest Orb scores
     2. Examine orb_score (0-100, higher is better)
@@ -631,6 +655,8 @@ def analyze_network_quality() -> str:
 def troubleshoot_slow_internet() -> str:
     """Diagnose slow internet connection issues"""
     return """
+    **Prerequisites:** Orb sensor reachable on the network with Local API enabled.
+
     To troubleshoot slow internet:
     1. Call get_speed_results() to check recent speed tests
     2. Call get_responsiveness() for latency/jitter data
@@ -647,6 +673,9 @@ def troubleshoot_slow_internet() -> str:
 def troubleshoot_wifi() -> str:
     """Diagnose Wi-Fi-specific issues by correlating signal metrics with performance"""
     return """
+    **Prerequisites:** Orb sensor connected via Wi-Fi with Local API enabled.
+    Wi-Fi Link data is unavailable on iOS or ethernet-connected sensors.
+
     To diagnose Wi-Fi-specific network issues:
     1. Call get_wifi_link() to get signal and link metrics
     2. Examine key signal indicators:
@@ -668,10 +697,9 @@ def troubleshoot_wifi() -> str:
        - Low SNR + packet loss = RF interference (neighboring networks, appliances)
        - Low link rate + low speed = signal quality is bottlenecking bandwidth
        - Good signal but slow speed = likely a WAN or ISP issue, not Wi-Fi
-    7. Note: Wi-Fi Link data is not available on iOS or ethernet-connected Orbs.
-       Some fields are platform-specific (rx_rate_mbps unavailable on macOS;
-       security and channel_width unavailable on Android; mcs and nss Linux only).
-    8. Summarize with specific, actionable recommendations.
+    7. Summarize with specific, actionable recommendations.
+       (Field-availability quirks across platforms are documented on
+       WifiLinkRecord — read the response to see what's present.)
     """
 
 
