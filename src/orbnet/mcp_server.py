@@ -15,6 +15,7 @@ Stateful Polling:
     polling behavior.
 """
 
+import functools
 import os
 import uuid
 from typing import Any, Literal
@@ -121,7 +122,14 @@ class OrbSensorConfig(BaseModel):
         )
 
 
-config = OrbSensorConfig.from_env()
+@functools.cache
+def get_config() -> OrbSensorConfig:
+    """Load and cache the env-derived sensor config on first access.
+
+    Cached so repeated tool calls don't re-parse env vars, but lazy so tests
+    can set ORB_HOST etc. before first use without import-order coupling.
+    """
+    return OrbSensorConfig.from_env()
 
 
 def get_client(
@@ -131,6 +139,7 @@ def get_client(
     timeout: float | None = None,
 ) -> OrbAPIClient:
     """Create an OrbAPIClient with config defaults and optional overrides."""
+    config = get_config()
     return OrbAPIClient(
         host=config.host if host is None else host,
         port=config.port if port is None else port,

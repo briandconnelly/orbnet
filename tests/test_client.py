@@ -2,6 +2,7 @@
 Tests for OrbAPIClient in orbnet.client.
 """
 
+import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
@@ -508,6 +509,77 @@ class TestOrbAPIClient:
             assert callback_calls[0][0] == "scores_1m"
             # Check callback received Pydantic objects
             assert all(isinstance(r, ScoreRecord) for r in callback_calls[0][1])
+
+    @pytest.mark.asyncio
+    async def test_poll_dataset_awaits_partial_of_async_callback(
+        self, sample_scores_data, mock_httpx_response
+    ):
+        """`functools.partial(async_fn, ...)` returns a coroutine when called.
+        The dispatch must await it regardless of how `partial` is classified
+        by `asyncio.iscoroutinefunction` (which varies by Python version)."""
+        import functools
+
+        mock_httpx_response.json.return_value = sample_scores_data
+        observed = []
+
+        async def async_fn(prefix, dataset_name, records):
+            observed.append((prefix, dataset_name, len(records)))
+
+        partial_callback = functools.partial(async_fn, "tag")
+
+        with patch("httpx.AsyncClient") as mock_client_class:
+            mock_client = AsyncMock()
+            mock_client_class.return_value.__aenter__.return_value = mock_client
+            mock_client.get.return_value = mock_httpx_response
+
+            client = OrbAPIClient(host="192.168.1.100")
+
+            async for _ in client.poll_dataset(
+                "scores_1m",
+                interval=0.01,
+                max_iterations=1,
+                callback=partial_callback,
+            ):
+                pass
+
+        assert observed == [("tag", "scores_1m", len(sample_scores_data))]
+
+    @pytest.mark.asyncio
+    async def test_poll_dataset_awaits_sync_callable_returning_coroutine(
+        self, sample_scores_data, mock_httpx_response
+    ):
+        """A sync function that builds and returns a coroutine should also
+        have that coroutine awaited (covers async-lambda-like patterns)."""
+        mock_httpx_response.json.return_value = sample_scores_data
+        observed = []
+
+        async def _record(dataset_name, records):
+            observed.append((dataset_name, len(records)))
+
+        def sync_returning_coro(dataset_name, records):
+            return _record(dataset_name, records)
+
+        # Sanity check: this is the shape that asyncio.iscoroutinefunction
+        # cannot detect — without inspect.isawaitable on the *result*, the
+        # returned coroutine would be silently dropped.
+        assert not asyncio.iscoroutinefunction(sync_returning_coro)
+
+        with patch("httpx.AsyncClient") as mock_client_class:
+            mock_client = AsyncMock()
+            mock_client_class.return_value.__aenter__.return_value = mock_client
+            mock_client.get.return_value = mock_httpx_response
+
+            client = OrbAPIClient(host="192.168.1.100")
+
+            async for _ in client.poll_dataset(
+                "scores_1m",
+                interval=0.01,
+                max_iterations=1,
+                callback=sync_returning_coro,
+            ):
+                pass
+
+        assert observed == [("scores_1m", len(sample_scores_data))]
 
     @pytest.mark.asyncio
     async def test_poll_dataset_with_error(self, mock_httpx_response, caplog):

@@ -1,8 +1,9 @@
 import asyncio
+import inspect
 import logging
 import uuid
 from importlib.metadata import version as get_version
-from typing import Any, Callable, Dict, List, Literal, Optional, cast
+from typing import Any, Dict, List, Literal, Optional, cast
 
 import httpx
 
@@ -12,6 +13,7 @@ from .models import (
     AllDatasetsResponse,
     ErrorPayload,
     OrbClientConfig,
+    PollingCallback,
     PollingConfig,
     ResponsivenessRecord,
     ScoreRecord,
@@ -642,7 +644,7 @@ class OrbAPIClient:
         self,
         dataset_name: str,
         interval: float = 60.0,
-        callback: Optional[Callable] = None,
+        callback: Optional[PollingCallback] = None,
         max_iterations: Optional[int] = None,
     ):
         """
@@ -753,10 +755,15 @@ class OrbAPIClient:
                 continue
 
             if config.callback and records:
-                if asyncio.iscoroutinefunction(config.callback):
-                    await config.callback(config.dataset_name, records)
-                else:
-                    config.callback(config.dataset_name, records)
+                # Always call, then await if the result is awaitable. This
+                # honors the full PollingCallback contract: `async def`, sync
+                # callables, and sync wrappers that return a coroutine.
+                # `asyncio.iscoroutinefunction` cannot see through the last
+                # shape, so dispatching on its result would silently drop the
+                # returned coroutine.
+                result = config.callback(config.dataset_name, records)
+                if inspect.isawaitable(result):
+                    await result
 
             yield records
 
