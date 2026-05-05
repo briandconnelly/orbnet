@@ -17,9 +17,10 @@ Stateful Polling:
 
 import os
 import uuid
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Literal
 
 from fastmcp import Context, FastMCP
+from mcp.types import ToolAnnotations
 from pydantic import BaseModel, Field
 
 from .client import OrbAPIClient
@@ -122,10 +123,10 @@ config = OrbSensorConfig.from_env()
 
 
 def get_client(
-    host: Optional[str] = None,
-    port: Optional[int] = None,
-    caller_id: Optional[str] = None,
-    timeout: Optional[float] = None,
+    host: str | None = None,
+    port: int | None = None,
+    caller_id: str | None = None,
+    timeout: float | None = None,
 ) -> OrbAPIClient:
     """Create an OrbAPIClient with config defaults and optional overrides."""
     return OrbAPIClient(
@@ -137,20 +138,17 @@ def get_client(
 
 
 @mcp.tool(
-    annotations={
-        "title": "Get Scores Dataset (1m)",
-        "readOnlyHint": True,
-        "idempotentHint": False,
-        "openWorldHint": True,
-    }
+    title="Get Scores Dataset (1m)",
+    annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=True),
+    tags={"orb", "scores"},
 )
 async def get_scores_1m(
     ctx: Context,
-    host: Optional[str] = None,
-    port: Optional[int] = None,
-    caller_id: Optional[str] = None,
-    timeout: Optional[float] = None,
-) -> List[ScoreRecord]:
+    host: str | None = None,
+    port: int | None = None,
+    caller_id: str | None = None,
+    timeout: float | None = None,
+) -> list[ScoreRecord]:
     """
     Retrieve 1-minute granularity Scores dataset from an Orb sensor.
 
@@ -229,21 +227,18 @@ async def get_scores_1m(
 
 
 @mcp.tool(
-    annotations={
-        "title": "Get Responsiveness Dataset",
-        "readOnlyHint": True,
-        "idempotentHint": False,
-        "openWorldHint": True,
-    }
+    title="Get Responsiveness Dataset",
+    annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=True),
+    tags={"orb", "responsiveness"},
 )
 async def get_responsiveness(
     ctx: Context,
-    host: Optional[str] = None,
+    host: str | None = None,
     granularity: Literal["1s", "15s", "1m"] = "1s",
-    port: Optional[int] = None,
-    caller_id: Optional[str] = None,
-    timeout: Optional[float] = None,
-) -> List[ResponsivenessRecord]:
+    port: int | None = None,
+    caller_id: str | None = None,
+    timeout: float | None = None,
+) -> list[ResponsivenessRecord]:
     """
     Retrieve Responsiveness dataset from an Orb sensor at a single granularity.
 
@@ -308,20 +303,17 @@ async def get_responsiveness(
 
 
 @mcp.tool(
-    annotations={
-        "title": "Get Web Responsiveness Dataset",
-        "readOnlyHint": True,
-        "idempotentHint": False,
-        "openWorldHint": True,
-    }
+    title="Get Web Responsiveness Dataset",
+    annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=True),
+    tags={"orb", "web-performance"},
 )
 async def get_web_responsiveness(
     ctx: Context,
-    host: Optional[str] = None,
-    port: Optional[int] = None,
-    caller_id: Optional[str] = None,
-    timeout: Optional[float] = None,
-) -> List[WebResponsivenessRecord]:
+    host: str | None = None,
+    port: int | None = None,
+    caller_id: str | None = None,
+    timeout: float | None = None,
+) -> list[WebResponsivenessRecord]:
     """
     Retrieve Web Responsiveness dataset from an Orb sensor.
 
@@ -356,20 +348,17 @@ async def get_web_responsiveness(
 
 
 @mcp.tool(
-    annotations={
-        "title": "Get Speed Test Results",
-        "readOnlyHint": True,
-        "idempotentHint": False,
-        "openWorldHint": True,
-    }
+    title="Get Speed Test Results",
+    annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=True),
+    tags={"orb", "speed"},
 )
 async def get_speed_results(
     ctx: Context,
-    host: Optional[str] = None,
-    port: Optional[int] = None,
-    caller_id: Optional[str] = None,
-    timeout: Optional[float] = None,
-) -> List[SpeedRecord]:
+    host: str | None = None,
+    port: int | None = None,
+    caller_id: str | None = None,
+    timeout: float | None = None,
+) -> list[SpeedRecord]:
     """
     Retrieve Speed test results dataset from an Orb sensor.
 
@@ -404,21 +393,18 @@ async def get_speed_results(
 
 
 @mcp.tool(
-    annotations={
-        "title": "Get Wi-Fi Link Dataset",
-        "readOnlyHint": True,
-        "idempotentHint": False,
-        "openWorldHint": True,
-    }
+    title="Get Wi-Fi Link Dataset",
+    annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=True),
+    tags={"orb", "wifi"},
 )
 async def get_wifi_link(
     ctx: Context,
-    host: Optional[str] = None,
+    host: str | None = None,
     granularity: Literal["1s", "15s", "1m"] = "1s",
-    port: Optional[int] = None,
-    caller_id: Optional[str] = None,
-    timeout: Optional[float] = None,
-) -> List[WifiLinkRecord]:
+    port: int | None = None,
+    caller_id: str | None = None,
+    timeout: float | None = None,
+) -> list[WifiLinkRecord]:
     """
     Retrieve Wi-Fi Link dataset from an Orb sensor at a single granularity.
 
@@ -480,21 +466,18 @@ async def get_wifi_link(
 
 
 @mcp.tool(
-    annotations={
-        "title": "Get All Datasets",
-        "readOnlyHint": True,
-        "idempotentHint": False,
-        "openWorldHint": True,
-    }
+    title="Get All Datasets",
+    annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=True),
+    tags={"orb", "aggregate"},
 )
 async def get_all_datasets(
     ctx: Context,
-    host: Optional[str] = None,
+    host: str | None = None,
     include_all_responsiveness: bool = False,
     include_all_wifi_link: bool = False,
-    port: Optional[int] = None,
-    caller_id: Optional[str] = None,
-    timeout: Optional[float] = None,
+    port: int | None = None,
+    caller_id: str | None = None,
+    timeout: float | None = None,
 ) -> AllDatasetsResponse:
     """
     Retrieve all available datasets from an Orb sensor concurrently.
@@ -562,11 +545,11 @@ async def get_all_datasets(
 
 
 def _get_client_info_impl(
-    host: Optional[str] = None,
-    port: Optional[int] = None,
-    caller_id: Optional[str] = None,
-    timeout: Optional[float] = None,
-) -> Dict[str, Any]:
+    host: str | None = None,
+    port: int | None = None,
+    caller_id: str | None = None,
+    timeout: float | None = None,
+) -> dict[str, Any]:
     """
     Get information about the Orb API client configuration.
 
@@ -600,24 +583,21 @@ def _get_client_info_impl(
 
 
 @mcp.tool(
-    annotations={
-        "title": "Get Client Configuration",
-        "readOnlyHint": True,
-        "idempotentHint": True,
-        "openWorldHint": False,
-    }
+    title="Get Client Configuration",
+    annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=False),
+    tags={"orb", "config"},
 )
 def get_client_info(
-    host: Optional[str] = None,
-    port: Optional[int] = None,
-    caller_id: Optional[str] = None,
-    timeout: Optional[float] = None,
-) -> Dict[str, Any]:
+    host: str | None = None,
+    port: int | None = None,
+    caller_id: str | None = None,
+    timeout: float | None = None,
+) -> dict[str, Any]:
     """Get information about the Orb API client configuration."""
     return _get_client_info_impl(host, port, caller_id, timeout)
 
 
-@mcp.prompt()
+@mcp.prompt(title="Analyze Network Quality", tags={"orb", "analysis"})
 def analyze_network_quality() -> str:
     """Analyze current network quality for the configured Orb and provide insights"""
     return """
@@ -630,7 +610,9 @@ def analyze_network_quality() -> str:
     """
 
 
-@mcp.prompt()
+@mcp.prompt(
+    title="Troubleshoot Slow Internet", tags={"orb", "speed", "troubleshooting"}
+)
 def troubleshoot_slow_internet() -> str:
     """Diagnose slow internet connection issues"""
     return """
@@ -646,7 +628,7 @@ def troubleshoot_slow_internet() -> str:
     """
 
 
-@mcp.prompt()
+@mcp.prompt(title="Troubleshoot Wi-Fi", tags={"orb", "wifi", "troubleshooting"})
 def troubleshoot_wifi() -> str:
     """Diagnose Wi-Fi-specific issues by correlating signal metrics with performance"""
     return """
