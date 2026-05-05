@@ -1,8 +1,7 @@
 """Tests for orbnet.mcp_server tool, prompt, and entry-point wiring.
 
-These tests invoke the underlying functions of FastMCP-decorated tools and
-prompts via their ``.fn`` attribute, patching ``get_client`` so no real
-network calls are made.
+These tests invoke FastMCP-decorated tools and prompts directly, patching
+``get_client`` so no real network calls are made.
 """
 
 from unittest.mock import AsyncMock, MagicMock
@@ -35,38 +34,38 @@ def ctx():
 
 
 async def test_get_scores_1m_tool(mock_client, ctx):
-    result = await mcp_server.get_scores_1m.fn(ctx, host="h")
+    result = await mcp_server.get_scores_1m(ctx, host="h")
     assert result == []
     mock_client.get_scores_1m.assert_awaited_once()
     ctx.info.assert_awaited_once()
 
 
 async def test_get_responsiveness_tool(mock_client, ctx):
-    result = await mcp_server.get_responsiveness.fn(ctx, host="h", granularity="1s")
+    result = await mcp_server.get_responsiveness(ctx, host="h", granularity="1s")
     assert result == []
     mock_client.get_responsiveness.assert_awaited_once_with(granularity="1s")
 
 
 async def test_get_web_responsiveness_tool(mock_client, ctx):
-    result = await mcp_server.get_web_responsiveness.fn(ctx, host="h")
+    result = await mcp_server.get_web_responsiveness(ctx, host="h")
     assert result == []
     mock_client.get_web_responsiveness.assert_awaited_once()
 
 
 async def test_get_speed_results_tool(mock_client, ctx):
-    result = await mcp_server.get_speed_results.fn(ctx, host="h")
+    result = await mcp_server.get_speed_results(ctx, host="h")
     assert result == []
     mock_client.get_speed_results.assert_awaited_once()
 
 
 async def test_get_wifi_link_tool(mock_client, ctx):
-    result = await mcp_server.get_wifi_link.fn(ctx, host="h", granularity="15s")
+    result = await mcp_server.get_wifi_link(ctx, host="h", granularity="15s")
     assert result == []
     mock_client.get_wifi_link.assert_awaited_once_with(granularity="15s")
 
 
 async def test_get_all_datasets_tool(mock_client, ctx):
-    result = await mcp_server.get_all_datasets.fn(
+    result = await mcp_server.get_all_datasets(
         ctx, host="h", include_all_responsiveness=True, include_all_wifi_link=True
     )
     assert result == {}
@@ -84,25 +83,25 @@ def test_get_client_info_tool(mock_client):
     mock_client.caller_id = "cid"
     mock_client.timeout = 30.0
 
-    info = mcp_server.get_client_info.fn(host="h")
+    info = mcp_server.get_client_info(host="h")
     assert info["host"] == "h"
     assert info["caller_id"] == "cid"
 
 
 def test_analyze_network_quality_prompt():
-    text = mcp_server.analyze_network_quality.fn()
+    text = mcp_server.analyze_network_quality()
     assert isinstance(text, str)
     assert "get_scores_1m" in text
 
 
 def test_troubleshoot_slow_internet_prompt():
-    text = mcp_server.troubleshoot_slow_internet.fn()
+    text = mcp_server.troubleshoot_slow_internet()
     assert isinstance(text, str)
     assert "get_speed_results" in text
 
 
 def test_troubleshoot_wifi_prompt():
-    text = mcp_server.troubleshoot_wifi.fn()
+    text = mcp_server.troubleshoot_wifi()
     assert isinstance(text, str)
     assert "get_wifi_link" in text
 
