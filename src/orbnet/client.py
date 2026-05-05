@@ -3,7 +3,7 @@ import inspect
 import logging
 import uuid
 from importlib.metadata import version as get_version
-from typing import Any, Dict, List, Literal, Optional, cast
+from typing import Any, cast
 
 import httpx
 
@@ -12,6 +12,7 @@ from .models import (
     AllDatasetsRequestParams,
     AllDatasetsResponse,
     ErrorPayload,
+    Granularity,
     OrbClientConfig,
     PollingCallback,
     PollingConfig,
@@ -57,8 +58,8 @@ class OrbAPIClient:
         self,
         host: str,
         port: int = 7080,
-        caller_id: Optional[str] = None,
-        client_id: Optional[str] = None,
+        caller_id: str | None = None,
+        client_id: str | None = None,
         timeout: float = 30.0,
     ):
         """
@@ -137,16 +138,16 @@ class OrbAPIClient:
         """Construct the base URL from host and port"""
         return f"http://{self.config.host}:{self.config.port}"
 
-    def _get_headers(self) -> Dict[str, str]:
+    def _get_headers(self) -> dict[str, str]:
         """Get common headers for API requests"""
         return {"Accept": "application/json", "User-Agent": self.client_id}
 
     async def _get_dataset(
         self,
         dataset_name: str,
-        caller_id: Optional[str] = None,
+        caller_id: str | None = None,
         **params,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Internal method to fetch a dataset from the Local Data API.
 
@@ -173,11 +174,11 @@ class OrbAPIClient:
 
     async def _fetch(
         self,
-        spec: "DatasetSpec",
-        granularity: Optional[str] = None,
-        caller_id: Optional[str] = None,
+        spec: DatasetSpec,
+        granularity: str | None = None,
+        caller_id: str | None = None,
         **params,
-    ) -> List[Any]:
+    ) -> list[Any]:
         """Fetch one dataset and map records to spec.record_class.
 
         Internal helper. The single place that turns raw JSON dicts into
@@ -205,9 +206,9 @@ class OrbAPIClient:
 
     async def get_scores_1m(
         self,
-        caller_id: Optional[str] = None,
+        caller_id: str | None = None,
         **params,
-    ) -> List[ScoreRecord]:
+    ) -> list[ScoreRecord]:
         """
         Retrieve 1-minute granularity Scores dataset.
 
@@ -271,10 +272,10 @@ class OrbAPIClient:
 
     async def get_responsiveness(
         self,
-        granularity: Literal["1s", "15s", "1m"] = "1m",
-        caller_id: Optional[str] = None,
+        granularity: Granularity = "1m",
+        caller_id: str | None = None,
         **params,
-    ) -> List[ResponsivenessRecord]:
+    ) -> list[ResponsivenessRecord]:
         """
         Retrieve Responsiveness dataset.
 
@@ -337,9 +338,9 @@ class OrbAPIClient:
 
     async def get_web_responsiveness(
         self,
-        caller_id: Optional[str] = None,
+        caller_id: str | None = None,
         **params,
-    ) -> List[WebResponsivenessRecord]:
+    ) -> list[WebResponsivenessRecord]:
         """
         Retrieve Web Responsiveness dataset.
 
@@ -403,9 +404,9 @@ class OrbAPIClient:
 
     async def get_speed_results(
         self,
-        caller_id: Optional[str] = None,
+        caller_id: str | None = None,
         **params,
-    ) -> List[SpeedRecord]:
+    ) -> list[SpeedRecord]:
         """
         Retrieve Speed dataset.
 
@@ -476,10 +477,10 @@ class OrbAPIClient:
 
     async def get_wifi_link(
         self,
-        granularity: Literal["1s", "15s", "1m"] = "1m",
-        caller_id: Optional[str] = None,
+        granularity: Granularity = "1m",
+        caller_id: str | None = None,
         **params,
-    ) -> List[WifiLinkRecord]:
+    ) -> list[WifiLinkRecord]:
         """
         Retrieve Wi-Fi Link dataset.
 
@@ -527,10 +528,10 @@ class OrbAPIClient:
 
     async def get_all_datasets(
         self,
-        caller_id: Optional[str] = None,
+        caller_id: str | None = None,
         include_all_responsiveness: bool = False,
         include_all_wifi_link: bool = False,
-        default_granularity: Literal["1s", "15s", "1m"] = "1m",
+        default_granularity: Granularity = "1m",
     ) -> AllDatasetsResponse:
         """
         Retrieve all datasets concurrently.
@@ -612,7 +613,7 @@ class OrbAPIClient:
             "wifi_link": request.include_all_wifi_link,
         }
 
-        plan: list[tuple[DatasetSpec, Optional[str]]] = []
+        plan: list[tuple[DatasetSpec, str | None]] = []
         for spec in DATASETS.values():
             if not spec.granularities:
                 plan.append((spec, None))
@@ -644,8 +645,8 @@ class OrbAPIClient:
         self,
         dataset_name: str,
         interval: float = 60.0,
-        callback: Optional[PollingCallback] = None,
-        max_iterations: Optional[int] = None,
+        callback: PollingCallback | None = None,
+        max_iterations: int | None = None,
     ):
         """
         Continuously poll a dataset at regular intervals.

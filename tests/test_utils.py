@@ -2,14 +2,14 @@
 Test utilities and helpers for orbnet tests.
 """
 
-from typing import Any, Dict, List
+from typing import Any
 
 
 def create_mock_orb_response(
     dataset_type: str,
     record_count: int = 2,
     timestamp_base: int = 1700000000000,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """
     Create mock Orb API response data for testing.
 
@@ -132,7 +132,7 @@ def create_mock_orb_response(
     return records
 
 
-def assert_valid_orb_score_record(record: Dict[str, Any]) -> None:
+def assert_valid_orb_score_record(record: dict[str, Any]) -> None:
     """
     Assert that a record has valid Orb score data structure.
 
@@ -178,7 +178,7 @@ def assert_valid_orb_score_record(record: Dict[str, Any]) -> None:
     assert isinstance(record["lag_avg_us"], (int, float)), "lag_avg_us must be numeric"
 
 
-def assert_valid_responsiveness_record(record: Dict[str, Any]) -> None:
+def assert_valid_responsiveness_record(record: dict[str, Any]) -> None:
     """
     Assert that a record has valid responsiveness data structure.
 
@@ -211,7 +211,7 @@ def assert_valid_responsiveness_record(record: Dict[str, Any]) -> None:
     assert 0 <= record["packet_loss_pct"] <= 100, "packet_loss_pct must be 0-100"
 
 
-def assert_valid_web_responsiveness_record(record: Dict[str, Any]) -> None:
+def assert_valid_web_responsiveness_record(record: dict[str, Any]) -> None:
     """
     Assert that a record has valid web responsiveness data structure.
 
@@ -240,7 +240,7 @@ def assert_valid_web_responsiveness_record(record: Dict[str, Any]) -> None:
     assert record["dns_us"] >= 0, "dns_us must be non-negative"
 
 
-def assert_valid_speed_record(record: Dict[str, Any]) -> None:
+def assert_valid_speed_record(record: dict[str, Any]) -> None:
     """
     Assert that a record has valid speed test data structure.
 
@@ -270,7 +270,7 @@ def assert_valid_speed_record(record: Dict[str, Any]) -> None:
     assert record["upload_kbps"] >= 0, "upload_kbps must be non-negative"
 
 
-def create_mock_error_response(error_message: str = "Test error") -> Dict[str, str]:
+def create_mock_error_response(error_message: str = "Test error") -> dict[str, str]:
     """
     Create a mock error response.
 
@@ -283,7 +283,7 @@ def create_mock_error_response(error_message: str = "Test error") -> Dict[str, s
     return {"error": error_message}
 
 
-def validate_client_config(config: Dict[str, Any]) -> None:
+def validate_client_config(config: dict[str, Any]) -> None:
     """
     Validate client configuration dictionary.
 
@@ -404,7 +404,7 @@ def assert_valid_speed_record_object(record) -> None:
     ], "speed_test_engine must be 0 (orb) or 1 (iperf)"
 
 
-def assert_valid_wifi_link_record(record: Dict[str, Any]) -> None:
+def assert_valid_wifi_link_record(record: dict[str, Any]) -> None:
     """
     Assert that a record has valid Wi-Fi Link data structure.
 
