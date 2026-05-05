@@ -246,7 +246,7 @@ async def get_scores_1m(
 async def get_responsiveness(
     ctx: Context,
     host: str | None = None,
-    granularity: Granularity = "1s",
+    granularity: Granularity = "1m",
     port: int | None = None,
     caller_id: str | None = None,
     timeout: float | None = None,
@@ -271,7 +271,7 @@ async def get_responsiveness(
         for updates without receiving duplicate records.
 
     Args:
-        granularity: Time bucket size - '1s', '15s', or '1m' (default: '1s')
+        granularity: Time bucket size - '1s', '15s', or '1m' (default: '1m')
         host: Orb sensor hostname or IP (default: from ORB_HOST env var or 'localhost')
         port: API port number (default: from ORB_PORT env var or 7080)
         caller_id: Unique ID to track polling state. Leave as None to use the default
@@ -412,7 +412,7 @@ async def get_speed_results(
 async def get_wifi_link(
     ctx: Context,
     host: str | None = None,
-    granularity: Granularity = "1s",
+    granularity: Granularity = "1m",
     port: int | None = None,
     caller_id: str | None = None,
     timeout: float | None = None,
@@ -442,7 +442,7 @@ async def get_wifi_link(
         for updates without receiving duplicate records.
 
     Args:
-        granularity: Time bucket size - '1s', '15s', or '1m' (default: '1s')
+        granularity: Time bucket size - '1s', '15s', or '1m' (default: '1m')
         host: Orb sensor hostname or IP (default: from ORB_HOST env var or 'localhost')
         port: API port number (default: from ORB_PORT env var or 7080)
         caller_id: Unique ID to track polling state. Leave as None to use the default
@@ -505,10 +505,10 @@ async def get_all_datasets(
 
     Args:
         include_all_responsiveness: If True, fetches all responsiveness granularities
-                                   (1s, 15s, 1m). If False, only fetches 1s. (default:
+                                   (1s, 15s, 1m). If False, only fetches 1m. (default:
                                    False)
         include_all_wifi_link: If True, fetches all Wi-Fi Link granularities
-                               (1s, 15s, 1m). If False, only fetches 1s. (default:
+                               (1s, 15s, 1m). If False, only fetches 1m. (default:
                                False)
         host: Orb sensor hostname or IP (default: from ORB_HOST env var or 'localhost')
         port: API port number (default: from ORB_PORT env var or 7080)
@@ -519,25 +519,28 @@ async def get_all_datasets(
     Returns:
         AllDatasetsResponse object with fields for each dataset type:
         - scores_1m: 1-minute scores dataset
-        - responsiveness_1s: 1-second responsiveness dataset
-        - responsiveness_15s: 15-second responsiveness
+        - responsiveness_1m: 1-minute responsiveness dataset
+        - responsiveness_1s: 1-second responsiveness
           (if include_all_responsiveness=True)
-        - responsiveness_1m: 1-minute responsiveness
+        - responsiveness_15s: 15-second responsiveness
           (if include_all_responsiveness=True)
         - web_responsiveness: Web responsiveness results
         - speed_results: Speed test results
-        - wifi_link_1s: 1-second Wi-Fi link dataset (empty list if not on Wi-Fi)
+        - wifi_link_1m: 1-minute Wi-Fi link dataset (empty list if not on Wi-Fi)
+        - wifi_link_1s: 1-second Wi-Fi link (if include_all_wifi_link=True)
         - wifi_link_15s: 15-second Wi-Fi link (if include_all_wifi_link=True)
-        - wifi_link_1m: 1-minute Wi-Fi link (if include_all_wifi_link=True)
 
         Each field is either a list of records or an ErrorPayload (typed
         `{"error": "..."}` payload) if that dataset failed to fetch.
 
-        For Python consumers, branch with is_ok() / .error:
+        For Python consumers, call OrbAPIClient directly (the MCP tool
+        function takes a FastMCP-injected ctx) and branch with is_ok() / .error:
 
-        >>> from orbnet.models import is_ok, unwrap
-        >>> result = await get_all_datasets()
-        >>> for field_name in ("scores_1m", "responsiveness_1s", "speed_results"):
+        >>> from orbnet import OrbAPIClient
+        >>> from orbnet.models import is_ok
+        >>> client = OrbAPIClient(host="192.168.1.100")
+        >>> result = await client.get_all_datasets()
+        >>> for field_name in ("scores_1m", "responsiveness_1m", "speed_results"):
         ...     value = getattr(result, field_name)
         ...     if is_ok(value):
         ...         print(f"{field_name}: {len(value)} records")
@@ -552,7 +555,7 @@ async def get_all_datasets(
     return await client.get_all_datasets(
         include_all_responsiveness=include_all_responsiveness,
         include_all_wifi_link=include_all_wifi_link,
-        default_granularity="1s",
+        default_granularity="1m",
     )
 
 

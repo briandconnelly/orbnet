@@ -4,11 +4,13 @@ These tests invoke FastMCP-decorated tools and prompts directly, patching
 ``get_client`` so no real network calls are made.
 """
 
+import inspect
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from orbnet import mcp_server
+from orbnet.client import OrbAPIClient
 from orbnet.models import AllDatasetsResponse, ErrorPayload
 
 
@@ -73,7 +75,7 @@ async def test_get_all_datasets_tool(mock_client, ctx):
     mock_client.get_all_datasets.assert_awaited_once_with(
         include_all_responsiveness=True,
         include_all_wifi_link=True,
-        default_granularity="1s",
+        default_granularity="1m",
     )
 
 
@@ -111,6 +113,63 @@ def test_main_invokes_mcp_run(mocker):
     run = mocker.patch.object(mcp_server.mcp, "run")
     mcp_server.main()
     run.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# Default-parity tests: MCP tool defaults must agree with client defaults.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("mcp_tool", "client_method"),
+    [
+        (mcp_server.get_responsiveness, OrbAPIClient.get_responsiveness),
+        (mcp_server.get_wifi_link, OrbAPIClient.get_wifi_link),
+    ],
+)
+def test_mcp_tool_granularity_default_matches_client(mcp_tool, client_method):
+    mcp_default = inspect.signature(mcp_tool).parameters["granularity"].default
+    client_default = inspect.signature(client_method).parameters["granularity"].default
+    assert mcp_default == client_default, (
+        f"{mcp_tool.__name__}(granularity=) defaults to {mcp_default!r} but "
+        f"{client_method.__qualname__}(granularity=) defaults to {client_default!r}; "
+        "MCP tool defaults must match the client to avoid silent behavior drift."
+    )
+
+
+async def test_get_all_datasets_forwards_client_default_granularity(mock_client, ctx):
+    """get_all_datasets does not currently expose default_granularity to MCP callers,
+    so it must forward whatever the underlying client treats as default. This locks
+    the MCP-layer hardcode to track the client default if either side moves.
+    """
+    await mcp_server.get_all_datasets(ctx, host="h")
+    call_kwargs = mock_client.get_all_datasets.await_args.kwargs
+    client_default = (
+        inspect.signature(OrbAPIClient.get_all_datasets)
+        .parameters["default_granularity"]
+        .default
+    )
+    assert call_kwargs["default_granularity"] == client_default
+
+
+@pytest.mark.parametrize(
+    ("mcp_tool", "client_method_attr"),
+    [
+        (mcp_server.get_responsiveness, "get_responsiveness"),
+        (mcp_server.get_wifi_link, "get_wifi_link"),
+    ],
+)
+async def test_mcp_tool_no_arg_forwards_client_default_granularity(
+    mock_client, ctx, mcp_tool, client_method_attr
+):
+    """No-arg MCP call must forward the client's default granularity."""
+    await mcp_tool(ctx, host="h")
+    client_method = getattr(OrbAPIClient, client_method_attr)
+    client_default = inspect.signature(client_method).parameters["granularity"].default
+    forwarded = getattr(mock_client, client_method_attr).await_args.kwargs[
+        "granularity"
+    ]
+    assert forwarded == client_default
 
 
 # ---------------------------------------------------------------------------
@@ -259,7 +318,7 @@ async def test_get_all_datasets_error_payload_passthrough(mock_client, ctx):
     mock_client.get_all_datasets.assert_awaited_once_with(
         include_all_responsiveness=False,
         include_all_wifi_link=False,
-        default_granularity="1s",
+        default_granularity="1m",
     )
 
 
