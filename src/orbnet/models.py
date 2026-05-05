@@ -1,12 +1,18 @@
 from collections.abc import Awaitable, Callable
-from typing import Any, Literal, Optional, TypeAlias, TypeVar
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+
+# Time-bucket size for granular datasets (responsiveness, wifi_link). Used in
+# Pydantic Field annotations and public method signatures. Defined here as a
+# single source of truth so any future change (e.g. adding a "5s" bucket) is
+# made in exactly one place.
+type Granularity = Literal["1s", "15s", "1m"]
 
 # A polling callback receives (dataset_name, records) and may return either
 # synchronously or as an awaitable (e.g. an async coroutine). The records
 # argument is typed Any because the concrete record class varies by dataset.
-PollingCallback: TypeAlias = Callable[[str, list[Any]], object | Awaitable[object]]
+type PollingCallback = Callable[[str, list[Any]], object | Awaitable[object]]
 
 NETWORK_STATE_DESC = (
     "Speed test load state: 0=unknown, 1=idle, 2=content upload, "
@@ -26,11 +32,11 @@ class OrbClientConfig(BaseModel):
     port: int = Field(
         default=7080, ge=1, le=65535, description="Port number for the Orb API"
     )
-    caller_id: Optional[str] = Field(
+    caller_id: str | None = Field(
         default=None,
         description="Unique ID for this caller to track polling state. If None, generates a random UUID.",  # noqa: E501
     )
-    client_id: Optional[str] = Field(
+    client_id: str | None = Field(
         default=None,
         description="Optional identifier for the HTTP client itself (sent as User-Agent header). If None, uses a default.",  # noqa: E501
     )
@@ -42,7 +48,7 @@ class OrbClientConfig(BaseModel):
 class DatasetRequestParams(BaseModel):
     """Parameters for dataset requests"""
 
-    caller_id: Optional[str] = Field(
+    caller_id: str | None = Field(
         default=None, description="Override the default caller_id for this request"
     )
 
@@ -52,7 +58,7 @@ class DatasetRequestParams(BaseModel):
 class ResponsivenessRequestParams(DatasetRequestParams):
     """Parameters for responsiveness dataset requests"""
 
-    granularity: Literal["1s", "15s", "1m"] = Field(
+    granularity: Granularity = Field(
         default="1m", description="Time bucket size - '1s', '15s', or '1m'"
     )
 
@@ -60,7 +66,7 @@ class ResponsivenessRequestParams(DatasetRequestParams):
 class AllDatasetsRequestParams(DatasetRequestParams):
     """Parameters for fetching all datasets"""
 
-    default_granularity: Literal["1s", "15s", "1m"] = Field(
+    default_granularity: Granularity = Field(
         default="1m",
         description="Default time-bucket size for granular datasets (responsiveness, wifi_link).",  # noqa: E501
     )
@@ -83,12 +89,12 @@ class PollingConfig(BaseModel):
     interval: float = Field(
         default=60.0, gt=0, description="Seconds to wait between polls"
     )
-    callback: Optional[PollingCallback] = Field(
+    callback: PollingCallback | None = Field(
         default=None,
         description="Optional function to call with each batch of new records. "
         "May be sync or async; signature: (dataset_name: str, records: list) -> Any.",
     )
-    max_iterations: Optional[int] = Field(
+    max_iterations: int | None = Field(
         default=None, ge=1, description="Maximum number of polls (None for infinite)"
     )
 
@@ -104,10 +110,10 @@ class BaseIdentifiers(BaseModel):
     """Base identifiers common across most datasets"""
 
     orb_id: str = Field(description="Orb Sensor identifier")
-    orb_name: Optional[str] = Field(
+    orb_name: str | None = Field(
         default=None, description="Current Orb friendly name (may not be included)"
     )
-    device_name: Optional[str] = Field(
+    device_name: str | None = Field(
         default=None,
         description="Hostname or name of the device as identified by the OS (may not be included)",  # noqa: E501
     )
@@ -166,28 +172,28 @@ class NetworkDimensions(BaseModel):
     network_type: int = Field(
         description="Network interface type: 0=unknown, 1=wifi, 2=ethernet, 3=other"
     )
-    country_code: Optional[str] = Field(
+    country_code: str | None = Field(
         default=None,
         description="Geocoded 2-digit ISO country code (may not be included)",
     )
-    city_name: Optional[str] = Field(
+    city_name: str | None = Field(
         default=None, description="Geocoded city name (may not be included)"
     )
-    isp_name: Optional[str] = Field(
+    isp_name: str | None = Field(
         default=None, description="ISP name from GeoIP lookup (may not be included)"
     )
-    public_ip: Optional[str] = Field(
+    public_ip: str | None = Field(
         default=None, description="Public IP address (may not be included)"
     )
-    latitude: Optional[float] = Field(
+    latitude: float | None = Field(
         default=None,
         description="Orb location latitude",
     )
-    longitude: Optional[float] = Field(
+    longitude: float | None = Field(
         default=None,
         description="Orb location longitude",
     )
-    location_source: Optional[int] = Field(
+    location_source: int | None = Field(
         default=None,
         description=LOCATION_SOURCE_DESC,
     )
@@ -196,7 +202,7 @@ class NetworkDimensions(BaseModel):
 class ScoreDimensions(NetworkDimensions):
     """Dimensions specific to the Scores dataset"""
 
-    network_state: Optional[int] = Field(default=None, description=NETWORK_STATE_DESC)
+    network_state: int | None = Field(default=None, description=NETWORK_STATE_DESC)
 
 
 class ResponsivenessMeasures(BaseModel):
@@ -219,28 +225,28 @@ class ResponsivenessMeasures(BaseModel):
         description="latency_lost_count / (latency_count+latency_loss_count)"
     )
     lag_count: int = Field(description="Lag sample count")
-    router_lag_avg_us: Optional[int] = Field(
+    router_lag_avg_us: int | None = Field(
         default=None, description="Avg router lag in microseconds"
     )
-    router_latency_avg_us: Optional[int] = Field(
+    router_latency_avg_us: int | None = Field(
         default=None,
         description="Avg router round trip latency in microseconds",
     )
-    router_jitter_avg_us: Optional[int] = Field(
+    router_jitter_avg_us: int | None = Field(
         default=None, description="Avg router jitter in microseconds"
     )
-    router_latency_count: Optional[float] = Field(
+    router_latency_count: float | None = Field(
         default=None,
         description="Count of router latency measurements that succeeded",
     )
-    router_latency_lost_count: Optional[int] = Field(
+    router_latency_lost_count: int | None = Field(
         default=None,
         description="Count of router latency measurements that were lost",
     )
-    router_packet_loss_pct: Optional[float] = Field(
+    router_packet_loss_pct: float | None = Field(
         default=None, description="Router packet loss percentage"
     )
-    router_lag_count: Optional[int] = Field(
+    router_lag_count: int | None = Field(
         default=None, description="Router lag sample count"
     )
 
@@ -248,11 +254,11 @@ class ResponsivenessMeasures(BaseModel):
 class ResponsivenessDimensions(NetworkDimensions):
     """Dimensions specific to the Responsiveness dataset"""
 
-    network_name: Optional[str] = Field(
+    network_name: str | None = Field(
         default=None, description="Network name (SSID, if available)"
     )
-    network_state: Optional[int] = Field(default=None, description=NETWORK_STATE_DESC)
-    pingers: Optional[str] = Field(
+    network_state: int | None = Field(default=None, description=NETWORK_STATE_DESC)
+    pingers: str | None = Field(
         default=None,
         description="List (CSV) of {protocol}|{endpoint} (may not be included)",
     )
@@ -272,11 +278,11 @@ class WebResponsivenessMeasures(BaseModel):
 class WebResponsivenessDimensions(NetworkDimensions):
     """Dimensions specific to the Web Responsiveness dataset"""
 
-    network_name: Optional[str] = Field(
+    network_name: str | None = Field(
         default=None, description="Network name (SSID, if available)"
     )
-    network_state: Optional[int] = Field(default=None, description=NETWORK_STATE_DESC)
-    web_url: Optional[str] = Field(
+    network_state: int | None = Field(default=None, description=NETWORK_STATE_DESC)
+    web_url: str | None = Field(
         default=None, description="URL endpoint for web test (may not be included)"
     )
 
@@ -291,14 +297,14 @@ class SpeedMeasures(BaseModel):
 class SpeedDimensions(NetworkDimensions):
     """Dimensions specific to the Speed dataset"""
 
-    network_name: Optional[str] = Field(
+    network_name: str | None = Field(
         default=None, description="Network name (SSID, if available)"
     )
-    network_state: Optional[int] = Field(default=None, description=NETWORK_STATE_DESC)
-    speed_test_engine: Optional[int] = Field(
+    network_state: int | None = Field(default=None, description=NETWORK_STATE_DESC)
+    speed_test_engine: int | None = Field(
         default=None, description="Testing engine: 0=orb, 1=iperf (may not be included)"
     )
-    speed_test_server: Optional[str] = Field(
+    speed_test_server: str | None = Field(
         default=None, description="Server URL or identifier (may not be included)"
     )
 
@@ -308,21 +314,21 @@ class WifiLinkMeasures(BaseModel):
 
     rssi_avg: float = Field(description="Average received signal strength in dBm")
     rssi_count: int = Field(description="Count of successful RSSI measurements")
-    frequency_mhz: Optional[int] = Field(
+    frequency_mhz: int | None = Field(
         default=None,
         description="Connected channel frequency in MHz (may not be included)",
     )
-    tx_rate_mbps: Optional[float] = Field(
+    tx_rate_mbps: float | None = Field(
         default=None, description="Average transmit link rate in Mbps"
     )
-    tx_rate_count: Optional[int] = Field(
+    tx_rate_count: int | None = Field(
         default=None, description="Count of transmit rate measurements"
     )
-    rx_rate_mbps: Optional[float] = Field(
+    rx_rate_mbps: float | None = Field(
         default=None,
         description="Average receive link rate in Mbps (unavailable on macOS)",
     )
-    rx_rate_count: Optional[int] = Field(
+    rx_rate_count: int | None = Field(
         default=None, description="Count of receive rate measurements"
     )
     snr_avg: float = Field(description="Average signal-to-noise ratio in dB")
@@ -332,25 +338,25 @@ class WifiLinkMeasures(BaseModel):
     phy_mode: str = Field(
         description="Wi-Fi standard designation (e.g., 802.11n, 802.11ac, 802.11ax)"
     )
-    security: Optional[str] = Field(
+    security: str | None = Field(
         default=None,
         description="Wi-Fi security protocol (unavailable on Android)",
     )
-    channel_width: Optional[str] = Field(
+    channel_width: str | None = Field(
         default=None,
         description="Channel width in MHz (unavailable on Android)",
     )
     channel_number: int = Field(description="Wi-Fi channel number")
     channel_band: str = Field(description="Wi-Fi band designation")
-    supported_wlan_channels: Optional[str] = Field(
+    supported_wlan_channels: str | None = Field(
         default=None,
         description="Comma-separated list of supported WLAN channels (unavailable on Windows)",  # noqa: E501
     )
-    mcs: Optional[int] = Field(
+    mcs: int | None = Field(
         default=None,
         description="Modulation and coding scheme index (Linux only)",
     )
-    nss: Optional[int] = Field(
+    nss: int | None = Field(
         default=None,
         description="Number of spatial streams (Linux only)",
     )
@@ -359,20 +365,20 @@ class WifiLinkMeasures(BaseModel):
 class WifiLinkDimensions(NetworkDimensions):
     """Dimensions specific to the Wi-Fi Link dataset"""
 
-    bssid: Optional[str] = Field(
+    bssid: str | None = Field(
         default=None, description="Access point MAC address (may not be included)"
     )
-    mac_address: Optional[str] = Field(
+    mac_address: str | None = Field(
         default=None, description="Client MAC address (may not be included)"
     )
-    network_name: Optional[str] = Field(
+    network_name: str | None = Field(
         default=None, description="Network name / SSID (may not be included)"
     )
-    network_state: Optional[int] = Field(default=None, description=NETWORK_STATE_DESC)
-    private_ip: Optional[str] = Field(
+    network_state: int | None = Field(default=None, description=NETWORK_STATE_DESC)
+    private_ip: str | None = Field(
         default=None, description="Local IP address (may not be included)"
     )
-    speed_test_engine: Optional[int] = Field(
+    speed_test_engine: int | None = Field(
         default=None, description="Testing engine: 0=orb, 1=iperf (may not be included)"
     )
 
@@ -479,12 +485,10 @@ class ErrorPayload(BaseModel):
         return cls(error=str(exc))
 
 
-T = TypeVar("T")
-
-DatasetResult: TypeAlias = list[T] | ErrorPayload
+type DatasetResult[T] = list[T] | ErrorPayload
 
 
-def is_ok(value: list | ErrorPayload | None) -> bool:
+def is_ok(value: list[Any] | ErrorPayload | None) -> bool:
     """Return True iff `value` is a successful dataset result (a non-None list).
 
     None values (optional fields not requested) and ErrorPayload (failed)
@@ -494,7 +498,7 @@ def is_ok(value: list | ErrorPayload | None) -> bool:
     return isinstance(value, list)
 
 
-def unwrap(value: list[T] | ErrorPayload | None) -> list[T]:
+def unwrap[T](value: list[T] | ErrorPayload | None) -> list[T]:
     """Return the list when `value` is ok, else raise ValueError.
 
     Raises if `value` is None (field not requested) or an ErrorPayload (failed).

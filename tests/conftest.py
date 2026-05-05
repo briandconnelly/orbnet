@@ -2,14 +2,14 @@
 Pytest configuration and shared fixtures for orbnet tests.
 """
 
-from typing import Any, Dict, List
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 
 @pytest.fixture
-def sample_scores_data() -> List[Dict[str, Any]]:
+def sample_scores_data() -> list[dict[str, Any]]:
     """Sample scores dataset response data."""
     return [
         {
@@ -74,7 +74,7 @@ def sample_scores_data() -> List[Dict[str, Any]]:
 
 
 @pytest.fixture
-def sample_responsiveness_data() -> List[Dict[str, Any]]:
+def sample_responsiveness_data() -> list[dict[str, Any]]:
     """Sample responsiveness dataset response data."""
     return [
         {
@@ -113,7 +113,7 @@ def sample_responsiveness_data() -> List[Dict[str, Any]]:
 
 
 @pytest.fixture
-def sample_web_responsiveness_data() -> List[Dict[str, Any]]:
+def sample_web_responsiveness_data() -> list[dict[str, Any]]:
     """Sample web responsiveness dataset response data."""
     return [
         {
@@ -140,7 +140,7 @@ def sample_web_responsiveness_data() -> List[Dict[str, Any]]:
 
 
 @pytest.fixture
-def sample_speed_data() -> List[Dict[str, Any]]:
+def sample_speed_data() -> list[dict[str, Any]]:
     """Sample speed test dataset response data."""
     return [
         {
@@ -168,7 +168,7 @@ def sample_speed_data() -> List[Dict[str, Any]]:
 
 
 @pytest.fixture
-def sample_wifi_link_data() -> List[Dict[str, Any]]:
+def sample_wifi_link_data() -> list[dict[str, Any]]:
     """Sample Wi-Fi Link dataset response data."""
     return [
         {

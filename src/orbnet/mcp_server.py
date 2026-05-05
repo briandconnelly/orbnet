@@ -18,7 +18,7 @@ Stateful Polling:
 import functools
 import os
 import uuid
-from typing import Any, Literal
+from typing import Any
 
 from fastmcp import Context, FastMCP
 from mcp.types import ToolAnnotations
@@ -27,6 +27,7 @@ from pydantic import BaseModel, Field
 from .client import OrbAPIClient
 from .models import (
     AllDatasetsResponse,
+    Granularity,
     ResponsivenessRecord,
     ScoreRecord,
     SpeedRecord,
@@ -245,7 +246,7 @@ async def get_scores_1m(
 async def get_responsiveness(
     ctx: Context,
     host: str | None = None,
-    granularity: Literal["1s", "15s", "1m"] = "1s",
+    granularity: Granularity = "1s",
     port: int | None = None,
     caller_id: str | None = None,
     timeout: float | None = None,
@@ -411,7 +412,7 @@ async def get_speed_results(
 async def get_wifi_link(
     ctx: Context,
     host: str | None = None,
-    granularity: Literal["1s", "15s", "1m"] = "1s",
+    granularity: Granularity = "1s",
     port: int | None = None,
     caller_id: str | None = None,
     timeout: float | None = None,
