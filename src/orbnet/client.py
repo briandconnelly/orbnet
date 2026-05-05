@@ -180,10 +180,20 @@ class OrbAPIClient:
 
         Internal helper. The single place that turns raw JSON dicts into
         Pydantic record instances. Public methods (get_scores_1m, etc.) are
-        thin shims over this. `granularity` is honored only for granular
-        families; ignored otherwise. Validation of the granularity string
-        is the caller's responsibility (see public-method shims).
+        thin shims over this. `granularity` is validated against
+        `spec.granularities` here so dynamic callers get a clear ValueError
+        instead of an opaque HTTP 404 from a malformed wire name.
         """
+        if (
+            granularity is not None
+            and spec.granularities
+            and granularity not in spec.granularities
+        ):
+            raise ValueError(
+                f"Invalid granularity {granularity!r} for {spec.family}. "
+                f"Valid: {', '.join(spec.granularities)}"
+            )
+
         raw_data = await self._get_dataset(
             spec.wire_name(granularity),
             caller_id=caller_id,

@@ -819,7 +819,19 @@ class TestPublicMethodsParametrized:
 
 class TestExplicitOverrideSemantics:
     """__init__ uses `is None` checks, not falsy fallbacks, so explicit
-    empty-string overrides are honored rather than silently replaced."""
+    empty-string overrides are honored rather than silently replaced.
+
+    The one exception is `host`, which has min_length=1 in OrbClientConfig
+    — an empty hostname produces a structurally invalid base URL like
+    `http://:7080`, so it's rejected at construction.
+    """
+
+    def test_empty_host_is_rejected(self):
+        """host="" should raise ValidationError (would yield invalid URL)."""
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            OrbAPIClient(host="")
 
     def test_empty_caller_id_is_preserved(self):
         """caller_id="" should be passed through, not replaced with a UUID."""
@@ -894,3 +906,29 @@ class TestPollDatasetPropagatesProgrammingErrors:
                     max_iterations=1,
                 ):
                     pass
+
+
+class TestGranularityValidation:
+    """Public client methods used to get granularity validation as a side-effect
+    of constructing a Pydantic request object. After dropping that dead-weight
+    construction, _fetch validates against spec.granularities so dynamic callers
+    still get a clear, local ValueError instead of an opaque HTTP 404."""
+
+    @pytest.mark.asyncio
+    async def test_get_responsiveness_rejects_invalid_granularity(self):
+        client = OrbAPIClient(host="192.168.1.100")
+        with pytest.raises(ValueError, match="Invalid granularity"):
+            await client.get_responsiveness(granularity="2m")  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]  # noqa: E501
+
+    @pytest.mark.asyncio
+    async def test_get_wifi_link_rejects_invalid_granularity(self):
+        client = OrbAPIClient(host="192.168.1.100")
+        with pytest.raises(ValueError, match="Invalid granularity"):
+            await client.get_wifi_link(granularity="2m")  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]  # noqa: E501
+
+    @pytest.mark.asyncio
+    async def test_validation_error_lists_valid_granularities(self):
+        """The error message should tell the caller what granularities are valid."""
+        client = OrbAPIClient(host="192.168.1.100")
+        with pytest.raises(ValueError, match="1s, 15s, 1m"):
+            await client.get_responsiveness(granularity="bogus")  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]  # noqa: E501

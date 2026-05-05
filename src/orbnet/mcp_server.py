@@ -100,7 +100,9 @@ mcp = FastMCP(
 class OrbSensorConfig(BaseModel):
     """Configuration for Orb MCP Server"""
 
-    host: str = Field(default="localhost", description="Orb sensor hostname or IP")
+    host: str = Field(
+        default="localhost", min_length=1, description="Orb sensor hostname or IP"
+    )
     port: int = Field(default=7080, description="Orb API port", ge=1, le=65535)
     timeout: float = Field(
         default=30.0, description="API request timeout in seconds", gt=0, le=60.0

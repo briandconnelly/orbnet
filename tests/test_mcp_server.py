@@ -284,6 +284,13 @@ class TestGetClientOverrideSemantics:
         client = mcp_server.get_client(host="h", caller_id="")
         assert client.caller_id == ""
 
+    def test_empty_host_is_rejected(self):
+        """host="" would produce an invalid base URL; reject at validation."""
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            mcp_server.get_client(host="")
+
 
 async def test_log_uses_resolved_host_not_raw_arg(mock_client, ctx):
     """When host is None, the log message should report the resolved host
