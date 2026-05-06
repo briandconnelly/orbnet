@@ -276,7 +276,7 @@ async def get_responsiveness(
     port: int | None = None,
     caller_id: str | None = None,
     timeout: float | None = None,
-) -> list[ResponsivenessRecord]:
+) -> list[ResponsivenessRecord] | ErrorPayload:
     """
     Retrieve Responsiveness dataset from an Orb sensor at a single granularity.
 
@@ -337,7 +337,13 @@ async def get_responsiveness(
     """
     client = get_client(host, port, caller_id, timeout)
     await ctx.info(f"Getting responsiveness data from Orb sensor {client.host}...")
-    return await client.get_responsiveness(granularity=granularity)
+    try:
+        return await client.get_responsiveness(granularity=granularity)
+    except (httpx.HTTPError, ValidationError) as exc:
+        return translate_exception(
+            exc,
+            ErrorContext(tool=get_responsiveness.__name__, granularity=granularity),
+        )
 
 
 @mcp.tool(

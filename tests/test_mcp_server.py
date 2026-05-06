@@ -509,6 +509,46 @@ class TestGetScores1mErrorEnvelope:
         assert result.repair is not None
 
 
+class TestGetResponsivenessErrorEnvelope:
+    async def test_404_at_1s_suggests_15s(self, mock_client, ctx):
+        import httpx
+
+        request = httpx.Request(
+            "GET", "http://h:7080/api/v2/datasets/responsiveness_1s.json"
+        )
+        response = httpx.Response(404, request=request)
+        mock_client.get_responsiveness.side_effect = httpx.HTTPStatusError(
+            "404", request=request, response=response
+        )
+
+        result = await mcp_server.get_responsiveness(ctx, host="h", granularity="1s")
+
+        assert isinstance(result, ErrorPayload)
+        assert result.code == "granularity_unavailable"
+        assert result.repair is not None
+        assert result.repair.tool == "get_responsiveness"
+        assert result.repair.arguments == {"granularity": "15s"}
+
+    async def test_404_at_1m_populates_alternative(self, mock_client, ctx):
+        import httpx
+
+        request = httpx.Request(
+            "GET", "http://h:7080/api/v2/datasets/responsiveness_1m.json"
+        )
+        response = httpx.Response(404, request=request)
+        mock_client.get_responsiveness.side_effect = httpx.HTTPStatusError(
+            "404", request=request, response=response
+        )
+
+        result = await mcp_server.get_responsiveness(ctx, host="h", granularity="1m")
+
+        assert isinstance(result, ErrorPayload)
+        assert result.code == "granularity_unavailable"
+        assert result.repair is not None
+        assert result.repair.arguments is None
+        assert result.repair.alternative is not None
+
+
 class TestMCPOutputSchemaIsUnion:
     """FastMCP derives outputSchema from each tool's return-type annotation.
     After widening to `list[X] | ErrorPayload`, the schema must accept both
@@ -519,6 +559,7 @@ class TestMCPOutputSchemaIsUnion:
         "tool_name",
         [
             "get_scores_1m",
+            "get_responsiveness",
             # Other widened tools added in later tasks.
         ],
     )
