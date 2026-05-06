@@ -1004,3 +1004,38 @@ class TestGranularityValidation:
         client = OrbAPIClient(host="192.168.1.100")
         with pytest.raises(ValueError, match="1s, 15s, 1m"):
             await client.get_responsiveness(granularity="bogus")  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]  # noqa: E501
+
+
+class TestGetAllDatasetsErrorContext:
+    """When a per-fetch task in get_all_datasets raises, the resulting
+    ErrorPayload must include the structured code/repair from
+    translate_exception, with `tool` and `granularity` populated from the
+    plan loop."""
+
+    async def test_partial_404_includes_repair_arguments(self, mocker):
+        import httpx
+
+        from orbnet.client import OrbAPIClient
+        from orbnet.models import ErrorPayload
+
+        client = OrbAPIClient(host="h")
+        request = httpx.Request(
+            "GET", "http://h:7080/api/v2/datasets/responsiveness_1s.json"
+        )
+        response = httpx.Response(404, request=request)
+
+        async def fake_fetch(spec, granularity, caller_id, **kwargs):
+            if spec.family == "responsiveness" and granularity == "1s":
+                raise httpx.HTTPStatusError("404", request=request, response=response)
+            return []
+
+        mocker.patch.object(client, "_fetch", side_effect=fake_fetch)
+
+        result = await client.get_all_datasets(include_all_responsiveness=True)
+
+        partial = result.responsiveness_1s
+        assert isinstance(partial, ErrorPayload)
+        assert partial.code == "granularity_unavailable"
+        assert partial.repair is not None
+        assert partial.repair.tool == "get_responsiveness"
+        assert partial.repair.arguments == {"granularity": "15s"}
