@@ -448,7 +448,7 @@ async def get_wifi_link(
     port: int | None = None,
     caller_id: str | None = None,
     timeout: float | None = None,
-) -> list[WifiLinkRecord]:
+) -> list[WifiLinkRecord] | ErrorPayload:
     """
     Retrieve Wi-Fi Link dataset from an Orb sensor at a single granularity.
 
@@ -506,7 +506,13 @@ async def get_wifi_link(
     """
     client = get_client(host, port, caller_id, timeout)
     await ctx.info(f"Getting Wi-Fi link data from Orb sensor {client.host}...")
-    return await client.get_wifi_link(granularity=granularity)
+    try:
+        return await client.get_wifi_link(granularity=granularity)
+    except (httpx.HTTPError, ValidationError) as exc:
+        return translate_exception(
+            exc,
+            ErrorContext(tool=get_wifi_link.__name__, granularity=granularity),
+        )
 
 
 @mcp.tool(
