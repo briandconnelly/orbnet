@@ -1387,3 +1387,24 @@ class TestExtendedErrorPayload:
 
         with pytest.raises(ValidationError):
             ErrorPayload(error="x", code="bogus_code")  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
+
+
+class TestErrorPayloadOfRoutesThroughTranslator:
+    """`ErrorPayload.of(exc)` must produce a structured payload for known
+    exception types (sensor_unreachable, timeout, http_error, etc.). Unknown
+    exceptions still fall through to `error=str(exc)` with `code=None`."""
+
+    def test_connect_error_emits_sensor_unreachable(self):
+        import httpx
+
+        from orbnet.models import ErrorPayload
+
+        payload = ErrorPayload.of(httpx.ConnectError("conn refused"))
+        assert payload.code == "sensor_unreachable"
+
+    def test_unknown_exception_has_no_code(self):
+        from orbnet.models import ErrorPayload
+
+        payload = ErrorPayload.of(RuntimeError("surprise"))
+        assert payload.code is None
+        assert "surprise" in payload.error

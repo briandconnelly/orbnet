@@ -1,7 +1,10 @@
 from collections.abc import Awaitable, Callable
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+
+if TYPE_CHECKING:
+    from .errors import ErrorContext  # noqa: F401
 
 # Time-bucket size for granular datasets (responsiveness, wifi_link). Used in
 # Pydantic Field annotations and public method signatures. Defined here as a
@@ -511,8 +514,20 @@ class ErrorPayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     @classmethod
-    def of(cls, exc: BaseException) -> "ErrorPayload":
-        return cls(error=str(exc))
+    def of(
+        cls,
+        exc: BaseException,
+        context: "ErrorContext | None" = None,
+    ) -> "ErrorPayload":
+        """Translate an exception into a structured `ErrorPayload`.
+
+        Routes through `orbnet.errors.translate_exception`. Imports lazily to
+        avoid a circular dependency with `errors.py`. Optional `context`
+        populates `tool` / `granularity` repair fields when the caller has them.
+        """
+        from .errors import translate_exception
+
+        return translate_exception(exc, context)
 
 
 type DatasetResult[T] = list[T] | ErrorPayload
