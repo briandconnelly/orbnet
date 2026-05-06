@@ -105,3 +105,114 @@ class TestErrorContext:
 
         with pytest.raises(ValidationError):
             ErrorContext(tool="get_responsiveness", bogus="x")  # type: ignore[call-arg]  # ty: ignore[unknown-argument]
+
+
+# ---------------------------------------------------------------------------
+# translate_exception dispatch
+# ---------------------------------------------------------------------------
+
+
+class TestTranslateExceptionDispatch:
+    """Pin every dispatch branch in translate_exception. First match wins;
+    order matches the spec's §Translation."""
+
+    def test_connect_error_is_sensor_unreachable(self):
+        from orbnet.errors import translate_exception
+
+        payload = translate_exception(httpx.ConnectError("conn refused"))
+        assert payload.code == "sensor_unreachable"
+        assert payload.repair is not None
+        assert "Local API" in payload.repair.next_step
+        assert payload.repair.alternative is not None
+        assert "ORB_HOST" in payload.repair.alternative
+
+    def test_network_error_is_sensor_unreachable(self):
+        from orbnet.errors import translate_exception
+
+        payload = translate_exception(httpx.NetworkError("network down"))
+        assert payload.code == "sensor_unreachable"
+
+    def test_timeout_exception_is_timeout(self):
+        from orbnet.errors import translate_exception
+
+        payload = translate_exception(httpx.TimeoutException("slow"))
+        assert payload.code == "timeout"
+        assert payload.repair is not None
+        assert "timeout" in payload.repair.next_step.lower()
+
+    def test_404_without_context_is_dataset_not_found(self):
+        from orbnet.errors import translate_exception
+
+        payload = translate_exception(_make_status_error(404), context=None)
+        assert payload.code == "dataset_not_found"
+
+    def test_404_with_tool_but_no_granularity_is_dataset_not_found(self):
+        from orbnet.errors import translate_exception
+
+        ctx = ErrorContext(tool="get_speed_results")
+        payload = translate_exception(_make_status_error(404), context=ctx)
+        assert payload.code == "dataset_not_found"
+
+    def test_500_is_http_error(self):
+        from orbnet.errors import translate_exception
+
+        payload = translate_exception(_make_status_error(500))
+        assert payload.code == "http_error"
+
+    def test_validation_error_is_validation_failed(self):
+        from pydantic import TypeAdapter, ValidationError
+
+        from orbnet.errors import translate_exception
+
+        try:
+            TypeAdapter(int).validate_python("not-an-int")
+        except ValidationError as exc:
+            payload = translate_exception(exc)
+        assert payload.code == "validation_failed"
+        assert payload.repair is None  # no machine-actionable repair
+
+    def test_unknown_exception_falls_through(self):
+        from orbnet.errors import translate_exception
+
+        payload = translate_exception(RuntimeError("surprise"))
+        assert payload.code is None
+        assert payload.repair is None
+        assert "surprise" in payload.error
+
+
+class TestGranularityRepairChain:
+    """When a 404 happens on a granular tool, the repair hint must point to
+    the next granularity in the fallback chain. When the failed granularity
+    is the last in the chain (1m), `repair.alternative` carries the
+    escalation cue rather than `repair = None`."""
+
+    @pytest.mark.parametrize(
+        ("failed", "expected_next"),
+        [("1s", "15s"), ("15s", "1m")],
+    )
+    def test_404_with_granular_context_suggests_next(
+        self, failed: Granularity, expected_next: Granularity
+    ):
+        from orbnet.errors import translate_exception
+
+        ctx = ErrorContext(tool="get_responsiveness", granularity=failed)
+        payload = translate_exception(_make_status_error(404), context=ctx)
+
+        assert payload.code == "granularity_unavailable"
+        assert payload.repair is not None
+        assert payload.repair.tool == "get_responsiveness"
+        assert payload.repair.arguments == {"granularity": expected_next}
+        assert payload.repair.alternative is None
+
+    def test_404_at_last_granularity_populates_alternative(self):
+        from orbnet.errors import translate_exception
+
+        ctx = ErrorContext(tool="get_responsiveness", granularity="1m")
+        payload = translate_exception(_make_status_error(404), context=ctx)
+
+        assert payload.code == "granularity_unavailable"
+        assert payload.repair is not None
+        assert payload.repair.tool is None
+        assert payload.repair.arguments is None
+        assert payload.repair.alternative is not None
+        assert "Local API" in payload.repair.alternative

@@ -5,13 +5,13 @@ errors, Pydantic validation errors) to structured `ErrorPayload` envelopes
 agents can branch on.
 
 This module is import-light: it depends only on `models` for the types it
-emits. The `translate_exception` function is added in a follow-up task; this
-file currently exposes the lookup tables and the per-call context object.
+emits, plus `httpx` and `pydantic` for the exception types it dispatches on.
 """
 
-from pydantic import BaseModel, ConfigDict
+import httpx
+from pydantic import BaseModel, ConfigDict, ValidationError
 
-from .models import Granularity
+from .models import ErrorPayload, Granularity, Repair
 
 GRANULARITY_FALLBACK: dict[Granularity, Granularity | None] = {
     "1s": "15s",
@@ -49,3 +49,81 @@ class ErrorContext(BaseModel):
     granularity: Granularity | None = None
 
     model_config = ConfigDict(extra="forbid")
+
+
+def translate_exception(
+    exc: BaseException, context: ErrorContext | None = None
+) -> ErrorPayload:
+    """Translate a raised exception into a structured `ErrorPayload`.
+
+    Pure: no I/O, no logging, no side effects. Dispatch order matches
+    `docs/superpowers/specs/2026-05-05-mcp-error-contract-design.md`
+    §Translation. First match wins.
+
+    Categorization choices:
+    - All `httpx.NetworkError` subclasses route to `sensor_unreachable`. This
+      covers `ConnectError`, `ReadError`, `WriteError`, `ProtocolError`,
+      `RemoteProtocolError`, etc.
+    - `httpx.ConnectTimeout` is a `TimeoutException` subclass (NOT a
+      `NetworkError` subclass), so it routes to the `timeout` branch below.
+    """
+    if isinstance(exc, httpx.NetworkError):
+        return ErrorPayload(
+            error=str(exc),
+            code="sensor_unreachable",
+            repair=Repair(
+                next_step=(
+                    "verify the sensor is on the network and Local API is enabled"
+                ),
+                alternative="check ORB_HOST and ORB_PORT settings",
+            ),
+        )
+
+    if isinstance(exc, httpx.TimeoutException):
+        return ErrorPayload(
+            error=str(exc),
+            code="timeout",
+            repair=Repair(
+                next_step="increase the timeout parameter, or wait and retry"
+            ),
+        )
+
+    if isinstance(exc, httpx.HTTPStatusError):
+        if exc.response.status_code == 404:
+            return _translate_404(exc, context)
+        return ErrorPayload(error=str(exc), code="http_error")
+
+    if isinstance(exc, ValidationError):
+        return ErrorPayload(error=str(exc), code="validation_failed")
+
+    # Fallthrough: unknown exception. Preserve legacy behaviour (no code,
+    # str(exc) as `error`).
+    return ErrorPayload(error=str(exc))
+
+
+def _translate_404(
+    exc: httpx.HTTPStatusError, context: ErrorContext | None
+) -> ErrorPayload:
+    if context is None or context.tool is None or context.granularity is None:
+        return ErrorPayload(error=str(exc), code="dataset_not_found")
+
+    next_granularity = GRANULARITY_FALLBACK[context.granularity]
+    if next_granularity is not None:
+        repair = Repair(
+            next_step="retry with the next granularity",
+            tool=context.tool,
+            arguments={"granularity": next_granularity},
+        )
+    else:
+        repair = Repair(
+            next_step="escalate to the user; no automated retry available",
+            alternative=(
+                "verify Local API is enabled on the sensor; if 1m is "
+                "unavailable, lower granularities are unlikely to be enabled either"
+            ),
+        )
+    return ErrorPayload(
+        error=str(exc),
+        code="granularity_unavailable",
+        repair=repair,
+    )
