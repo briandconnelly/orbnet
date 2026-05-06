@@ -10,6 +10,7 @@ from dataclasses import dataclass
 
 from .models import (
     BaseRecord,
+    Granularity,
     ResponsivenessRecord,
     ScoreRecord,
     SpeedRecord,
@@ -38,18 +39,18 @@ class DatasetSpec:
 
     family: str
     record_class: type[BaseRecord]
-    granularities: tuple[str, ...] = ()
-    default_granularity: str | None = None
+    granularities: tuple[Granularity, ...] = ()
+    default_granularity: Granularity | None = None
     wire_name_override: str | None = None
 
-    def wire_name(self, granularity: str | None = None) -> str:
+    def wire_name(self, granularity: Granularity | None = None) -> str:
         if self.wire_name_override is not None:
             return self.wire_name_override
         if self.granularities:
             return f"{self.family}_{granularity or self.default_granularity}"
         return self.family
 
-    def response_field(self, granularity: str | None = None) -> str:
+    def response_field(self, granularity: Granularity | None = None) -> str:
         if self.granularities:
             return f"{self.family}_{granularity or self.default_granularity}"
         return self.family
@@ -88,8 +89,8 @@ DATASETS: dict[str, DatasetSpec] = {
 
 def _build_poll_aliases(
     datasets: dict[str, DatasetSpec],
-) -> dict[str, tuple[DatasetSpec, str | None]]:
-    aliases: dict[str, tuple[DatasetSpec, str | None]] = {}
+) -> dict[str, tuple[DatasetSpec, Granularity | None]]:
+    aliases: dict[str, tuple[DatasetSpec, Granularity | None]] = {}
     for spec in datasets.values():
         if spec.granularities:
             for g in spec.granularities:
@@ -99,10 +100,12 @@ def _build_poll_aliases(
     return aliases
 
 
-POLL_ALIASES: dict[str, tuple[DatasetSpec, str | None]] = _build_poll_aliases(DATASETS)
+POLL_ALIASES: dict[str, tuple[DatasetSpec, Granularity | None]] = _build_poll_aliases(
+    DATASETS
+)
 
 
-def parse_poll_alias(name: str) -> tuple[DatasetSpec, str | None]:
+def parse_poll_alias(name: str) -> tuple[DatasetSpec, Granularity | None]:
     """Resolve a wire-name string (as accepted by poll_dataset) to (spec, granularity).
 
     Raises ValueError with the list of valid options if `name` is unknown.

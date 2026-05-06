@@ -8,11 +8,10 @@ from typing import Any, cast
 import httpx
 
 from .datasets import DATASETS, DatasetSpec, parse_poll_alias
-from .errors import FAMILY_TO_TOOL_NAME, ErrorContext
+from .errors import FAMILY_TO_TOOL_NAME, ErrorContext, translate_exception
 from .models import (
     AllDatasetsRequestParams,
     AllDatasetsResponse,
-    ErrorPayload,
     Granularity,
     OrbClientConfig,
     PollingCallback,
@@ -176,7 +175,7 @@ class OrbAPIClient:
     async def _fetch(
         self,
         spec: DatasetSpec,
-        granularity: str | None = None,
+        granularity: Granularity | None = None,
         caller_id: str | None = None,
         **params,
     ) -> list[Any]:
@@ -614,7 +613,7 @@ class OrbAPIClient:
             "wifi_link": request.include_all_wifi_link,
         }
 
-        plan: list[tuple[DatasetSpec, str | None]] = []
+        plan: list[tuple[DatasetSpec, Granularity | None]] = []
         for spec in DATASETS.values():
             if not spec.granularities:
                 plan.append((spec, None))
@@ -638,14 +637,11 @@ class OrbAPIClient:
         fields: dict[str, Any] = {}
         for (spec, g), result in zip(plan, results, strict=True):
             if isinstance(result, BaseException):
-                # `g` is plan-loop-constrained to spec.granularities (tuple of
-                # str literals matching `Granularity`) or `None`, so the cast
-                # is sound.
                 context = ErrorContext(
                     tool=FAMILY_TO_TOOL_NAME[spec.family],
-                    granularity=cast(Granularity | None, g),
+                    granularity=g,
                 )
-                fields[spec.response_field(g)] = ErrorPayload.of(result, context)
+                fields[spec.response_field(g)] = translate_exception(result, context)
             else:
                 fields[spec.response_field(g)] = result
         return AllDatasetsResponse(**fields)

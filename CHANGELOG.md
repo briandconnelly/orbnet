@@ -20,6 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Internal cleanup: tightened `DatasetSpec.granularities` typing from
+  `tuple[str, ...]` to `tuple[Granularity, ...]` (and same for
+  `default_granularity`), eliminating a runtime-no-op `cast` in
+  `OrbAPIClient.get_all_datasets`'s partial-failure path. Also removed
+  the redundant `ErrorPayload.of` classmethod — its only call site
+  now invokes `translate_exception` directly. No public-API change.
 - **BREAKING:** Renamed all seven MCP tools with the `orb_` service
   prefix to reduce ambiguity in multi-server contexts. `get_scores_1m`
   also drops the `_1m` suffix because the Scores dataset is
