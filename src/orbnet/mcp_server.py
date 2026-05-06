@@ -44,18 +44,13 @@ SERVER_FINGERPRINT = f"orbnet@{__version__}"
 # Initialize FastMCP server
 mcp = FastMCP(
     "Orb Network Quality Data",
-    instructions=f"""
+    instructions="""
     This server provides real-time network quality monitoring from Orb sensors.
 
-    **Server fingerprint:** {SERVER_FINGERPRINT}
-    **Transport:** stdio
-    **Auth:** None — sensor must be reachable on the local network with Local API enabled
-    **Ambient state:** Reads ORB_HOST, ORB_PORT, ORB_TIMEOUT env vars (cached
-    after first tool call). Polling state is keyed by a session-specific
-    caller_id: the Orb sensor uses that id to track which records each caller
-    has already seen and returns only new ones on subsequent calls. Because
-    the polling state lives on the sensor (not this MCP server), per-tool
-    readOnlyHint=True remains accurate.
+    **Stateful polling:** Each tool call sends a caller_id that's fixed for
+    this server process's lifetime. The Orb sensor uses that id to track
+    which records each caller has already seen, returning only new ones on
+    subsequent calls.
 
     **What You Can Ask:**
     ✓ "What's my current network quality?"
