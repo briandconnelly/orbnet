@@ -8,6 +8,7 @@ from typing import Any, cast
 import httpx
 
 from .datasets import DATASETS, DatasetSpec, parse_poll_alias
+from .errors import FAMILY_TO_TOOL_NAME, ErrorContext
 from .models import (
     AllDatasetsRequestParams,
     AllDatasetsResponse,
@@ -636,9 +637,17 @@ class OrbAPIClient:
 
         fields: dict[str, Any] = {}
         for (spec, g), result in zip(plan, results, strict=True):
-            fields[spec.response_field(g)] = (
-                ErrorPayload.of(result) if isinstance(result, BaseException) else result
-            )
+            if isinstance(result, BaseException):
+                # `g` is plan-loop-constrained to spec.granularities (tuple of
+                # str literals matching `Granularity`) or `None`, so the cast
+                # is sound.
+                context = ErrorContext(
+                    tool=FAMILY_TO_TOOL_NAME[spec.family],
+                    granularity=cast(Granularity | None, g),
+                )
+                fields[spec.response_field(g)] = ErrorPayload.of(result, context)
+            else:
+                fields[spec.response_field(g)] = result
         return AllDatasetsResponse(**fields)
 
     async def poll_dataset(

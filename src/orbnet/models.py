@@ -1,7 +1,10 @@
 from collections.abc import Awaitable, Callable
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+
+if TYPE_CHECKING:
+    from .errors import ErrorContext  # noqa: F401
 
 # Time-bucket size for granular datasets (responsiveness, wifi_link). Used in
 # Pydantic Field annotations and public method signatures. Defined here as a
@@ -469,20 +472,62 @@ class WifiLinkRecord(BaseRecord, BaseIdentifiers, WifiLinkMeasures, WifiLinkDime
 # ============================================================================
 
 
+OrbErrorCode = Literal[
+    "sensor_unreachable",
+    "timeout",
+    "granularity_unavailable",
+    "dataset_not_found",
+    "validation_failed",
+    "http_error",
+]
+
+
+class Repair(BaseModel):
+    """Structured retry hint emitted alongside an `ErrorPayload`.
+
+    `tool` and `arguments` reference real callable surfaces — never free-form
+    prose. When the structured fields don't apply (e.g., the granularity
+    fallback chain is exhausted), `alternative` carries a textual fallback.
+    """
+
+    next_step: str
+    tool: str | None = None
+    arguments: dict[str, Any] | None = None
+    alternative: str | None = None
+
+    model_config = ConfigDict(extra="forbid")
+
+
 class ErrorPayload(BaseModel):
     """Typed error payload for AllDatasetsResponse fields when a dataset fetch fails.
 
-    Serializes to {"error": "..."} and validates from the same shape,
-    preserving the JSON wire format that previously used a bare dict.
+    Serializes to `{"error": "..."}` and validates from the same shape,
+    preserving the JSON wire format. Optional `code` and `repair` fields
+    add machine-readable context; both default to `None` so the legacy
+    bare-`error` shape still validates.
     """
 
     error: str
+    code: OrbErrorCode | None = None
+    repair: Repair | None = None
 
     model_config = ConfigDict(extra="forbid")
 
     @classmethod
-    def of(cls, exc: BaseException) -> "ErrorPayload":
-        return cls(error=str(exc))
+    def of(
+        cls,
+        exc: BaseException,
+        context: "ErrorContext | None" = None,
+    ) -> "ErrorPayload":
+        """Translate an exception into a structured `ErrorPayload`.
+
+        Routes through `orbnet.errors.translate_exception`. Imports lazily to
+        avoid a circular dependency with `errors.py`. Optional `context`
+        populates `tool` / `granularity` repair fields when the caller has them.
+        """
+        from .errors import translate_exception
+
+        return translate_exception(exc, context)
 
 
 type DatasetResult[T] = list[T] | ErrorPayload

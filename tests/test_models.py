@@ -1019,7 +1019,9 @@ class TestErrorPayload:
         from orbnet.models import ErrorPayload
 
         payload = ErrorPayload(error="boom")
-        assert payload.model_dump() == {"error": "boom"}
+        # exclude_none preserves the legacy bare wire format; new optional
+        # fields (code, repair) default to None.
+        assert payload.model_dump(exclude_none=True) == {"error": "boom"}
 
     def test_error_payload_validates_from_dict(self):
         from orbnet.models import ErrorPayload
@@ -1282,7 +1284,10 @@ class TestAllDatasetsResponseWireFormat:
             speed_results=[],
             wifi_link_1m=[WifiLinkRecord(**r) for r in sample_wifi_link_data],
         )
-        dumped = response.model_dump()
+        # exclude_none preserves the legacy bare error wire format; the
+        # extended ErrorPayload's optional code/repair default to None and
+        # are omitted.
+        dumped = response.model_dump(exclude_none=True)
         assert dumped["responsiveness_1m"] == {"error": "boom"}
 
     def test_error_field_validates_from_error_dict(
@@ -1301,3 +1306,105 @@ class TestAllDatasetsResponseWireFormat:
         )
         assert isinstance(response.responsiveness_1m, ErrorPayload)
         assert response.responsiveness_1m.error == "boom"
+
+
+# ---------------------------------------------------------------------------
+# Error envelope: Repair + extended ErrorPayload
+# ---------------------------------------------------------------------------
+
+
+class TestErrorPayloadBackwardsCompat:
+    """Existing wire format `{"error": "..."}` must still validate after adding
+    optional `code` and `repair` fields. Pin this so future schema changes
+    can't silently break consumers caching the old shape."""
+
+    def test_legacy_payload_validates(self):
+        from orbnet.models import ErrorPayload
+
+        payload = ErrorPayload(error="connection refused")
+        assert payload.error == "connection refused"
+        assert payload.code is None
+        assert payload.repair is None
+
+    def test_legacy_payload_serializes_bare_when_none_excluded(self):
+        from orbnet.models import ErrorPayload
+
+        payload = ErrorPayload(error="connection refused")
+        assert payload.model_dump(exclude_none=True) == {"error": "connection refused"}
+
+
+class TestRepair:
+    def test_minimal_construction_with_only_next_step(self):
+        from orbnet.models import Repair
+
+        r = Repair(next_step="retry with the next granularity")
+        assert r.next_step == "retry with the next granularity"
+        assert r.tool is None
+        assert r.arguments is None
+        assert r.alternative is None
+
+    def test_full_construction(self):
+        from orbnet.models import Repair
+
+        r = Repair(
+            next_step="retry with the next granularity",
+            tool="get_responsiveness",
+            arguments={"granularity": "15s"},
+        )
+        assert r.tool == "get_responsiveness"
+        assert r.arguments == {"granularity": "15s"}
+
+    def test_extra_fields_forbidden(self):
+        from pydantic import ValidationError
+
+        from orbnet.models import Repair
+
+        with pytest.raises(ValidationError):
+            Repair(next_step="x", bogus="y")  # type: ignore[call-arg]  # ty: ignore[unknown-argument]
+
+
+class TestExtendedErrorPayload:
+    def test_accepts_code_and_repair(self):
+        from orbnet.models import ErrorPayload, Repair
+
+        payload = ErrorPayload(
+            error="404",
+            code="granularity_unavailable",
+            repair=Repair(
+                next_step="retry with the next granularity",
+                tool="get_responsiveness",
+                arguments={"granularity": "15s"},
+            ),
+        )
+        assert payload.code == "granularity_unavailable"
+        assert payload.repair is not None
+        assert payload.repair.arguments == {"granularity": "15s"}
+
+    def test_invalid_code_rejected(self):
+        from pydantic import ValidationError
+
+        from orbnet.models import ErrorPayload
+
+        with pytest.raises(ValidationError):
+            ErrorPayload(error="x", code="bogus_code")  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
+
+
+class TestErrorPayloadOfRoutesThroughTranslator:
+    """`ErrorPayload.of(exc)` must produce a structured payload for known
+    exception types (sensor_unreachable, timeout, http_error, etc.). Unknown
+    exceptions still fall through to `error=str(exc)` with `code=None`."""
+
+    def test_connect_error_emits_sensor_unreachable(self):
+        import httpx
+
+        from orbnet.models import ErrorPayload
+
+        payload = ErrorPayload.of(httpx.ConnectError("conn refused"))
+        assert payload.code == "sensor_unreachable"
+
+    def test_unknown_exception_has_no_code(self):
+        from orbnet.models import ErrorPayload
+
+        payload = ErrorPayload.of(RuntimeError("surprise"))
+        assert payload.code is None
+        assert "surprise" in payload.error

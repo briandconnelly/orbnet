@@ -312,7 +312,10 @@ async def test_get_all_datasets_error_payload_passthrough(mock_client, ctx):
     result = await mcp_server.get_all_datasets(ctx, host="h")
 
     assert isinstance(result, AllDatasetsResponse)
-    dumped = result.model_dump()
+    # exclude_none preserves the legacy bare error wire format; the
+    # extended ErrorPayload's optional code/repair default to None and
+    # are omitted.
+    dumped = result.model_dump(exclude_none=True)
     assert dumped["responsiveness_1s"] == {"error": "connection refused"}
     assert dumped["scores_1m"] == []
     mock_client.get_all_datasets.assert_awaited_once_with(
@@ -485,4 +488,159 @@ class TestTroubleshootWifiNoPlatformDuplication:
         assert platform not in text, (
             f"troubleshoot_wifi should not duplicate WifiLinkRecord's "
             f"platform-availability notes ('{platform}' found in prompt text)"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Per-tool error envelope: widened return type + structured ErrorPayload
+# ---------------------------------------------------------------------------
+
+
+class TestGetScores1mErrorEnvelope:
+    async def test_returns_error_payload_on_connect_error(self, mock_client, ctx):
+        import httpx
+
+        mock_client.get_scores_1m.side_effect = httpx.ConnectError("conn refused")
+
+        result = await mcp_server.get_scores_1m(ctx, host="h")
+
+        assert isinstance(result, ErrorPayload)
+        assert result.code == "sensor_unreachable"
+        assert result.repair is not None
+
+
+class TestGetResponsivenessErrorEnvelope:
+    async def test_404_at_1s_suggests_15s(self, mock_client, ctx):
+        import httpx
+
+        request = httpx.Request(
+            "GET", "http://h:7080/api/v2/datasets/responsiveness_1s.json"
+        )
+        response = httpx.Response(404, request=request)
+        mock_client.get_responsiveness.side_effect = httpx.HTTPStatusError(
+            "404", request=request, response=response
+        )
+
+        result = await mcp_server.get_responsiveness(ctx, host="h", granularity="1s")
+
+        assert isinstance(result, ErrorPayload)
+        assert result.code == "granularity_unavailable"
+        assert result.repair is not None
+        assert result.repair.tool == "get_responsiveness"
+        assert result.repair.arguments == {"granularity": "15s"}
+
+    async def test_404_at_1m_populates_alternative(self, mock_client, ctx):
+        import httpx
+
+        request = httpx.Request(
+            "GET", "http://h:7080/api/v2/datasets/responsiveness_1m.json"
+        )
+        response = httpx.Response(404, request=request)
+        mock_client.get_responsiveness.side_effect = httpx.HTTPStatusError(
+            "404", request=request, response=response
+        )
+
+        result = await mcp_server.get_responsiveness(ctx, host="h", granularity="1m")
+
+        assert isinstance(result, ErrorPayload)
+        assert result.code == "granularity_unavailable"
+        assert result.repair is not None
+        assert result.repair.arguments is None
+        assert result.repair.alternative is not None
+
+
+class TestGetWifiLinkErrorEnvelope:
+    async def test_404_at_1s_suggests_15s(self, mock_client, ctx):
+        import httpx
+
+        request = httpx.Request(
+            "GET", "http://h:7080/api/v2/datasets/wifi_link_1s.json"
+        )
+        response = httpx.Response(404, request=request)
+        mock_client.get_wifi_link.side_effect = httpx.HTTPStatusError(
+            "404", request=request, response=response
+        )
+
+        result = await mcp_server.get_wifi_link(ctx, host="h", granularity="1s")
+
+        assert isinstance(result, ErrorPayload)
+        assert result.code == "granularity_unavailable"
+        assert result.repair is not None
+        assert result.repair.tool == "get_wifi_link"
+        assert result.repair.arguments == {"granularity": "15s"}
+
+
+class TestGetWebResponsivenessErrorEnvelope:
+    async def test_404_is_dataset_not_found(self, mock_client, ctx):
+        import httpx
+
+        request = httpx.Request(
+            "GET", "http://h:7080/api/v2/datasets/web_responsiveness_results.json"
+        )
+        response = httpx.Response(404, request=request)
+        mock_client.get_web_responsiveness.side_effect = httpx.HTTPStatusError(
+            "404", request=request, response=response
+        )
+
+        result = await mcp_server.get_web_responsiveness(ctx, host="h")
+
+        assert isinstance(result, ErrorPayload)
+        assert result.code == "dataset_not_found"
+
+
+class TestGetSpeedResultsErrorEnvelope:
+    async def test_timeout_emits_timeout_code(self, mock_client, ctx):
+        import httpx
+
+        mock_client.get_speed_results.side_effect = httpx.TimeoutException("slow")
+
+        result = await mcp_server.get_speed_results(ctx, host="h")
+
+        assert isinstance(result, ErrorPayload)
+        assert result.code == "timeout"
+
+
+class TestMCPOutputSchemaIsUnion:
+    """FastMCP derives outputSchema from each tool's return-type annotation.
+    After widening to `list[X] | ErrorPayload`, the schema must accept both
+    branches — pin this so MCP clients see an additive shape change rather
+    than a regression."""
+
+    @pytest.mark.parametrize(
+        "tool_name",
+        [
+            "get_scores_1m",
+            "get_responsiveness",
+            "get_wifi_link",
+            "get_web_responsiveness",
+            "get_speed_results",
+            # Other widened tools added in later tasks.
+        ],
+    )
+    async def test_output_schema_accepts_array_or_error_payload(self, tool_name: str):
+        tool = await mcp_server.mcp.get_tool(tool_name)
+        assert tool is not None
+        schema = tool.output_schema
+        assert schema is not None, f"{tool_name} has no output schema"
+
+        # Pydantic emits unions as `anyOf`. Look for a union-shaped top level
+        # OR a wrapped union one level deep; FastMCP wraps result schemas
+        # with a `result` key in some versions.
+        candidates = [schema]
+        if "properties" in schema and "result" in schema["properties"]:
+            candidates.append(schema["properties"]["result"])
+
+        # Require not just *a* union node, but a union with >=2 branches. A
+        # regression where FastMCP/Pydantic collapsed the union to a single
+        # `anyOf: [<one>]` would pass the bare-existence check silently.
+        def _union_branches(c: dict) -> int:
+            for key in ("anyOf", "oneOf"):
+                if key in c and isinstance(c[key], list):
+                    return len(c[key])
+            return 0
+
+        best = max((_union_branches(c) for c in candidates), default=0)
+        assert best >= 2, (
+            f"{tool_name} output schema is not a multi-branch union "
+            f"(best union arity: {best}): {schema}"
         )

@@ -20,14 +20,17 @@ import os
 import uuid
 from typing import Any
 
+import httpx
 from fastmcp import Context, FastMCP
 from mcp.types import ToolAnnotations
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from . import __version__
 from .client import OrbAPIClient
+from .errors import ErrorContext, translate_exception
 from .models import (
     AllDatasetsResponse,
+    ErrorPayload,
     Granularity,
     ResponsivenessRecord,
     ScoreRecord,
@@ -180,7 +183,7 @@ async def get_scores_1m(
     port: int | None = None,
     caller_id: str | None = None,
     timeout: float | None = None,
-) -> list[ScoreRecord]:
+) -> list[ScoreRecord] | ErrorPayload:
     """
     Retrieve 1-minute granularity Scores dataset from an Orb sensor.
 
@@ -255,7 +258,10 @@ async def get_scores_1m(
     """
     client = get_client(host, port, caller_id, timeout)
     await ctx.info(f"Getting 1m scores from Orb sensor {client.host}...")
-    return await client.get_scores_1m()
+    try:
+        return await client.get_scores_1m()
+    except (httpx.HTTPError, ValidationError) as exc:
+        return translate_exception(exc, ErrorContext(tool=get_scores_1m.__name__))
 
 
 @mcp.tool(
@@ -270,7 +276,7 @@ async def get_responsiveness(
     port: int | None = None,
     caller_id: str | None = None,
     timeout: float | None = None,
-) -> list[ResponsivenessRecord]:
+) -> list[ResponsivenessRecord] | ErrorPayload:
     """
     Retrieve Responsiveness dataset from an Orb sensor at a single granularity.
 
@@ -331,7 +337,13 @@ async def get_responsiveness(
     """
     client = get_client(host, port, caller_id, timeout)
     await ctx.info(f"Getting responsiveness data from Orb sensor {client.host}...")
-    return await client.get_responsiveness(granularity=granularity)
+    try:
+        return await client.get_responsiveness(granularity=granularity)
+    except (httpx.HTTPError, ValidationError) as exc:
+        return translate_exception(
+            exc,
+            ErrorContext(tool=get_responsiveness.__name__, granularity=granularity),
+        )
 
 
 @mcp.tool(
@@ -345,7 +357,7 @@ async def get_web_responsiveness(
     port: int | None = None,
     caller_id: str | None = None,
     timeout: float | None = None,
-) -> list[WebResponsivenessRecord]:
+) -> list[WebResponsivenessRecord] | ErrorPayload:
     """
     Retrieve Web Responsiveness dataset from an Orb sensor.
 
@@ -376,7 +388,12 @@ async def get_web_responsiveness(
     """
     client = get_client(host, port, caller_id, timeout)
     await ctx.info(f"Getting web responsiveness data from Orb sensor {client.host}...")
-    return await client.get_web_responsiveness()
+    try:
+        return await client.get_web_responsiveness()
+    except (httpx.HTTPError, ValidationError) as exc:
+        return translate_exception(
+            exc, ErrorContext(tool=get_web_responsiveness.__name__)
+        )
 
 
 @mcp.tool(
@@ -390,7 +407,7 @@ async def get_speed_results(
     port: int | None = None,
     caller_id: str | None = None,
     timeout: float | None = None,
-) -> list[SpeedRecord]:
+) -> list[SpeedRecord] | ErrorPayload:
     """
     Retrieve Speed test results dataset from an Orb sensor.
 
@@ -421,7 +438,10 @@ async def get_speed_results(
     """
     client = get_client(host, port, caller_id, timeout)
     await ctx.info(f"Getting speed test data from Orb sensor {client.host}...")
-    return await client.get_speed_results()
+    try:
+        return await client.get_speed_results()
+    except (httpx.HTTPError, ValidationError) as exc:
+        return translate_exception(exc, ErrorContext(tool=get_speed_results.__name__))
 
 
 @mcp.tool(
@@ -436,7 +456,7 @@ async def get_wifi_link(
     port: int | None = None,
     caller_id: str | None = None,
     timeout: float | None = None,
-) -> list[WifiLinkRecord]:
+) -> list[WifiLinkRecord] | ErrorPayload:
     """
     Retrieve Wi-Fi Link dataset from an Orb sensor at a single granularity.
 
@@ -494,7 +514,13 @@ async def get_wifi_link(
     """
     client = get_client(host, port, caller_id, timeout)
     await ctx.info(f"Getting Wi-Fi link data from Orb sensor {client.host}...")
-    return await client.get_wifi_link(granularity=granularity)
+    try:
+        return await client.get_wifi_link(granularity=granularity)
+    except (httpx.HTTPError, ValidationError) as exc:
+        return translate_exception(
+            exc,
+            ErrorContext(tool=get_wifi_link.__name__, granularity=granularity),
+        )
 
 
 @mcp.tool(
