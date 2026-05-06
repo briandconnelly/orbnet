@@ -469,14 +469,44 @@ class WifiLinkRecord(BaseRecord, BaseIdentifiers, WifiLinkMeasures, WifiLinkDime
 # ============================================================================
 
 
+OrbErrorCode = Literal[
+    "sensor_unreachable",
+    "timeout",
+    "granularity_unavailable",
+    "dataset_not_found",
+    "validation_failed",
+    "http_error",
+]
+
+
+class Repair(BaseModel):
+    """Structured retry hint emitted alongside an `ErrorPayload`.
+
+    `tool` and `arguments` reference real callable surfaces — never free-form
+    prose. When the structured fields don't apply (e.g., the granularity
+    fallback chain is exhausted), `alternative` carries a textual fallback.
+    """
+
+    next_step: str
+    tool: str | None = None
+    arguments: dict[str, Any] | None = None
+    alternative: str | None = None
+
+    model_config = ConfigDict(extra="forbid")
+
+
 class ErrorPayload(BaseModel):
     """Typed error payload for AllDatasetsResponse fields when a dataset fetch fails.
 
-    Serializes to {"error": "..."} and validates from the same shape,
-    preserving the JSON wire format that previously used a bare dict.
+    Serializes to `{"error": "..."}` and validates from the same shape,
+    preserving the JSON wire format. Optional `code` and `repair` fields
+    add machine-readable context; both default to `None` so the legacy
+    bare-`error` shape still validates.
     """
 
     error: str
+    code: OrbErrorCode | None = None
+    repair: Repair | None = None
 
     model_config = ConfigDict(extra="forbid")
 

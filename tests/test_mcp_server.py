@@ -312,7 +312,10 @@ async def test_get_all_datasets_error_payload_passthrough(mock_client, ctx):
     result = await mcp_server.get_all_datasets(ctx, host="h")
 
     assert isinstance(result, AllDatasetsResponse)
-    dumped = result.model_dump()
+    # exclude_none preserves the legacy bare error wire format; the
+    # extended ErrorPayload's optional code/repair default to None and
+    # are omitted.
+    dumped = result.model_dump(exclude_none=True)
     assert dumped["responsiveness_1s"] == {"error": "connection refused"}
     assert dumped["scores_1m"] == []
     mock_client.get_all_datasets.assert_awaited_once_with(
