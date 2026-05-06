@@ -570,6 +570,36 @@ class TestGetWifiLinkErrorEnvelope:
         assert result.repair.arguments == {"granularity": "15s"}
 
 
+class TestGetWebResponsivenessErrorEnvelope:
+    async def test_404_is_dataset_not_found(self, mock_client, ctx):
+        import httpx
+
+        request = httpx.Request(
+            "GET", "http://h:7080/api/v2/datasets/web_responsiveness_results.json"
+        )
+        response = httpx.Response(404, request=request)
+        mock_client.get_web_responsiveness.side_effect = httpx.HTTPStatusError(
+            "404", request=request, response=response
+        )
+
+        result = await mcp_server.get_web_responsiveness(ctx, host="h")
+
+        assert isinstance(result, ErrorPayload)
+        assert result.code == "dataset_not_found"
+
+
+class TestGetSpeedResultsErrorEnvelope:
+    async def test_timeout_emits_timeout_code(self, mock_client, ctx):
+        import httpx
+
+        mock_client.get_speed_results.side_effect = httpx.TimeoutException("slow")
+
+        result = await mcp_server.get_speed_results(ctx, host="h")
+
+        assert isinstance(result, ErrorPayload)
+        assert result.code == "timeout"
+
+
 class TestMCPOutputSchemaIsUnion:
     """FastMCP derives outputSchema from each tool's return-type annotation.
     After widening to `list[X] | ErrorPayload`, the schema must accept both
@@ -582,6 +612,8 @@ class TestMCPOutputSchemaIsUnion:
             "get_scores_1m",
             "get_responsiveness",
             "get_wifi_link",
+            "get_web_responsiveness",
+            "get_speed_results",
             # Other widened tools added in later tasks.
         ],
     )

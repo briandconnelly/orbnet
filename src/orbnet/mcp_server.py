@@ -357,7 +357,7 @@ async def get_web_responsiveness(
     port: int | None = None,
     caller_id: str | None = None,
     timeout: float | None = None,
-) -> list[WebResponsivenessRecord]:
+) -> list[WebResponsivenessRecord] | ErrorPayload:
     """
     Retrieve Web Responsiveness dataset from an Orb sensor.
 
@@ -388,7 +388,12 @@ async def get_web_responsiveness(
     """
     client = get_client(host, port, caller_id, timeout)
     await ctx.info(f"Getting web responsiveness data from Orb sensor {client.host}...")
-    return await client.get_web_responsiveness()
+    try:
+        return await client.get_web_responsiveness()
+    except (httpx.HTTPError, ValidationError) as exc:
+        return translate_exception(
+            exc, ErrorContext(tool=get_web_responsiveness.__name__)
+        )
 
 
 @mcp.tool(
@@ -402,7 +407,7 @@ async def get_speed_results(
     port: int | None = None,
     caller_id: str | None = None,
     timeout: float | None = None,
-) -> list[SpeedRecord]:
+) -> list[SpeedRecord] | ErrorPayload:
     """
     Retrieve Speed test results dataset from an Orb sensor.
 
@@ -433,7 +438,10 @@ async def get_speed_results(
     """
     client = get_client(host, port, caller_id, timeout)
     await ctx.info(f"Getting speed test data from Orb sensor {client.host}...")
-    return await client.get_speed_results()
+    try:
+        return await client.get_speed_results()
+    except (httpx.HTTPError, ValidationError) as exc:
+        return translate_exception(exc, ErrorContext(tool=get_speed_results.__name__))
 
 
 @mcp.tool(
