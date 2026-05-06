@@ -393,9 +393,10 @@ class TestLazyConfigLoading:
 
 
 # ---------------------------------------------------------------------------
-# Discoverability surface (PR 2 — F4/F7/F8/F9):
-#   - Server instructions declare transport, auth, ambient state, fingerprint,
-#     and explicit negative scope.
+# Discoverability surface:
+#   - Server instructions carry only client-actionable information: stateful
+#     polling semantics and explicit negative scope (no transport/auth/env-var
+#     declarations — those don't help an agent that has already connected).
 #   - get_client_info exposes a server fingerprint.
 #   - Prompts list prerequisites and avoid duplicating model-level platform
 #     notes.
@@ -403,9 +404,10 @@ class TestLazyConfigLoading:
 
 
 class TestServerInstructions:
-    """The instructions block is what an MCP client reads at cold start —
-    transport, auth, ambient state, negative scope, and the capability
-    fingerprint must all be discoverable from this single text.
+    """The instructions block is what an MCP client reads at cold start. It
+    must carry the client-actionable bits (stateful-polling behavior and
+    negative scope) without leaking server-operator metadata an agent
+    can't act on.
     """
 
     @pytest.fixture
@@ -415,24 +417,19 @@ class TestServerInstructions:
     @pytest.mark.parametrize(
         "anchor",
         [
-            "Transport:",
-            "Auth:",
-            "Ambient state:",
-            "Server fingerprint:",
+            "Stateful polling:",
             "Does NOT",
         ],
     )
     def test_declares_section(self, text, anchor):
         assert anchor in text, f"server instructions should declare '{anchor}'"
 
-    def test_fingerprint_includes_version(self, text):
-        from orbnet import __version__
-
-        assert f"orbnet@{__version__}" in text
-
-    @pytest.mark.parametrize("env_var", ["ORB_HOST", "ORB_PORT", "ORB_TIMEOUT"])
-    def test_lists_ambient_env_vars(self, text, env_var):
-        assert env_var in text
+    def test_stateful_polling_describes_substantive_behavior(self, text):
+        """Header presence is necessary but not sufficient — the section must
+        carry the behavior agents need to interpret repeated tool calls
+        correctly. Pin the load-bearing tokens against wording regressions."""
+        assert "caller_id" in text
+        assert "only new" in text
 
 
 class TestGetClientInfoFingerprint:
