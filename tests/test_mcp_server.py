@@ -489,3 +489,51 @@ class TestTroubleshootWifiNoPlatformDuplication:
             f"troubleshoot_wifi should not duplicate WifiLinkRecord's "
             f"platform-availability notes ('{platform}' found in prompt text)"
         )
+
+
+# ---------------------------------------------------------------------------
+# Per-tool error envelope: widened return type + structured ErrorPayload
+# ---------------------------------------------------------------------------
+
+
+class TestGetScores1mErrorEnvelope:
+    async def test_returns_error_payload_on_connect_error(self, mock_client, ctx):
+        import httpx
+
+        mock_client.get_scores_1m.side_effect = httpx.ConnectError("conn refused")
+
+        result = await mcp_server.get_scores_1m(ctx, host="h")
+
+        assert isinstance(result, ErrorPayload)
+        assert result.code == "sensor_unreachable"
+        assert result.repair is not None
+
+
+class TestMCPOutputSchemaIsUnion:
+    """FastMCP derives outputSchema from each tool's return-type annotation.
+    After widening to `list[X] | ErrorPayload`, the schema must accept both
+    branches — pin this so MCP clients see an additive shape change rather
+    than a regression."""
+
+    @pytest.mark.parametrize(
+        "tool_name",
+        [
+            "get_scores_1m",
+            # Other widened tools added in later tasks.
+        ],
+    )
+    async def test_output_schema_accepts_array_or_error_payload(self, tool_name: str):
+        tool = await mcp_server.mcp.get_tool(tool_name)
+        assert tool is not None
+        schema = tool.output_schema
+        assert schema is not None, f"{tool_name} has no output schema"
+
+        # Pydantic emits unions as `anyOf`. Look for a union-shaped top level
+        # OR a wrapped union one level deep; FastMCP wraps result schemas
+        # with a `result` key in some versions.
+        candidates = [schema]
+        if "properties" in schema and "result" in schema["properties"]:
+            candidates.append(schema["properties"]["result"])
+
+        union_found = any("anyOf" in c or "oneOf" in c for c in candidates)
+        assert union_found, f"{tool_name} output schema is not a union: {schema}"
