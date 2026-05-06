@@ -20,6 +20,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **BREAKING:** Renamed all seven MCP tools with the `orb_` service
+  prefix to reduce ambiguity in multi-server contexts. `get_scores_1m`
+  also drops the `_1m` suffix because the Scores dataset is
+  single-granularity at the Orb API level. No deprecation aliases —
+  old names are gone. Migration:
+  - `get_scores_1m` → `orb_get_scores`
+  - `get_responsiveness` → `orb_get_responsiveness`
+  - `get_speed_results` → `orb_get_speed_results`
+  - `get_web_responsiveness` → `orb_get_web_responsiveness`
+  - `get_wifi_link` → `orb_get_wifi_link`
+  - `get_all_datasets` → `orb_get_all_datasets`
+  - `get_client_info` → `orb_get_client_info`
+
+  Direct Python users of `OrbAPIClient` see no method-signature changes.
+  Note: `ErrorPayload.repair.tool` values emitted via
+  `OrbAPIClient.get_all_datasets`'s partial-failure path now reflect the
+  new MCP tool names (the `tool` field is documented as the canonical
+  MCP tool to retry with).
 - **BREAKING:** Dropped FastMCP 2.x support; `fastmcp>=3.2.0` is now
   required (#21)
 - Aligned MCP tool granularity defaults to `1m` to match the underlying
