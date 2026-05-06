@@ -36,39 +36,39 @@ def ctx():
     return c
 
 
-async def test_get_scores_1m_tool(mock_client, ctx):
-    result = await mcp_server.get_scores_1m(ctx, host="h")
+async def test_orb_get_scores_tool(mock_client, ctx):
+    result = await mcp_server.orb_get_scores(ctx, host="h")
     assert result == []
     mock_client.get_scores_1m.assert_awaited_once()
     ctx.info.assert_awaited_once()
 
 
-async def test_get_responsiveness_tool(mock_client, ctx):
-    result = await mcp_server.get_responsiveness(ctx, host="h", granularity="1s")
+async def test_orb_get_responsiveness_tool(mock_client, ctx):
+    result = await mcp_server.orb_get_responsiveness(ctx, host="h", granularity="1s")
     assert result == []
     mock_client.get_responsiveness.assert_awaited_once_with(granularity="1s")
 
 
-async def test_get_web_responsiveness_tool(mock_client, ctx):
-    result = await mcp_server.get_web_responsiveness(ctx, host="h")
+async def test_orb_get_web_responsiveness_tool(mock_client, ctx):
+    result = await mcp_server.orb_get_web_responsiveness(ctx, host="h")
     assert result == []
     mock_client.get_web_responsiveness.assert_awaited_once()
 
 
-async def test_get_speed_results_tool(mock_client, ctx):
-    result = await mcp_server.get_speed_results(ctx, host="h")
+async def test_orb_get_speed_results_tool(mock_client, ctx):
+    result = await mcp_server.orb_get_speed_results(ctx, host="h")
     assert result == []
     mock_client.get_speed_results.assert_awaited_once()
 
 
-async def test_get_wifi_link_tool(mock_client, ctx):
-    result = await mcp_server.get_wifi_link(ctx, host="h", granularity="15s")
+async def test_orb_get_wifi_link_tool(mock_client, ctx):
+    result = await mcp_server.orb_get_wifi_link(ctx, host="h", granularity="15s")
     assert result == []
     mock_client.get_wifi_link.assert_awaited_once_with(granularity="15s")
 
 
-async def test_get_all_datasets_tool(mock_client, ctx):
-    result = await mcp_server.get_all_datasets(
+async def test_orb_get_all_datasets_tool(mock_client, ctx):
+    result = await mcp_server.orb_get_all_datasets(
         ctx, host="h", include_all_responsiveness=True, include_all_wifi_link=True
     )
     assert result == {}
@@ -79,14 +79,14 @@ async def test_get_all_datasets_tool(mock_client, ctx):
     )
 
 
-def test_get_client_info_tool(mock_client):
+def test_orb_get_client_info_tool(mock_client):
     mock_client.host = "h"
     mock_client.port = 7080
     mock_client.base_url = "http://h:7080"
     mock_client.caller_id = "cid"
     mock_client.timeout = 30.0
 
-    info = mcp_server.get_client_info(host="h")
+    info = mcp_server.orb_get_client_info(host="h")
     assert info["host"] == "h"
     assert info["caller_id"] == "cid"
 
@@ -94,19 +94,19 @@ def test_get_client_info_tool(mock_client):
 def test_analyze_network_quality_prompt():
     text = mcp_server.analyze_network_quality()
     assert isinstance(text, str)
-    assert "get_scores_1m" in text
+    assert "orb_get_scores" in text
 
 
 def test_troubleshoot_slow_internet_prompt():
     text = mcp_server.troubleshoot_slow_internet()
     assert isinstance(text, str)
-    assert "get_speed_results" in text
+    assert "orb_get_speed_results" in text
 
 
 def test_troubleshoot_wifi_prompt():
     text = mcp_server.troubleshoot_wifi()
     assert isinstance(text, str)
-    assert "get_wifi_link" in text
+    assert "orb_get_wifi_link" in text
 
 
 def test_main_invokes_mcp_run(mocker):
@@ -123,8 +123,8 @@ def test_main_invokes_mcp_run(mocker):
 @pytest.mark.parametrize(
     ("mcp_tool", "client_method"),
     [
-        (mcp_server.get_responsiveness, OrbAPIClient.get_responsiveness),
-        (mcp_server.get_wifi_link, OrbAPIClient.get_wifi_link),
+        (mcp_server.orb_get_responsiveness, OrbAPIClient.get_responsiveness),
+        (mcp_server.orb_get_wifi_link, OrbAPIClient.get_wifi_link),
     ],
 )
 def test_mcp_tool_granularity_default_matches_client(mcp_tool, client_method):
@@ -137,12 +137,15 @@ def test_mcp_tool_granularity_default_matches_client(mcp_tool, client_method):
     )
 
 
-async def test_get_all_datasets_forwards_client_default_granularity(mock_client, ctx):
-    """get_all_datasets does not currently expose default_granularity to MCP callers,
-    so it must forward whatever the underlying client treats as default. This locks
-    the MCP-layer hardcode to track the client default if either side moves.
+async def test_orb_get_all_datasets_forwards_client_default_granularity(
+    mock_client, ctx
+):
+    """orb_get_all_datasets does not currently expose default_granularity to MCP
+    callers, so it must forward whatever the underlying client treats as default.
+    This locks the MCP-layer hardcode to track the client default if either side
+    moves.
     """
-    await mcp_server.get_all_datasets(ctx, host="h")
+    await mcp_server.orb_get_all_datasets(ctx, host="h")
     call_kwargs = mock_client.get_all_datasets.await_args.kwargs
     client_default = (
         inspect.signature(OrbAPIClient.get_all_datasets)
@@ -155,8 +158,8 @@ async def test_get_all_datasets_forwards_client_default_granularity(mock_client,
 @pytest.mark.parametrize(
     ("mcp_tool", "client_method_attr"),
     [
-        (mcp_server.get_responsiveness, "get_responsiveness"),
-        (mcp_server.get_wifi_link, "get_wifi_link"),
+        (mcp_server.orb_get_responsiveness, "get_responsiveness"),
+        (mcp_server.orb_get_wifi_link, "get_wifi_link"),
     ],
 )
 async def test_mcp_tool_no_arg_forwards_client_default_granularity(
@@ -177,10 +180,10 @@ async def test_mcp_tool_no_arg_forwards_client_default_granularity(
 # ---------------------------------------------------------------------------
 
 
-async def test_tool_metadata_get_scores_1m():
-    tool = await mcp_server.mcp.get_tool("get_scores_1m")
+async def test_tool_metadata_orb_get_scores():
+    tool = await mcp_server.mcp.get_tool("orb_get_scores")
     assert tool is not None
-    assert tool.title == "Get Scores Dataset (1m)"
+    assert tool.title == "Get Scores Dataset"
     assert tool.tags == {"orb", "scores"}
     assert tool.annotations is not None
     assert tool.annotations.readOnlyHint is True
@@ -188,8 +191,8 @@ async def test_tool_metadata_get_scores_1m():
     assert tool.annotations.idempotentHint is None
 
 
-async def test_tool_metadata_get_responsiveness():
-    tool = await mcp_server.mcp.get_tool("get_responsiveness")
+async def test_tool_metadata_orb_get_responsiveness():
+    tool = await mcp_server.mcp.get_tool("orb_get_responsiveness")
     assert tool is not None
     assert tool.title == "Get Responsiveness Dataset"
     assert tool.tags == {"orb", "responsiveness"}
@@ -199,8 +202,8 @@ async def test_tool_metadata_get_responsiveness():
     assert tool.annotations.idempotentHint is None
 
 
-async def test_tool_metadata_get_web_responsiveness():
-    tool = await mcp_server.mcp.get_tool("get_web_responsiveness")
+async def test_tool_metadata_orb_get_web_responsiveness():
+    tool = await mcp_server.mcp.get_tool("orb_get_web_responsiveness")
     assert tool is not None
     assert tool.title == "Get Web Responsiveness Dataset"
     assert tool.tags == {"orb", "web-performance"}
@@ -210,8 +213,8 @@ async def test_tool_metadata_get_web_responsiveness():
     assert tool.annotations.idempotentHint is None
 
 
-async def test_tool_metadata_get_speed_results():
-    tool = await mcp_server.mcp.get_tool("get_speed_results")
+async def test_tool_metadata_orb_get_speed_results():
+    tool = await mcp_server.mcp.get_tool("orb_get_speed_results")
     assert tool is not None
     assert tool.title == "Get Speed Test Results"
     assert tool.tags == {"orb", "speed"}
@@ -221,8 +224,8 @@ async def test_tool_metadata_get_speed_results():
     assert tool.annotations.idempotentHint is None
 
 
-async def test_tool_metadata_get_wifi_link():
-    tool = await mcp_server.mcp.get_tool("get_wifi_link")
+async def test_tool_metadata_orb_get_wifi_link():
+    tool = await mcp_server.mcp.get_tool("orb_get_wifi_link")
     assert tool is not None
     assert tool.title == "Get Wi-Fi Link Dataset"
     assert tool.tags == {"orb", "wifi"}
@@ -232,8 +235,8 @@ async def test_tool_metadata_get_wifi_link():
     assert tool.annotations.idempotentHint is None
 
 
-async def test_tool_metadata_get_all_datasets():
-    tool = await mcp_server.mcp.get_tool("get_all_datasets")
+async def test_tool_metadata_orb_get_all_datasets():
+    tool = await mcp_server.mcp.get_tool("orb_get_all_datasets")
     assert tool is not None
     assert tool.title == "Get All Datasets"
     assert tool.tags == {"orb", "aggregate"}
@@ -243,8 +246,8 @@ async def test_tool_metadata_get_all_datasets():
     assert tool.annotations.idempotentHint is None
 
 
-async def test_tool_metadata_get_client_info():
-    tool = await mcp_server.mcp.get_tool("get_client_info")
+async def test_tool_metadata_orb_get_client_info():
+    tool = await mcp_server.mcp.get_tool("orb_get_client_info")
     assert tool is not None
     assert tool.title == "Get Client Configuration"
     assert tool.tags == {"orb", "config"}
@@ -284,13 +287,13 @@ async def test_registered_tools_and_prompts():
     tools = await mcp_server.mcp.list_tools()
     prompts = await mcp_server.mcp.list_prompts()
     assert {t.name for t in tools} == {
-        "get_scores_1m",
-        "get_responsiveness",
-        "get_web_responsiveness",
-        "get_speed_results",
-        "get_wifi_link",
-        "get_all_datasets",
-        "get_client_info",
+        "orb_get_scores",
+        "orb_get_responsiveness",
+        "orb_get_web_responsiveness",
+        "orb_get_speed_results",
+        "orb_get_wifi_link",
+        "orb_get_all_datasets",
+        "orb_get_client_info",
     }
     assert {p.name for p in prompts} == {
         "analyze_network_quality",
@@ -299,7 +302,7 @@ async def test_registered_tools_and_prompts():
     }
 
 
-async def test_get_all_datasets_error_payload_passthrough(mock_client, ctx):
+async def test_orb_get_all_datasets_error_payload_passthrough(mock_client, ctx):
     error_payload = ErrorPayload(error="connection refused")
     response = AllDatasetsResponse(
         scores_1m=[],
@@ -309,7 +312,7 @@ async def test_get_all_datasets_error_payload_passthrough(mock_client, ctx):
     )
     mock_client.get_all_datasets = AsyncMock(return_value=response)
 
-    result = await mcp_server.get_all_datasets(ctx, host="h")
+    result = await mcp_server.orb_get_all_datasets(ctx, host="h")
 
     assert isinstance(result, AllDatasetsResponse)
     # exclude_none preserves the legacy bare error wire format; the
@@ -359,7 +362,7 @@ async def test_log_uses_resolved_host_not_raw_arg(mock_client, ctx):
     (from config), not literal 'None'."""
     mock_client.host = "resolved-host"
 
-    await mcp_server.get_scores_1m(ctx, host=None)
+    await mcp_server.orb_get_scores(ctx, host=None)
 
     ctx.info.assert_awaited_once()
     log_message = ctx.info.await_args.args[0]
@@ -435,8 +438,8 @@ class TestServerInstructions:
         assert "only new" in text
 
 
-class TestGetClientInfoFingerprint:
-    """get_client_info should surface the server fingerprint so agents that
+class TestOrbGetClientInfoFingerprint:
+    """orb_get_client_info should surface the server fingerprint so agents that
     skip the instructions block can still discover the version they're against.
     """
 
@@ -449,7 +452,7 @@ class TestGetClientInfoFingerprint:
         mock_client.caller_id = "cid"
         mock_client.timeout = 30.0
 
-        info = mcp_server.get_client_info(host="h")
+        info = mcp_server.orb_get_client_info(host="h")
 
         assert info["server_fingerprint"] == f"orbnet@{__version__}"
 
@@ -493,20 +496,20 @@ class TestTroubleshootWifiNoPlatformDuplication:
 # ---------------------------------------------------------------------------
 
 
-class TestGetScores1mErrorEnvelope:
+class TestOrbGetScoresErrorEnvelope:
     async def test_returns_error_payload_on_connect_error(self, mock_client, ctx):
         import httpx
 
         mock_client.get_scores_1m.side_effect = httpx.ConnectError("conn refused")
 
-        result = await mcp_server.get_scores_1m(ctx, host="h")
+        result = await mcp_server.orb_get_scores(ctx, host="h")
 
         assert isinstance(result, ErrorPayload)
         assert result.code == "sensor_unreachable"
         assert result.repair is not None
 
 
-class TestGetResponsivenessErrorEnvelope:
+class TestOrbGetResponsivenessErrorEnvelope:
     async def test_404_at_1s_suggests_15s(self, mock_client, ctx):
         import httpx
 
@@ -518,12 +521,14 @@ class TestGetResponsivenessErrorEnvelope:
             "404", request=request, response=response
         )
 
-        result = await mcp_server.get_responsiveness(ctx, host="h", granularity="1s")
+        result = await mcp_server.orb_get_responsiveness(
+            ctx, host="h", granularity="1s"
+        )
 
         assert isinstance(result, ErrorPayload)
         assert result.code == "granularity_unavailable"
         assert result.repair is not None
-        assert result.repair.tool == "get_responsiveness"
+        assert result.repair.tool == "orb_get_responsiveness"
         assert result.repair.arguments == {"granularity": "15s"}
 
     async def test_404_at_1m_populates_alternative(self, mock_client, ctx):
@@ -537,7 +542,9 @@ class TestGetResponsivenessErrorEnvelope:
             "404", request=request, response=response
         )
 
-        result = await mcp_server.get_responsiveness(ctx, host="h", granularity="1m")
+        result = await mcp_server.orb_get_responsiveness(
+            ctx, host="h", granularity="1m"
+        )
 
         assert isinstance(result, ErrorPayload)
         assert result.code == "granularity_unavailable"
@@ -546,7 +553,7 @@ class TestGetResponsivenessErrorEnvelope:
         assert result.repair.alternative is not None
 
 
-class TestGetWifiLinkErrorEnvelope:
+class TestOrbGetWifiLinkErrorEnvelope:
     async def test_404_at_1s_suggests_15s(self, mock_client, ctx):
         import httpx
 
@@ -558,16 +565,16 @@ class TestGetWifiLinkErrorEnvelope:
             "404", request=request, response=response
         )
 
-        result = await mcp_server.get_wifi_link(ctx, host="h", granularity="1s")
+        result = await mcp_server.orb_get_wifi_link(ctx, host="h", granularity="1s")
 
         assert isinstance(result, ErrorPayload)
         assert result.code == "granularity_unavailable"
         assert result.repair is not None
-        assert result.repair.tool == "get_wifi_link"
+        assert result.repair.tool == "orb_get_wifi_link"
         assert result.repair.arguments == {"granularity": "15s"}
 
 
-class TestGetWebResponsivenessErrorEnvelope:
+class TestOrbGetWebResponsivenessErrorEnvelope:
     async def test_404_is_dataset_not_found(self, mock_client, ctx):
         import httpx
 
@@ -579,19 +586,19 @@ class TestGetWebResponsivenessErrorEnvelope:
             "404", request=request, response=response
         )
 
-        result = await mcp_server.get_web_responsiveness(ctx, host="h")
+        result = await mcp_server.orb_get_web_responsiveness(ctx, host="h")
 
         assert isinstance(result, ErrorPayload)
         assert result.code == "dataset_not_found"
 
 
-class TestGetSpeedResultsErrorEnvelope:
+class TestOrbGetSpeedResultsErrorEnvelope:
     async def test_timeout_emits_timeout_code(self, mock_client, ctx):
         import httpx
 
         mock_client.get_speed_results.side_effect = httpx.TimeoutException("slow")
 
-        result = await mcp_server.get_speed_results(ctx, host="h")
+        result = await mcp_server.orb_get_speed_results(ctx, host="h")
 
         assert isinstance(result, ErrorPayload)
         assert result.code == "timeout"
@@ -606,11 +613,11 @@ class TestMCPOutputSchemaIsUnion:
     @pytest.mark.parametrize(
         "tool_name",
         [
-            "get_scores_1m",
-            "get_responsiveness",
-            "get_wifi_link",
-            "get_web_responsiveness",
-            "get_speed_results",
+            "orb_get_scores",
+            "orb_get_responsiveness",
+            "orb_get_wifi_link",
+            "orb_get_web_responsiveness",
+            "orb_get_speed_results",
             # Other widened tools added in later tasks.
         ],
     )
@@ -641,3 +648,23 @@ class TestMCPOutputSchemaIsUnion:
             f"{tool_name} output schema is not a multi-branch union "
             f"(best union arity: {best}): {schema}"
         )
+
+
+async def test_old_tool_names_are_not_registered():
+    """The hard rename to orb_get_* must not leave the old names
+    discoverable. PR 4's rationale assumes a clean surface — a residual
+    old-name registration would silently undo that."""
+    tools = await mcp_server.mcp.list_tools()
+    names = {t.name for t in tools}
+    old_names = {
+        "get_scores_1m",
+        "get_responsiveness",
+        "get_web_responsiveness",
+        "get_speed_results",
+        "get_wifi_link",
+        "get_all_datasets",
+        "get_client_info",
+    }
+    assert names.isdisjoint(old_names), (
+        f"old tool names still registered: {names & old_names}"
+    )

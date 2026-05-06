@@ -25,22 +25,20 @@ typically aren't enabled either)."""
 
 
 FAMILY_TO_TOOL_NAME: dict[str, str] = {
-    "scores": "get_scores_1m",
-    "responsiveness": "get_responsiveness",
-    "web_responsiveness": "get_web_responsiveness",
-    "speed_results": "get_speed_results",
-    "wifi_link": "get_wifi_link",
+    "scores": "orb_get_scores",
+    "responsiveness": "orb_get_responsiveness",
+    "web_responsiveness": "orb_get_web_responsiveness",
+    "speed_results": "orb_get_speed_results",
+    "wifi_link": "orb_get_wifi_link",
 }
-"""Maps `DatasetSpec.family` values to the canonical MCP tool name. Most
-families round-trip via `f"get_{family}"`; `scores` is the only entry whose
-canonical tool name (`get_scores_1m`) deviates from that pattern, so we keep
-the whole mapping as one explicit table.
+"""Maps `DatasetSpec.family` values to the canonical MCP tool name.
 
-Note: per-tool wrappers in `mcp_server.py` use `<fn>.__name__` so a tool
-rename propagates there automatically. This table is the only place tool
-names are hardcoded; planned tool-name changes (e.g., the `orb_` prefix in
-PR 4 of the agent-friendliness audit) must update both the renamed
-function definitions AND the values in this dict."""
+Each MCP per-tool wrapper uses `<fn>.__name__` to populate
+`ErrorContext.tool` automatically; this table is the single hand-maintained
+mapping used by `OrbAPIClient.get_all_datasets`'s partial-failure path,
+where the loop iterates `(spec, granularity)` pairs and needs to map
+`spec.family` to the public tool name to thread into `ErrorContext`.
+"""
 
 
 class ErrorContext(BaseModel):
