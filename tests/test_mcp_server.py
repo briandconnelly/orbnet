@@ -630,5 +630,17 @@ class TestMCPOutputSchemaIsUnion:
         if "properties" in schema and "result" in schema["properties"]:
             candidates.append(schema["properties"]["result"])
 
-        union_found = any("anyOf" in c or "oneOf" in c for c in candidates)
-        assert union_found, f"{tool_name} output schema is not a union: {schema}"
+        # Require not just *a* union node, but a union with >=2 branches. A
+        # regression where FastMCP/Pydantic collapsed the union to a single
+        # `anyOf: [<one>]` would pass the bare-existence check silently.
+        def _union_branches(c: dict) -> int:
+            for key in ("anyOf", "oneOf"):
+                if key in c and isinstance(c[key], list):
+                    return len(c[key])
+            return 0
+
+        best = max((_union_branches(c) for c in candidates), default=0)
+        assert best >= 2, (
+            f"{tool_name} output schema is not a multi-branch union "
+            f"(best union arity: {best}): {schema}"
+        )

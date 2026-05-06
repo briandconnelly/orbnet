@@ -34,7 +34,13 @@ FAMILY_TO_TOOL_NAME: dict[str, str] = {
 """Maps `DatasetSpec.family` values to the canonical MCP tool name. Most
 families round-trip via `f"get_{family}"`; `scores` is the only entry whose
 canonical tool name (`get_scores_1m`) deviates from that pattern, so we keep
-the whole mapping as one explicit table."""
+the whole mapping as one explicit table.
+
+Note: per-tool wrappers in `mcp_server.py` use `<fn>.__name__` so a tool
+rename propagates there automatically. This table is the only place tool
+names are hardcoded; planned tool-name changes (e.g., the `orb_` prefix in
+PR 4 of the agent-friendliness audit) must update both the renamed
+function definitions AND the values in this dict."""
 
 
 class ErrorContext(BaseModel):
