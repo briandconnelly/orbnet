@@ -83,15 +83,15 @@ class TestGranularityFallbackChain:
 
 
 class TestFamilyToToolName:
-    def test_scores_family_maps_to_versioned_name(self):
-        assert FAMILY_TO_TOOL_NAME["scores"] == "get_scores_1m"
+    def test_scores_family_maps_to_orb_get_scores(self):
+        assert FAMILY_TO_TOOL_NAME["scores"] == "orb_get_scores"
 
     @pytest.mark.parametrize(
         "family",
         ["responsiveness", "web_responsiveness", "speed_results", "wifi_link"],
     )
     def test_other_families_round_trip(self, family: str):
-        assert FAMILY_TO_TOOL_NAME[family] == f"get_{family}"
+        assert FAMILY_TO_TOOL_NAME[family] == f"orb_get_{family}"
 
 
 class TestErrorContext:
@@ -104,7 +104,7 @@ class TestErrorContext:
         from pydantic import ValidationError
 
         with pytest.raises(ValidationError):
-            ErrorContext(tool="get_responsiveness", bogus="x")  # type: ignore[call-arg]  # ty: ignore[unknown-argument]
+            ErrorContext(tool="orb_get_responsiveness", bogus="x")  # type: ignore[call-arg]  # ty: ignore[unknown-argument]
 
 
 # ---------------------------------------------------------------------------
@@ -149,7 +149,7 @@ class TestTranslateExceptionDispatch:
     def test_404_with_tool_but_no_granularity_is_dataset_not_found(self):
         from orbnet.errors import translate_exception
 
-        ctx = ErrorContext(tool="get_speed_results")
+        ctx = ErrorContext(tool="orb_get_speed_results")
         payload = translate_exception(_make_status_error(404), context=ctx)
         assert payload.code == "dataset_not_found"
 
@@ -195,19 +195,19 @@ class TestGranularityRepairChain:
     ):
         from orbnet.errors import translate_exception
 
-        ctx = ErrorContext(tool="get_responsiveness", granularity=failed)
+        ctx = ErrorContext(tool="orb_get_responsiveness", granularity=failed)
         payload = translate_exception(_make_status_error(404), context=ctx)
 
         assert payload.code == "granularity_unavailable"
         assert payload.repair is not None
-        assert payload.repair.tool == "get_responsiveness"
+        assert payload.repair.tool == "orb_get_responsiveness"
         assert payload.repair.arguments == {"granularity": expected_next}
         assert payload.repair.alternative is None
 
     def test_404_at_last_granularity_populates_alternative(self):
         from orbnet.errors import translate_exception
 
-        ctx = ErrorContext(tool="get_responsiveness", granularity="1m")
+        ctx = ErrorContext(tool="orb_get_responsiveness", granularity="1m")
         payload = translate_exception(_make_status_error(404), context=ctx)
 
         assert payload.code == "granularity_unavailable"

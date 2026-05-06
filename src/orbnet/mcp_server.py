@@ -87,16 +87,16 @@ mcp = FastMCP(
     If a request for a specific granularity returns an error or empty data,
     you MUST try the other granularities for that same dataset before moving
     on to a different dataset. The fallback order is: 1s → 15s → 1m.
-    For example, if get_wifi_link(granularity="1s") fails, try "15s",
+    For example, if orb_get_wifi_link(granularity="1s") fails, try "15s",
     then "1m" before concluding that Wi-Fi link data is unavailable.
 
     **Tool Selection Guide:**
-    - Quick check? → get_scores_1m() (fastest, gives overall picture)
-    - Detailed troubleshooting? → get_all_datasets() (comprehensive)
-    - Video call problems? → get_responsiveness() (latency/jitter focus)
-    - Slow downloads? → get_speed_results() (bandwidth focus)
-    - Web browsing issues? → get_web_responsiveness() (page load focus)
-    - Weak Wi-Fi signal? → get_wifi_link() (RSSI, SNR, link rates)
+    - Quick check? → orb_get_scores() (fastest, gives overall picture)
+    - Detailed troubleshooting? → orb_get_all_datasets() (comprehensive)
+    - Video call problems? → orb_get_responsiveness() (latency/jitter focus)
+    - Slow downloads? → orb_get_speed_results() (bandwidth focus)
+    - Web browsing issues? → orb_get_web_responsiveness() (page load focus)
+    - Weak Wi-Fi signal? → orb_get_wifi_link() (RSSI, SNR, link rates)
 
     **Built-in Workflows:**
     Use prompts like 'analyze_network_quality', 'troubleshoot_slow_internet', or
@@ -168,11 +168,11 @@ def get_client(
 
 
 @mcp.tool(
-    title="Get Scores Dataset (1m)",
+    title="Get Scores Dataset",
     annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=True),
     tags={"orb", "scores"},
 )
-async def get_scores_1m(
+async def orb_get_scores(
     ctx: Context,
     host: str | None = None,
     port: int | None = None,
@@ -256,7 +256,7 @@ async def get_scores_1m(
     try:
         return await client.get_scores_1m()
     except (httpx.HTTPError, ValidationError) as exc:
-        return translate_exception(exc, ErrorContext(tool=get_scores_1m.__name__))
+        return translate_exception(exc, ErrorContext(tool=orb_get_scores.__name__))
 
 
 @mcp.tool(
@@ -264,7 +264,7 @@ async def get_scores_1m(
     annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=True),
     tags={"orb", "responsiveness"},
 )
-async def get_responsiveness(
+async def orb_get_responsiveness(
     ctx: Context,
     host: str | None = None,
     granularity: Granularity = "1m",
@@ -276,7 +276,7 @@ async def get_responsiveness(
     Retrieve Responsiveness dataset from an Orb sensor at a single granularity.
 
     This tool fetches ONE granularity at a time. To fetch all granularities at
-    once, use get_all_datasets(include_all_responsiveness=True) instead.
+    once, use orb_get_all_datasets(include_all_responsiveness=True) instead.
 
     Includes detailed network responsiveness measures including lag, latency,
     jitter, and packet loss. Available in 1-second, 15-second, and 1-minute buckets.
@@ -337,7 +337,7 @@ async def get_responsiveness(
     except (httpx.HTTPError, ValidationError) as exc:
         return translate_exception(
             exc,
-            ErrorContext(tool=get_responsiveness.__name__, granularity=granularity),
+            ErrorContext(tool=orb_get_responsiveness.__name__, granularity=granularity),
         )
 
 
@@ -346,7 +346,7 @@ async def get_responsiveness(
     annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=True),
     tags={"orb", "web-performance"},
 )
-async def get_web_responsiveness(
+async def orb_get_web_responsiveness(
     ctx: Context,
     host: str | None = None,
     port: int | None = None,
@@ -387,7 +387,7 @@ async def get_web_responsiveness(
         return await client.get_web_responsiveness()
     except (httpx.HTTPError, ValidationError) as exc:
         return translate_exception(
-            exc, ErrorContext(tool=get_web_responsiveness.__name__)
+            exc, ErrorContext(tool=orb_get_web_responsiveness.__name__)
         )
 
 
@@ -396,7 +396,7 @@ async def get_web_responsiveness(
     annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=True),
     tags={"orb", "speed"},
 )
-async def get_speed_results(
+async def orb_get_speed_results(
     ctx: Context,
     host: str | None = None,
     port: int | None = None,
@@ -436,7 +436,9 @@ async def get_speed_results(
     try:
         return await client.get_speed_results()
     except (httpx.HTTPError, ValidationError) as exc:
-        return translate_exception(exc, ErrorContext(tool=get_speed_results.__name__))
+        return translate_exception(
+            exc, ErrorContext(tool=orb_get_speed_results.__name__)
+        )
 
 
 @mcp.tool(
@@ -444,7 +446,7 @@ async def get_speed_results(
     annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=True),
     tags={"orb", "wifi"},
 )
-async def get_wifi_link(
+async def orb_get_wifi_link(
     ctx: Context,
     host: str | None = None,
     granularity: Granularity = "1m",
@@ -456,7 +458,7 @@ async def get_wifi_link(
     Retrieve Wi-Fi Link dataset from an Orb sensor at a single granularity.
 
     This tool fetches ONE granularity at a time. To fetch all granularities at
-    once, use get_all_datasets(include_all_wifi_link=True) instead.
+    once, use orb_get_all_datasets(include_all_wifi_link=True) instead.
 
     Includes signal quality and link-layer metrics for the active Wi-Fi
     connection: signal strength (RSSI), signal-to-noise ratio (SNR), transmit
@@ -514,7 +516,7 @@ async def get_wifi_link(
     except (httpx.HTTPError, ValidationError) as exc:
         return translate_exception(
             exc,
-            ErrorContext(tool=get_wifi_link.__name__, granularity=granularity),
+            ErrorContext(tool=orb_get_wifi_link.__name__, granularity=granularity),
         )
 
 
@@ -523,7 +525,7 @@ async def get_wifi_link(
     annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=True),
     tags={"orb", "aggregate"},
 )
-async def get_all_datasets(
+async def orb_get_all_datasets(
     ctx: Context,
     host: str | None = None,
     include_all_responsiveness: bool = False,
@@ -645,7 +647,7 @@ def _get_client_info_impl(
     annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=False),
     tags={"orb", "config"},
 )
-def get_client_info(
+def orb_get_client_info(
     host: str | None = None,
     port: int | None = None,
     caller_id: str | None = None,
@@ -662,10 +664,10 @@ def analyze_network_quality() -> str:
     **Prerequisites:** Orb sensor reachable on the network with Local API enabled.
 
     Analyze the network quality using these steps:
-    1. Call get_scores_1m() to get the latest Orb scores
+    1. Call orb_get_scores() to get the latest Orb scores
     2. Examine orb_score (0-100, higher is better)
     3. Check component scores: responsiveness_score, reliability_score, speed_score
-    4. If scores are low, call get_responsiveness() for detailed metrics
+    4. If scores are low, call orb_get_responsiveness() for detailed metrics
     5. Provide actionable insights about network performance
     """
 
@@ -679,9 +681,9 @@ def troubleshoot_slow_internet() -> str:
     **Prerequisites:** Orb sensor reachable on the network with Local API enabled.
 
     To troubleshoot slow internet:
-    1. Call get_speed_results() to check recent speed tests
-    2. Call get_responsiveness() for latency/jitter data
-    3. Call get_web_responsiveness() to check TTFB and DNS performance
+    1. Call orb_get_speed_results() to check recent speed tests
+    2. Call orb_get_responsiveness() for latency/jitter data
+    3. Call orb_get_web_responsiveness() to check TTFB and DNS performance
     4. Compare metrics against typical values:
        - Good latency: < 50ms
        - Good jitter: < 10ms
@@ -698,7 +700,7 @@ def troubleshoot_wifi() -> str:
     Wi-Fi Link data is unavailable on iOS or ethernet-connected sensors.
 
     To diagnose Wi-Fi-specific network issues:
-    1. Call get_wifi_link() to get signal and link metrics
+    1. Call orb_get_wifi_link() to get signal and link metrics
     2. Examine key signal indicators:
        - rssi_avg: Signal strength in dBm (good: > -65, poor: < -75)
        - snr_avg: Signal-to-noise ratio in dB (good: > 25, poor: < 15)
@@ -710,9 +712,9 @@ def troubleshoot_wifi() -> str:
        - channel_number: Overlapping channels cause interference
        - phy_mode: Older standards (802.11n) have lower max throughput than
          802.11ac or 802.11ax
-    4. Call get_responsiveness() to check if poor Wi-Fi signal
+    4. Call orb_get_responsiveness() to check if poor Wi-Fi signal
        correlates with high latency or packet loss
-    5. Call get_speed_results() to check if signal weakness is limiting throughput
+    5. Call orb_get_speed_results() to check if signal weakness is limiting throughput
     6. Correlate the metrics:
        - Low RSSI + high latency = device too far from access point
        - Low SNR + packet loss = RF interference (neighboring networks, appliances)

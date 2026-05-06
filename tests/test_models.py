@@ -1348,10 +1348,10 @@ class TestRepair:
 
         r = Repair(
             next_step="retry with the next granularity",
-            tool="get_responsiveness",
+            tool="orb_get_responsiveness",
             arguments={"granularity": "15s"},
         )
-        assert r.tool == "get_responsiveness"
+        assert r.tool == "orb_get_responsiveness"
         assert r.arguments == {"granularity": "15s"}
 
     def test_extra_fields_forbidden(self):
@@ -1372,7 +1372,7 @@ class TestExtendedErrorPayload:
             code="granularity_unavailable",
             repair=Repair(
                 next_step="retry with the next granularity",
-                tool="get_responsiveness",
+                tool="orb_get_responsiveness",
                 arguments={"granularity": "15s"},
             ),
         )

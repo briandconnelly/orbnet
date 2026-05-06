@@ -1037,5 +1037,5 @@ class TestGetAllDatasetsErrorContext:
         assert isinstance(partial, ErrorPayload)
         assert partial.code == "granularity_unavailable"
         assert partial.repair is not None
-        assert partial.repair.tool == "get_responsiveness"
+        assert partial.repair.tool == "orb_get_responsiveness"
         assert partial.repair.arguments == {"granularity": "15s"}
