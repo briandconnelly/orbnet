@@ -458,6 +458,11 @@ def _register_dataset_tool(
     client_method_name = (
         "get_scores_1m" if spec.family == "scores" else f"get_{spec.family}"
     )
+    if not hasattr(OrbAPIClient, client_method_name):
+        raise RuntimeError(
+            f"_register_dataset_tool: OrbAPIClient has no method "
+            f"{client_method_name!r} for spec family {spec.family!r}"
+        )
     # Construct `list[<record_type>] | ErrorPayload` at runtime. ty cannot
     # evaluate `list[record_type]` as a type expression because record_type
     # is a parameter, but FastMCP only needs the runtime type object.

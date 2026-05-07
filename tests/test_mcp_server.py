@@ -175,6 +175,32 @@ async def test_mcp_tool_no_arg_forwards_client_default_granularity(
     assert forwarded == client_default
 
 
+def test_register_dataset_tool_raises_for_missing_client_method():
+    """Registration-time invariant: the spec must reference an
+    OrbAPIClient method that exists. Catches typos in spec.family or
+    a registry entry added without a corresponding client method."""
+    from dataclasses import replace
+
+    from orbnet.datasets import DATASETS
+    from orbnet.mcp_server import _register_dataset_tool
+    from orbnet.models import ScoreRecord
+
+    # Mutate scores spec to point at a nonexistent family name. The
+    # factory derives client_method_name = f"get_{spec.family}" for
+    # non-scores families.
+    bogus_spec = replace(DATASETS["responsiveness"], family="bogus_family")
+
+    with pytest.raises(RuntimeError, match="bogus_family"):
+        _register_dataset_tool(
+            bogus_spec,
+            title="Bogus",
+            tags={"orb"},
+            docstring="bogus",
+            granular=True,
+            record_type=ScoreRecord,
+        )
+
+
 # ---------------------------------------------------------------------------
 # Tool metadata tests (FastMCP 3.2: title, tags, ToolAnnotations)
 # ---------------------------------------------------------------------------
