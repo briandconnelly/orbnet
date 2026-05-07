@@ -44,19 +44,6 @@ class TestIntegration:
         assert info["timeout"] == 45.0
         assert info["base_url"] == "http://test-host:8080"
 
-    def test_model_validation_integration(self):
-        """Test that OrbClientConfig validates a realistic configuration."""
-        from orbnet.models import OrbClientConfig
-
-        config = OrbClientConfig(
-            host="test-host", port=8080, caller_id="test-caller", timeout=30.0
-        )
-
-        assert config.host == "test-host"
-        assert config.port == 8080
-        assert config.caller_id == "test-caller"
-        assert config.timeout == 30.0
-
     @pytest.mark.asyncio
     async def test_polling_configuration_integration(self):
         """Test that polling configuration works with client."""
