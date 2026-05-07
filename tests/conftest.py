@@ -3,7 +3,6 @@ Pytest configuration and shared fixtures for orbnet tests.
 """
 
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -249,41 +248,6 @@ def sample_wifi_link_data() -> list[dict[str, Any]]:
             "speed_test_engine": 0,
         }
     ]
-
-
-@pytest.fixture
-def mock_httpx_response():
-    """Mock httpx response object."""
-    response = MagicMock()
-    response.raise_for_status = MagicMock()
-    response.json = MagicMock()
-    response.text = "mock response text"
-    return response
-
-
-@pytest.fixture
-def mock_httpx_client():
-    """Mock httpx AsyncClient."""
-    client = AsyncMock()
-    client.__aenter__ = AsyncMock(return_value=client)
-    client.__aexit__ = AsyncMock(return_value=None)
-    return client
-
-
-@pytest.fixture
-def mock_httpx_get(mock_httpx_client, mock_httpx_response):
-    """Mock httpx.AsyncClient.get method."""
-    mock_httpx_client.get = AsyncMock(return_value=mock_httpx_response)
-    return mock_httpx_client.get
-
-
-@pytest.fixture
-def mock_httpx_client_context(mock_httpx_client):
-    """Mock httpx.AsyncClient context manager."""
-    with MagicMock() as mock_context:
-        mock_context.return_value.__aenter__ = AsyncMock(return_value=mock_httpx_client)
-        mock_context.return_value.__aexit__ = AsyncMock(return_value=None)
-        return mock_context
 
 
 @pytest.fixture
