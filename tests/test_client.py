@@ -528,6 +528,69 @@ class TestFetchHelper:
 
         assert fake_transport.calls[-1][0] == "web_responsiveness_results"
 
+    @pytest.mark.asyncio
+    async def test_fetch_threads_caller_id_override_into_params(
+        self, sample_scores_data, fake_transport
+    ):
+        """`_fetch` must pass an explicit caller_id override into the
+        transport's params dict as `id`. The deleted `_get_dataset`
+        test covered this contract; this asserts it directly at the
+        client→transport seam."""
+        from orbnet.datasets import DATASETS
+
+        fake_transport.responses["scores_1m"] = sample_scores_data
+
+        client = OrbAPIClient(host="192.168.1.100", transport=fake_transport)
+        await client._fetch(DATASETS["scores"], "1m", caller_id="override-123")
+
+        params = fake_transport.calls[-1][1]
+        assert params["id"] == "override-123"
+
+    @pytest.mark.asyncio
+    async def test_fetch_uses_default_caller_id_when_no_override(
+        self, sample_scores_data, fake_transport
+    ):
+        """When no caller_id is passed, `_fetch` must thread the
+        client's configured caller_id (set in __init__) into params."""
+        from orbnet.datasets import DATASETS
+
+        fake_transport.responses["scores_1m"] = sample_scores_data
+
+        client = OrbAPIClient(
+            host="192.168.1.100",
+            caller_id="configured-default",
+            transport=fake_transport,
+        )
+        await client._fetch(DATASETS["scores"], "1m")
+
+        params = fake_transport.calls[-1][1]
+        assert params["id"] == "configured-default"
+
+    @pytest.mark.asyncio
+    async def test_fetch_passes_extra_params_to_transport(
+        self, sample_scores_data, fake_transport
+    ):
+        """`_fetch`'s `**params` must reach the transport's params dict
+        alongside `id`. The deleted `_get_dataset_with_extra_params`
+        test covered this; this asserts the same contract via the seam."""
+        from orbnet.datasets import DATASETS
+
+        fake_transport.responses["scores_1m"] = sample_scores_data
+
+        client = OrbAPIClient(host="192.168.1.100", transport=fake_transport)
+        await client._fetch(
+            DATASETS["scores"],
+            "1m",
+            start_time=1700000000000,
+            end_time=1700000060000,
+        )
+
+        params = fake_transport.calls[-1][1]
+        assert params["start_time"] == 1700000000000
+        assert params["end_time"] == 1700000060000
+        # `id` is always populated alongside extra params.
+        assert "id" in params
+
 
 class TestGetAllDatasetsPlan:
     """Verify get_all_datasets dispatches to the right wire endpoints."""
