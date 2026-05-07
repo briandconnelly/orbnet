@@ -7,6 +7,43 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+# ---------------------------------------------------------------------------
+# Dataset transport test double
+# ---------------------------------------------------------------------------
+
+
+class FakeDatasetTransport:
+    """In-memory `DatasetTransport` for tests.
+
+    Set `responses[wire_name]` to either a list[dict] (success) or an
+    Exception instance (raised on fetch). `calls` captures the full
+    (wire_name, params) sequence so tests can assert on what was asked for.
+    """
+
+    def __init__(self):
+        self.responses: dict[str, list[dict[str, Any]] | Exception] = {}
+        self.calls: list[tuple[str, dict[str, Any]]] = []
+
+    async def fetch_dataset(
+        self, wire_name: str, params: dict[str, Any]
+    ) -> list[dict[str, Any]]:
+        self.calls.append((wire_name, dict(params)))
+        if wire_name not in self.responses:
+            raise KeyError(
+                f"FakeDatasetTransport: no response set for {wire_name!r}. "
+                f"Set fake_transport.responses[{wire_name!r}] in your test."
+            )
+        result = self.responses[wire_name]
+        if isinstance(result, Exception):
+            raise result
+        return result
+
+
+@pytest.fixture
+def fake_transport():
+    """An empty `FakeDatasetTransport`; populate `responses` per-test."""
+    return FakeDatasetTransport()
+
 
 @pytest.fixture
 def sample_scores_data() -> list[dict[str, Any]]:
