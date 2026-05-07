@@ -6,11 +6,11 @@ from importlib.metadata import version as get_version
 from typing import Any, cast
 
 import httpx
+from pydantic import TypeAdapter
 
 from .datasets import DATASETS, DatasetSpec, parse_poll_alias
 from .errors import ErrorContext, translate_exception
 from .models import (
-    AllDatasetsRequestParams,
     AllDatasetsResponse,
     Granularity,
     OrbClientConfig,
@@ -23,6 +23,10 @@ from .models import (
     WifiLinkRecord,
 )
 from .transport import DatasetTransport, HttpxDatasetTransport
+
+_GRANULARITY_ADAPTER: TypeAdapter[Granularity] = TypeAdapter(Granularity)
+_BOOL_ADAPTER: TypeAdapter[bool] = TypeAdapter(bool)
+_CALLER_ID_ADAPTER: TypeAdapter[str | None] = TypeAdapter(str | None)
 
 logger = logging.getLogger(__name__)
 
@@ -580,16 +584,17 @@ class OrbAPIClient:
             ...     else:
             ...         print(f"Failed to fetch {name}: {data.error}")
         """
-        request = AllDatasetsRequestParams(
-            caller_id=caller_id,
-            default_granularity=default_granularity,
-            include_all_responsiveness=include_all_responsiveness,
-            include_all_wifi_link=include_all_wifi_link,
+        _GRANULARITY_ADAPTER.validate_python(default_granularity)
+        # Pydantic bool coercion preserved: "false" → False, "true" → True, etc.
+        include_all_responsiveness = _BOOL_ADAPTER.validate_python(
+            include_all_responsiveness
         )
+        include_all_wifi_link = _BOOL_ADAPTER.validate_python(include_all_wifi_link)
+        caller_id = _CALLER_ID_ADAPTER.validate_python(caller_id)
 
         include_all_map = {
-            "responsiveness": request.include_all_responsiveness,
-            "wifi_link": request.include_all_wifi_link,
+            "responsiveness": include_all_responsiveness,
+            "wifi_link": include_all_wifi_link,
         }
 
         plan: list[tuple[DatasetSpec, Granularity | None]] = []
@@ -598,8 +603,8 @@ class OrbAPIClient:
                 plan.append((spec, None))
                 continue
             chosen = (
-                request.default_granularity
-                if request.default_granularity in spec.granularities
+                default_granularity
+                if default_granularity in spec.granularities
                 else spec.default_granularity
             )
             plan.append((spec, chosen))
@@ -609,7 +614,7 @@ class OrbAPIClient:
                         plan.append((spec, g))
 
         results = await asyncio.gather(
-            *[self._fetch(spec, g, request.caller_id) for spec, g in plan],
+            *[self._fetch(spec, g, caller_id) for spec, g in plan],
             return_exceptions=True,
         )
 

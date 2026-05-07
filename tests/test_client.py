@@ -853,6 +853,58 @@ class TestGranularityValidation:
             await client.get_responsiveness(granularity="bogus")  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]  # noqa: E501
 
 
+class TestGetAllDatasetsValidation:
+    """The deleted AllDatasetsRequestParams validated default_granularity
+    (Literal), the two include_all_* flags (bool with coercion), and
+    caller_id (str | None). Confirm equivalent validation now lives at
+    the get_all_datasets entrypoint via TypeAdapter."""
+
+    @pytest.mark.asyncio
+    async def test_invalid_default_granularity_raises(self):
+        from pydantic import ValidationError
+
+        client = OrbAPIClient(host="192.168.1.100")
+        with pytest.raises(ValidationError):
+            await client.get_all_datasets(default_granularity="bogus")  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]  # noqa: E501
+
+    @pytest.mark.asyncio
+    async def test_string_false_coerces_to_false_for_include_flags(
+        self, fake_transport
+    ):
+        """Pydantic bool coercion is preserved: passing the string 'false'
+        for include_all_* must coerce to False (not be truthy)."""
+        for wire_name in (
+            "scores_1m",
+            "responsiveness_1m",
+            "web_responsiveness_results",
+            "speed_results",
+            "wifi_link_1m",
+        ):
+            fake_transport.responses[wire_name] = []
+
+        client = OrbAPIClient(host="192.168.1.100", transport=fake_transport)
+        result = await client.get_all_datasets(
+            include_all_responsiveness="false",  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]  # noqa: E501
+            include_all_wifi_link="false",  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]  # noqa: E501
+        )
+
+        # If "false" had been treated truthily, all 3 responsiveness
+        # granularities would be in the plan; the bool coercion ensures
+        # only the default 1m is fetched.
+        assert result.responsiveness_1s is None
+        assert result.responsiveness_15s is None
+        assert result.wifi_link_1s is None
+        assert result.wifi_link_15s is None
+
+    @pytest.mark.asyncio
+    async def test_non_string_caller_id_raises(self):
+        from pydantic import ValidationError
+
+        client = OrbAPIClient(host="192.168.1.100")
+        with pytest.raises(ValidationError):
+            await client.get_all_datasets(caller_id=12345)  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]  # noqa: E501
+
+
 class TestGetAllDatasetsErrorContext:
     """When a per-fetch task in get_all_datasets raises, the resulting
     ErrorPayload must include the structured code/repair from

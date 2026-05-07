@@ -45,41 +45,6 @@ class OrbClientConfig(BaseModel):
     model_config = ConfigDict(validate_assignment=True)
 
 
-class DatasetRequestParams(BaseModel):
-    """Parameters for dataset requests"""
-
-    caller_id: str | None = Field(
-        default=None, description="Override the default caller_id for this request"
-    )
-
-    model_config = ConfigDict(extra="allow")
-
-
-class ResponsivenessRequestParams(DatasetRequestParams):
-    """Parameters for responsiveness dataset requests"""
-
-    granularity: Granularity = Field(
-        default="1m", description="Time bucket size - '1s', '15s', or '1m'"
-    )
-
-
-class AllDatasetsRequestParams(DatasetRequestParams):
-    """Parameters for fetching all datasets"""
-
-    default_granularity: Granularity = Field(
-        default="1m",
-        description="Default time-bucket size for granular datasets (responsiveness, wifi_link).",  # noqa: E501
-    )
-    include_all_responsiveness: bool = Field(
-        default=False,
-        description="If True, fetches all responsiveness granularities (1s, 15s, 1m). If False, only fetches 1m.",  # noqa: E501
-    )
-    include_all_wifi_link: bool = Field(
-        default=False,
-        description="If True, fetches all Wi-Fi Link granularities (1s, 15s, 1m). If False, only fetches 1m.",  # noqa: E501
-    )
-
-
 class PollingConfig(BaseModel):
     """Configuration for polling datasets"""
 

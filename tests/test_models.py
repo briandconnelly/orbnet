@@ -6,15 +6,12 @@ import pytest
 from pydantic import ValidationError
 
 from orbnet.models import (
-    AllDatasetsRequestParams,
     AllDatasetsResponse,
-    DatasetRequestParams,
     NetworkDimensions,
     OrbClientConfig,
     PollingConfig,
     ResponsivenessMeasures,
     ResponsivenessRecord,
-    ResponsivenessRequestParams,
     ScoreIdentifiers,
     ScoreMeasures,
     ScoreRecord,
@@ -76,81 +73,6 @@ class TestOrbClientConfig:
             OrbClientConfig(host="192.168.1.100", timeout=0)
         with pytest.raises(ValidationError):
             OrbClientConfig(host="192.168.1.100", timeout=-1.0)
-
-
-class TestDatasetRequestParams:
-    """Test DatasetRequestParams model."""
-
-    def test_default_values(self):
-        """Test default parameter values."""
-        params = DatasetRequestParams()
-        assert params.caller_id is None
-
-    def test_custom_values(self):
-        """Test custom parameter values."""
-        params = DatasetRequestParams.model_validate(
-            {"caller_id": "test-caller", "extra_param": "extra_value"}
-        )
-        assert params.caller_id == "test-caller"
-        assert params.model_extra is not None
-        assert params.model_extra["extra_param"] == "extra_value"
-
-
-class TestResponsivenessRequestParams:
-    """Test ResponsivenessRequestParams model."""
-
-    def test_default_values(self):
-        """Test default parameter values."""
-        params = ResponsivenessRequestParams()
-        assert params.caller_id is None
-        assert params.granularity == "1m"
-
-    def test_custom_values(self):
-        """Test custom parameter values."""
-        params = ResponsivenessRequestParams(caller_id="test-caller", granularity="1s")
-        assert params.caller_id == "test-caller"
-        assert params.granularity == "1s"
-
-    def test_granularity_validation(self):
-        """Test granularity validation."""
-        # Valid granularities
-        ResponsivenessRequestParams(granularity="1s")
-        ResponsivenessRequestParams(granularity="15s")
-        ResponsivenessRequestParams(granularity="1m")
-
-        # Invalid granularity
-        with pytest.raises(ValidationError):
-            ResponsivenessRequestParams.model_validate({"granularity": "5m"})
-
-
-class TestAllDatasetsRequestParams:
-    """Test AllDatasetsRequestParams model."""
-
-    def test_default_values(self):
-        """Test default parameter values."""
-        params = AllDatasetsRequestParams()
-        assert params.caller_id is None
-        assert params.default_granularity == "1m"
-        assert params.include_all_responsiveness is False
-        assert params.include_all_wifi_link is False
-
-    def test_custom_values(self):
-        """Test custom parameter values."""
-        params = AllDatasetsRequestParams(
-            caller_id="test-caller",
-            default_granularity="1s",
-            include_all_responsiveness=True,
-            include_all_wifi_link=True,
-        )
-        assert params.caller_id == "test-caller"
-        assert params.default_granularity == "1s"
-        assert params.include_all_responsiveness is True
-        assert params.include_all_wifi_link is True
-
-    def test_invalid_default_granularity_raises(self):
-        """Test that invalid default_granularity raises ValidationError."""
-        with pytest.raises(ValidationError):
-            AllDatasetsRequestParams(default_granularity="5m")  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]  # noqa: E501
 
 
 class TestPollingConfig:

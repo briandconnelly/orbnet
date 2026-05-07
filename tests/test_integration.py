@@ -45,37 +45,17 @@ class TestIntegration:
         assert info["base_url"] == "http://test-host:8080"
 
     def test_model_validation_integration(self):
-        """Test that models work together in realistic scenarios."""
-        from orbnet.models import (
-            AllDatasetsRequestParams,
-            DatasetRequestParams,
-            OrbClientConfig,
-            ResponsivenessRequestParams,
-        )
+        """Test that OrbClientConfig validates a realistic configuration."""
+        from orbnet.models import OrbClientConfig
 
-        # Test configuration chain
         config = OrbClientConfig(
             host="test-host", port=8080, caller_id="test-caller", timeout=30.0
         )
 
-        # Test dataset request with config values
-        dataset_params = DatasetRequestParams(caller_id=config.caller_id)
-
-        # Test responsiveness request
-        resp_params = ResponsivenessRequestParams(
-            granularity="1s", caller_id=config.caller_id
-        )
-
-        # Test all datasets request
-        all_params = AllDatasetsRequestParams(
-            caller_id=config.caller_id, include_all_responsiveness=True
-        )
-
-        # Verify all parameters are valid
-        assert dataset_params.caller_id == config.caller_id
-        assert resp_params.caller_id == config.caller_id
-        assert all_params.caller_id == config.caller_id
-        assert all_params.include_all_responsiveness is True
+        assert config.host == "test-host"
+        assert config.port == 8080
+        assert config.caller_id == "test-caller"
+        assert config.timeout == 30.0
 
     @pytest.mark.asyncio
     async def test_polling_configuration_integration(self):
