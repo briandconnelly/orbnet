@@ -239,7 +239,7 @@ class TestDatasetSpecValidateGranularity:
         from orbnet.datasets import DATASETS
 
         with pytest.raises(ValueError, match="Invalid granularity"):
-            DATASETS["responsiveness"].validate_granularity("2m")  # type: ignore[arg-type]
+            DATASETS["responsiveness"].validate_granularity("2m")  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]  # noqa: E501
 
     def test_error_message_lists_valid_granularities(self):
         import pytest
@@ -247,7 +247,7 @@ class TestDatasetSpecValidateGranularity:
         from orbnet.datasets import DATASETS
 
         with pytest.raises(ValueError, match="1s, 15s, 1m"):
-            DATASETS["responsiveness"].validate_granularity("bogus")  # type: ignore[arg-type]
+            DATASETS["responsiveness"].validate_granularity("bogus")  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]  # noqa: E501
 
     def test_non_granular_dataset_accepts_none(self):
         from orbnet.datasets import DATASETS
@@ -263,4 +263,4 @@ class TestDatasetSpecValidateGranularity:
         from orbnet.datasets import DATASETS
 
         # No exception even though "1s" isn't meaningful for this dataset.
-        DATASETS["speed_results"].validate_granularity("1s")  # type: ignore[arg-type]
+        DATASETS["speed_results"].validate_granularity("1s")
