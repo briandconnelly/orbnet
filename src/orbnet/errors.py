@@ -24,23 +24,6 @@ most retention-friendly granularity, and if it's unavailable the lower ones
 typically aren't enabled either)."""
 
 
-FAMILY_TO_TOOL_NAME: dict[str, str] = {
-    "scores": "orb_get_scores",
-    "responsiveness": "orb_get_responsiveness",
-    "web_responsiveness": "orb_get_web_responsiveness",
-    "speed_results": "orb_get_speed_results",
-    "wifi_link": "orb_get_wifi_link",
-}
-"""Maps `DatasetSpec.family` values to the canonical MCP tool name.
-
-Each MCP per-tool wrapper uses `<fn>.__name__` to populate
-`ErrorContext.tool` automatically; this table is the single hand-maintained
-mapping used by `OrbAPIClient.get_all_datasets`'s partial-failure path,
-where the loop iterates `(spec, granularity)` pairs and needs to map
-`spec.family` to the public tool name to thread into `ErrorContext`.
-"""
-
-
 class ErrorContext(BaseModel):
     """Per-call context threaded into `translate_exception`.
 

@@ -8,7 +8,7 @@ from typing import Any, cast
 import httpx
 
 from .datasets import DATASETS, DatasetSpec, parse_poll_alias
-from .errors import FAMILY_TO_TOOL_NAME, ErrorContext, translate_exception
+from .errors import ErrorContext, translate_exception
 from .models import (
     AllDatasetsRequestParams,
     AllDatasetsResponse,
@@ -170,19 +170,11 @@ class OrbAPIClient:
 
         Internal helper. The single place that turns raw JSON dicts into
         Pydantic record instances. Public methods (get_scores_1m, etc.) are
-        thin shims over this. `granularity` is validated against
-        `spec.granularities` here so dynamic callers get a clear ValueError
-        instead of an opaque HTTP 404 from a malformed wire name.
+        thin shims over this. `granularity` is validated by the spec so
+        dynamic callers get a clear ValueError instead of an opaque HTTP 404
+        from a malformed wire name.
         """
-        if (
-            granularity is not None
-            and spec.granularities
-            and granularity not in spec.granularities
-        ):
-            raise ValueError(
-                f"Invalid granularity {granularity!r} for {spec.family}. "
-                f"Valid: {', '.join(spec.granularities)}"
-            )
+        spec.validate_granularity(granularity)
 
         caller = caller_id or self.config.caller_id
         raw_data = await self._transport.fetch_dataset(
@@ -625,7 +617,7 @@ class OrbAPIClient:
         for (spec, g), result in zip(plan, results, strict=True):
             if isinstance(result, BaseException):
                 context = ErrorContext(
-                    tool=FAMILY_TO_TOOL_NAME[spec.family],
+                    tool=spec.tool_name,
                     granularity=g,
                 )
                 fields[spec.response_field(g)] = translate_exception(result, context)
