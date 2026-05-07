@@ -27,9 +27,11 @@ from pydantic import BaseModel, Field, ValidationError
 
 from . import __version__
 from .client import OrbAPIClient
+from .datasets import DATASETS, DatasetSpec
 from .errors import ErrorContext, translate_exception
 from .models import (
     AllDatasetsResponse,
+    BaseRecord,
     ErrorPayload,
     Granularity,
     ResponsivenessRecord,
@@ -167,19 +169,7 @@ def get_client(
     )
 
 
-@mcp.tool(
-    title="Get Scores Dataset",
-    annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=True),
-    tags={"orb", "scores"},
-)
-async def orb_get_scores(
-    ctx: Context,
-    host: str | None = None,
-    port: int | None = None,
-    caller_id: str | None = None,
-    timeout: float | None = None,
-) -> list[ScoreRecord] | ErrorPayload:
-    """
+_SCORES_DOCSTRING = """
     Retrieve 1-minute granularity Scores dataset from an Orb sensor.
 
     The Scores Dataset includes Orb Score and its component scores (Responsiveness,
@@ -251,28 +241,9 @@ async def orb_get_scores(
             }
         ]
     """
-    client = get_client(host, port, caller_id, timeout)
-    await ctx.info(f"Getting 1m scores from Orb sensor {client.host}...")
-    try:
-        return await client.get_scores_1m()
-    except (httpx.HTTPError, ValidationError) as exc:
-        return translate_exception(exc, ErrorContext(tool=orb_get_scores.__name__))
 
 
-@mcp.tool(
-    title="Get Responsiveness Dataset",
-    annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=True),
-    tags={"orb", "responsiveness"},
-)
-async def orb_get_responsiveness(
-    ctx: Context,
-    host: str | None = None,
-    granularity: Granularity = "1m",
-    port: int | None = None,
-    caller_id: str | None = None,
-    timeout: float | None = None,
-) -> list[ResponsivenessRecord] | ErrorPayload:
-    """
+_RESPONSIVENESS_DOCSTRING = """
     Retrieve Responsiveness dataset from an Orb sensor at a single granularity.
 
     This tool fetches ONE granularity at a time. To fetch all granularities at
@@ -330,30 +301,9 @@ async def orb_get_responsiveness(
 
     Empty list [] if no new data since last poll.
     """
-    client = get_client(host, port, caller_id, timeout)
-    await ctx.info(f"Getting responsiveness data from Orb sensor {client.host}...")
-    try:
-        return await client.get_responsiveness(granularity=granularity)
-    except (httpx.HTTPError, ValidationError) as exc:
-        return translate_exception(
-            exc,
-            ErrorContext(tool=orb_get_responsiveness.__name__, granularity=granularity),
-        )
 
 
-@mcp.tool(
-    title="Get Web Responsiveness Dataset",
-    annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=True),
-    tags={"orb", "web-performance"},
-)
-async def orb_get_web_responsiveness(
-    ctx: Context,
-    host: str | None = None,
-    port: int | None = None,
-    caller_id: str | None = None,
-    timeout: float | None = None,
-) -> list[WebResponsivenessRecord] | ErrorPayload:
-    """
+_WEB_RESPONSIVENESS_DOCSTRING = """
     Retrieve Web Responsiveness dataset from an Orb sensor.
 
     Includes Time to First Byte (TTFB) for web page loads and DNS resolver
@@ -381,29 +331,9 @@ async def orb_get_web_responsiveness(
         - network_type: Network interface type
         - And more...
     """
-    client = get_client(host, port, caller_id, timeout)
-    await ctx.info(f"Getting web responsiveness data from Orb sensor {client.host}...")
-    try:
-        return await client.get_web_responsiveness()
-    except (httpx.HTTPError, ValidationError) as exc:
-        return translate_exception(
-            exc, ErrorContext(tool=orb_get_web_responsiveness.__name__)
-        )
 
 
-@mcp.tool(
-    title="Get Speed Test Results",
-    annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=True),
-    tags={"orb", "speed"},
-)
-async def orb_get_speed_results(
-    ctx: Context,
-    host: str | None = None,
-    port: int | None = None,
-    caller_id: str | None = None,
-    timeout: float | None = None,
-) -> list[SpeedRecord] | ErrorPayload:
-    """
+_SPEED_RESULTS_DOCSTRING = """
     Retrieve Speed test results dataset from an Orb sensor.
 
     Includes download and upload speed test results. Content speed measurements
@@ -431,30 +361,9 @@ async def orb_get_speed_results(
         - timestamp: Test timestamp in epoch milliseconds
         - network_type: Network interface type
     """
-    client = get_client(host, port, caller_id, timeout)
-    await ctx.info(f"Getting speed test data from Orb sensor {client.host}...")
-    try:
-        return await client.get_speed_results()
-    except (httpx.HTTPError, ValidationError) as exc:
-        return translate_exception(
-            exc, ErrorContext(tool=orb_get_speed_results.__name__)
-        )
 
 
-@mcp.tool(
-    title="Get Wi-Fi Link Dataset",
-    annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=True),
-    tags={"orb", "wifi"},
-)
-async def orb_get_wifi_link(
-    ctx: Context,
-    host: str | None = None,
-    granularity: Granularity = "1m",
-    port: int | None = None,
-    caller_id: str | None = None,
-    timeout: float | None = None,
-) -> list[WifiLinkRecord] | ErrorPayload:
-    """
+_WIFI_LINK_DOCSTRING = """
     Retrieve Wi-Fi Link dataset from an Orb sensor at a single granularity.
 
     This tool fetches ONE granularity at a time. To fetch all granularities at
@@ -509,15 +418,153 @@ async def orb_get_wifi_link(
         "Why is my Wi-Fi slow even though my internet plan is fast?"
         "Show me my Wi-Fi signal strength over the last hour"
     """
-    client = get_client(host, port, caller_id, timeout)
-    await ctx.info(f"Getting Wi-Fi link data from Orb sensor {client.host}...")
-    try:
-        return await client.get_wifi_link(granularity=granularity)
-    except (httpx.HTTPError, ValidationError) as exc:
-        return translate_exception(
-            exc,
-            ErrorContext(tool=orb_get_wifi_link.__name__, granularity=granularity),
-        )
+
+
+def _register_dataset_tool(
+    spec: DatasetSpec,
+    *,
+    title: str,
+    tags: set[str],
+    docstring: str,
+    granular: bool,
+    record_type: type[BaseRecord],
+) -> None:
+    """Register a FastMCP tool for one dataset family.
+
+    The tool body is the same for every family modulo (a) which client
+    method to call and (b) whether `granularity` is exposed and threaded
+    into ErrorContext. This factory bakes the body once; each per-family
+    registration is then a single declarative call.
+
+    `granular=True` exposes a `granularity` parameter and uses
+    `spec.default_granularity` as its default. The granularity is also
+    threaded into ErrorContext so 404 fallback hints reach
+    granularity_unavailable.
+
+    `granular=False` omits the parameter; `ErrorContext.granularity` is
+    None so 404s become dataset_not_found.
+
+    `client_method_name` is derived from the spec: `get_scores_1m` for
+    the scores family (historical exception preserved); `get_<family>`
+    for everything else.
+
+    `record_type` becomes the success branch of the tool's return
+    annotation (`list[record_type] | ErrorPayload`). FastMCP reads
+    this annotation to derive `output_schema`; without it, the union
+    shape pinned by `TestMCPOutputSchemaIsUnion` would silently
+    collapse.
+    """
+    tool_name = spec.tool_name
+    client_method_name = (
+        "get_scores_1m" if spec.family == "scores" else f"get_{spec.family}"
+    )
+    # Construct `list[<record_type>] | ErrorPayload` at runtime. ty cannot
+    # evaluate `list[record_type]` as a type expression because record_type
+    # is a parameter, but FastMCP only needs the runtime type object.
+    return_type = list[record_type] | ErrorPayload  # type: ignore[valid-type]  # ty: ignore[invalid-type-form]
+
+    if granular:
+        default_granularity = spec.default_granularity
+
+        async def _tool(
+            ctx: Context,
+            host: str | None = None,
+            granularity: Granularity = default_granularity,  # type: ignore[assignment]  # ty: ignore[invalid-parameter-default]
+            port: int | None = None,
+            caller_id: str | None = None,
+            timeout: float | None = None,
+        ):
+            client = get_client(host, port, caller_id, timeout)
+            await ctx.info(
+                f"Getting {spec.family} data from Orb sensor {client.host}..."
+            )
+            try:
+                method = getattr(client, client_method_name)
+                return await method(granularity=granularity)
+            except (httpx.HTTPError, ValidationError) as exc:
+                return translate_exception(
+                    exc,
+                    ErrorContext(tool=tool_name, granularity=granularity),
+                )
+
+    else:
+
+        async def _tool(  # type: ignore[no-redef]
+            ctx: Context,
+            host: str | None = None,
+            port: int | None = None,
+            caller_id: str | None = None,
+            timeout: float | None = None,
+        ):
+            client = get_client(host, port, caller_id, timeout)
+            await ctx.info(
+                f"Getting {spec.family} data from Orb sensor {client.host}..."
+            )
+            try:
+                method = getattr(client, client_method_name)
+                return await method()
+            except (httpx.HTTPError, ValidationError) as exc:
+                return translate_exception(exc, ErrorContext(tool=tool_name))
+
+    _tool.__name__ = tool_name
+    _tool.__doc__ = docstring
+    # Set return annotation explicitly so FastMCP's output_schema derivation
+    # sees `list[<Record>] | ErrorPayload` instead of an inference fallback.
+    _tool.__annotations__["return"] = return_type
+    # Bind to module globals so existing tests that call mcp_server.orb_get_<x>
+    # directly continue to work.
+    globals()[tool_name] = _tool
+    mcp.tool(
+        title=title,
+        annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=True),
+        tags=tags,
+    )(_tool)
+
+
+_register_dataset_tool(
+    DATASETS["scores"],
+    title="Get Scores Dataset",
+    tags={"orb", "scores"},
+    docstring=_SCORES_DOCSTRING,
+    granular=False,
+    record_type=ScoreRecord,
+)
+
+_register_dataset_tool(
+    DATASETS["responsiveness"],
+    title="Get Responsiveness Dataset",
+    tags={"orb", "responsiveness"},
+    docstring=_RESPONSIVENESS_DOCSTRING,
+    granular=True,
+    record_type=ResponsivenessRecord,
+)
+
+_register_dataset_tool(
+    DATASETS["web_responsiveness"],
+    title="Get Web Responsiveness Dataset",
+    tags={"orb", "web-performance"},
+    docstring=_WEB_RESPONSIVENESS_DOCSTRING,
+    granular=False,
+    record_type=WebResponsivenessRecord,
+)
+
+_register_dataset_tool(
+    DATASETS["speed_results"],
+    title="Get Speed Test Results",
+    tags={"orb", "speed"},
+    docstring=_SPEED_RESULTS_DOCSTRING,
+    granular=False,
+    record_type=SpeedRecord,
+)
+
+_register_dataset_tool(
+    DATASETS["wifi_link"],
+    title="Get Wi-Fi Link Dataset",
+    tags={"orb", "wifi"},
+    docstring=_WIFI_LINK_DOCSTRING,
+    granular=True,
+    record_type=WifiLinkRecord,
+)
 
 
 @mcp.tool(
