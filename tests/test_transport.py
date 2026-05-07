@@ -136,3 +136,27 @@ class TestHttpxDatasetTransport:
 
             init_kwargs = mock_client_class.call_args[1]
             assert init_kwargs["timeout"] == 12.5
+
+    @pytest.mark.asyncio
+    async def test_fetch_constructs_a_fresh_client_per_call(self, mock_httpx_response):
+        """Per-call lifecycle: each fetch_dataset call must open and
+        close its own httpx.AsyncClient via `async with`. Regressing
+        to a long-lived client would change connection-pool semantics
+        and silently alter timeout-per-call behavior."""
+        with patch("httpx.AsyncClient") as mock_client_class:
+            mock_client = AsyncMock()
+            mock_client_class.return_value.__aenter__.return_value = mock_client
+            mock_client.get.return_value = mock_httpx_response
+
+            transport = HttpxDatasetTransport(
+                host="h",
+                port=7080,
+                client_id="ua",
+                timeout=30.0,
+            )
+            await transport.fetch_dataset("scores_1m", {"id": "x"})
+            await transport.fetch_dataset("scores_1m", {"id": "x"})
+
+            assert mock_client_class.call_count == 2
+            # Each construction is followed by a context-manager exit.
+            assert mock_client_class.return_value.__aexit__.await_count == 2

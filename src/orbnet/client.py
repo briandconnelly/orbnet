@@ -77,9 +77,14 @@ class OrbAPIClient:
                       User-Agent). Useful for identifying different applications
                       or services. If None, uses a default identifier.
             timeout: Request timeout in seconds (default: 30.0)
-            transport: Optional `DatasetTransport` for testing or alternate
-                       HTTP backends. If None, builds a default
-                       `HttpxDatasetTransport` from host/port/client_id/timeout.
+            transport: Optional `DatasetTransport` for testing. If None,
+                       builds a default `HttpxDatasetTransport` from
+                       host/port/client_id/timeout. The transport
+                       snapshots these values at construction; mutating
+                       `self.config` post-init does not alter request
+                       target, headers, or timeout. (See
+                       `orbnet.transport` for the seam's current
+                       httpx-shaped contract.)
 
         Examples:
             Connect to Orb sensor:

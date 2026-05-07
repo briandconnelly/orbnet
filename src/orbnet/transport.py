@@ -2,10 +2,19 @@
 
 `OrbAPIClient` does not speak HTTP directly; it composes a `DatasetTransport`
 that takes a wire-name and query params and returns the parsed JSON list.
-Production code uses `HttpxDatasetTransport`; tests use a fake.
+Production code uses `HttpxDatasetTransport`; tests use an in-memory fake.
 
-The seam exists so test code never has to mock `httpx.AsyncClient` to
-exercise client behavior. Two adapters (httpx + fake) make the seam real.
+The seam exists primarily so test code never has to mock `httpx.AsyncClient`
+to exercise client behavior. Two adapters (httpx + fake) make the seam real.
+
+Today the seam is httpx-shaped: `OrbAPIClient.poll_dataset` catches
+`httpx.HTTPError` to swallow transport errors, and `orbnet.errors`
+dispatches on httpx exception types when translating to `ErrorPayload`.
+A transport implementation that raises non-httpx exception types will
+not get the same polling/translation behavior. Introducing a
+transport-neutral error type is future work; until then, alternate
+adapters should raise `httpx.HTTPError` subclasses (or a subclass
+thereof) for transport-level failures.
 """
 
 from typing import Any, Protocol
@@ -14,7 +23,14 @@ import httpx
 
 
 class DatasetTransport(Protocol):
-    """Port for fetching raw dataset records by wire name."""
+    """Port for fetching raw dataset records by wire name.
+
+    Implementations must raise `httpx.HTTPError` subclasses for
+    transport-level failures (network errors, timeouts, non-2xx
+    responses). `OrbAPIClient.poll_dataset` and `orbnet.errors`
+    branch on httpx exception types; non-httpx errors propagate
+    instead of being recognized.
+    """
 
     async def fetch_dataset(
         self, wire_name: str, params: dict[str, Any]
