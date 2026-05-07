@@ -584,7 +584,7 @@ class OrbAPIClient:
             ...     else:
             ...         print(f"Failed to fetch {name}: {data.error}")
         """
-        _GRANULARITY_ADAPTER.validate_python(default_granularity)
+        default_granularity = _GRANULARITY_ADAPTER.validate_python(default_granularity)
         # Pydantic bool coercion preserved: "false" → False, "true" → True, etc.
         include_all_responsiveness = _BOOL_ADAPTER.validate_python(
             include_all_responsiveness

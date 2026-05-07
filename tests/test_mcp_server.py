@@ -183,11 +183,12 @@ def test_register_dataset_tool_raises_for_missing_client_method():
 
     from orbnet.datasets import DATASETS
     from orbnet.mcp_server import _register_dataset_tool
-    from orbnet.models import ScoreRecord
 
-    # Mutate scores spec to point at a nonexistent family name. The
-    # factory derives client_method_name = f"get_{spec.family}" for
-    # non-scores families.
+    # Use the responsiveness spec (a standard granular family) and
+    # mutate its `family` to a nonexistent name. The factory derives
+    # client_method_name = f"get_{spec.family}" for non-scores families,
+    # so the registration-time hasattr check should fire on the
+    # missing OrbAPIClient.get_bogus_family.
     bogus_spec = replace(DATASETS["responsiveness"], family="bogus_family")
 
     with pytest.raises(RuntimeError, match="bogus_family"):
@@ -197,7 +198,6 @@ def test_register_dataset_tool_raises_for_missing_client_method():
             tags={"orb"},
             docstring="bogus",
             granular=True,
-            record_type=ScoreRecord,
         )
 
 

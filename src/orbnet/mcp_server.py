@@ -31,14 +31,8 @@ from .datasets import DATASETS, DatasetSpec
 from .errors import ErrorContext, translate_exception
 from .models import (
     AllDatasetsResponse,
-    BaseRecord,
     ErrorPayload,
     Granularity,
-    ResponsivenessRecord,
-    ScoreRecord,
-    SpeedRecord,
-    WebResponsivenessRecord,
-    WifiLinkRecord,
 )
 
 SERVER_FINGERPRINT = f"orbnet@{__version__}"
@@ -427,7 +421,6 @@ def _register_dataset_tool(
     tags: set[str],
     docstring: str,
     granular: bool,
-    record_type: type[BaseRecord],
 ) -> None:
     """Register a FastMCP tool for one dataset family.
 
@@ -448,11 +441,13 @@ def _register_dataset_tool(
     the scores family (historical exception preserved); `get_<family>`
     for everything else.
 
-    `record_type` becomes the success branch of the tool's return
-    annotation (`list[record_type] | ErrorPayload`). FastMCP reads
-    this annotation to derive `output_schema`; without it, the union
-    shape pinned by `TestMCPOutputSchemaIsUnion` would silently
-    collapse.
+    The return annotation is derived from `spec.record_class` as
+    `list[spec.record_class] | ErrorPayload`. FastMCP reads this
+    annotation to derive `output_schema`; without it the union shape
+    pinned by `TestMCPOutputSchemaIsUnion` would silently collapse.
+    Sourcing from the spec keeps the registry the single source of
+    truth — there's no second `record_type` parameter that could
+    drift out of sync with `spec.record_class`.
     """
     tool_name = spec.tool_name
     client_method_name = (
@@ -463,10 +458,11 @@ def _register_dataset_tool(
             f"_register_dataset_tool: OrbAPIClient has no method "
             f"{client_method_name!r} for spec family {spec.family!r}"
         )
-    # Construct `list[<record_type>] | ErrorPayload` at runtime. ty cannot
-    # evaluate `list[record_type]` as a type expression because record_type
-    # is a parameter, but FastMCP only needs the runtime type object.
-    return_type = list[record_type] | ErrorPayload  # type: ignore[valid-type]  # ty: ignore[invalid-type-form]
+    # Construct `list[<record_class>] | ErrorPayload` at runtime. ty cannot
+    # evaluate `list[spec.record_class]` as a type expression because
+    # spec.record_class is an attribute access, but FastMCP only needs the
+    # runtime type object.
+    return_type = list[spec.record_class] | ErrorPayload  # type: ignore[valid-type]  # ty: ignore[invalid-type-form]
 
     if granular:
         default_granularity = spec.default_granularity
@@ -532,7 +528,6 @@ _register_dataset_tool(
     tags={"orb", "scores"},
     docstring=_SCORES_DOCSTRING,
     granular=False,
-    record_type=ScoreRecord,
 )
 
 _register_dataset_tool(
@@ -541,7 +536,6 @@ _register_dataset_tool(
     tags={"orb", "responsiveness"},
     docstring=_RESPONSIVENESS_DOCSTRING,
     granular=True,
-    record_type=ResponsivenessRecord,
 )
 
 _register_dataset_tool(
@@ -550,7 +544,6 @@ _register_dataset_tool(
     tags={"orb", "web-performance"},
     docstring=_WEB_RESPONSIVENESS_DOCSTRING,
     granular=False,
-    record_type=WebResponsivenessRecord,
 )
 
 _register_dataset_tool(
@@ -559,7 +552,6 @@ _register_dataset_tool(
     tags={"orb", "speed"},
     docstring=_SPEED_RESULTS_DOCSTRING,
     granular=False,
-    record_type=SpeedRecord,
 )
 
 _register_dataset_tool(
@@ -568,7 +560,6 @@ _register_dataset_tool(
     tags={"orb", "wifi"},
     docstring=_WIFI_LINK_DOCSTRING,
     granular=True,
-    record_type=WifiLinkRecord,
 )
 
 
