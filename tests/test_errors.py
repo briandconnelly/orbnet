@@ -8,7 +8,6 @@ import httpx
 import pytest
 
 from orbnet.errors import (
-    FAMILY_TO_TOOL_NAME,
     GRANULARITY_FALLBACK,
     ErrorContext,
 )
@@ -80,18 +79,6 @@ class TestGranularityFallbackChain:
 
         granularity_values = set(get_args(Granularity.__value__))
         assert set(GRANULARITY_FALLBACK.keys()) == granularity_values
-
-
-class TestFamilyToToolName:
-    def test_scores_family_maps_to_orb_get_scores(self):
-        assert FAMILY_TO_TOOL_NAME["scores"] == "orb_get_scores"
-
-    @pytest.mark.parametrize(
-        "family",
-        ["responsiveness", "web_responsiveness", "speed_results", "wifi_link"],
-    )
-    def test_other_families_round_trip(self, family: str):
-        assert FAMILY_TO_TOOL_NAME[family] == f"orb_get_{family}"
 
 
 class TestErrorContext:
