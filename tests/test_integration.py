@@ -44,15 +44,6 @@ class TestIntegration:
         assert info["timeout"] == 45.0
         assert info["base_url"] == "http://test-host:8080"
 
-    @pytest.mark.asyncio
-    async def test_client_headers_integration(self):
-        """Test that client headers are properly constructed."""
-        client = OrbAPIClient(host="192.168.1.100", client_id="test-client")
-        headers = client._get_headers()
-
-        expected_headers = {"Accept": "application/json", "User-Agent": "test-client"}
-        assert headers == expected_headers
-
     def test_model_validation_integration(self):
         """Test that models work together in realistic scenarios."""
         from orbnet.models import (

@@ -3,9 +3,45 @@ Pytest configuration and shared fixtures for orbnet tests.
 """
 
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+
+# ---------------------------------------------------------------------------
+# Dataset transport test double
+# ---------------------------------------------------------------------------
+
+
+class FakeDatasetTransport:
+    """In-memory `DatasetTransport` for tests.
+
+    Set `responses[wire_name]` to either a list[dict] (success) or an
+    Exception instance (raised on fetch). `calls` captures the full
+    (wire_name, params) sequence so tests can assert on what was asked for.
+    """
+
+    def __init__(self):
+        self.responses: dict[str, list[dict[str, Any]] | Exception] = {}
+        self.calls: list[tuple[str, dict[str, Any]]] = []
+
+    async def fetch_dataset(
+        self, wire_name: str, params: dict[str, Any]
+    ) -> list[dict[str, Any]]:
+        self.calls.append((wire_name, dict(params)))
+        if wire_name not in self.responses:
+            raise KeyError(
+                f"FakeDatasetTransport: no response set for {wire_name!r}. "
+                f"Set fake_transport.responses[{wire_name!r}] in your test."
+            )
+        result = self.responses[wire_name]
+        if isinstance(result, Exception):
+            raise result
+        return result
+
+
+@pytest.fixture
+def fake_transport():
+    """An empty `FakeDatasetTransport`; populate `responses` per-test."""
+    return FakeDatasetTransport()
 
 
 @pytest.fixture
@@ -212,41 +248,6 @@ def sample_wifi_link_data() -> list[dict[str, Any]]:
             "speed_test_engine": 0,
         }
     ]
-
-
-@pytest.fixture
-def mock_httpx_response():
-    """Mock httpx response object."""
-    response = MagicMock()
-    response.raise_for_status = MagicMock()
-    response.json = MagicMock()
-    response.text = "mock response text"
-    return response
-
-
-@pytest.fixture
-def mock_httpx_client():
-    """Mock httpx AsyncClient."""
-    client = AsyncMock()
-    client.__aenter__ = AsyncMock(return_value=client)
-    client.__aexit__ = AsyncMock(return_value=None)
-    return client
-
-
-@pytest.fixture
-def mock_httpx_get(mock_httpx_client, mock_httpx_response):
-    """Mock httpx.AsyncClient.get method."""
-    mock_httpx_client.get = AsyncMock(return_value=mock_httpx_response)
-    return mock_httpx_client.get
-
-
-@pytest.fixture
-def mock_httpx_client_context(mock_httpx_client):
-    """Mock httpx.AsyncClient context manager."""
-    with MagicMock() as mock_context:
-        mock_context.return_value.__aenter__ = AsyncMock(return_value=mock_httpx_client)
-        mock_context.return_value.__aexit__ = AsyncMock(return_value=None)
-        return mock_context
 
 
 @pytest.fixture

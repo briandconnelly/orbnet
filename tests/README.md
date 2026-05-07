@@ -10,17 +10,23 @@ tests/
 ├── conftest.py              # Pytest configuration and shared fixtures
 ├── test_models.py           # Tests for Pydantic models
 ├── test_client.py           # Tests for OrbAPIClient class
+├── test_transport.py        # Tests for HttpxDatasetTransport adapter
+├── test_datasets.py         # Tests for DatasetSpec registry
+├── test_errors.py           # Tests for ErrorPayload translator
 ├── test_mcp_server.py       # Tests for MCP server tools
 ├── test_integration.py      # Integration tests
 ├── test_utils.py            # Test utilities and helpers
-└── README.md               # This file
+└── README.md                # This file
 ```
 
 ## Test Categories
 
 ### Unit Tests
 - **test_models.py**: Tests for all Pydantic models including validation, serialization, and error handling
-- **test_client.py**: Tests for the OrbAPIClient class including HTTP requests, error handling, and async operations
+- **test_client.py**: Tests for the OrbAPIClient class including granularity validation, error handling, async operations, and the client→transport contract
+- **test_transport.py**: Tests for the `HttpxDatasetTransport` adapter (the only place httpx is mocked directly)
+- **test_datasets.py**: Tests for the `DatasetSpec` registry and poll-name aliasing
+- **test_errors.py**: Tests for the exception → `ErrorPayload` translator
 - **test_mcp_server.py**: Tests for MCP server tools and configuration
 
 ### Integration Tests
@@ -121,11 +127,8 @@ The test suite includes comprehensive fixtures in `conftest.py`:
 - `sample_all_datasets_response`: Mock response for get_all_datasets
 - `sample_error_response`: Mock error response
 
-### Mock Fixtures
-- `mock_httpx_response`: Mock httpx response object
-- `mock_httpx_client`: Mock httpx AsyncClient
-- `mock_httpx_get`: Mock httpx.AsyncClient.get method
-- `mock_httpx_client_context`: Mock httpx.AsyncClient context manager
+### Transport Test Double
+- `fake_transport`: An empty `FakeDatasetTransport` for injection into `OrbAPIClient(transport=...)`. Populate `responses[wire_name]` with either a list of records (success) or an Exception (failure); inspect `calls` to assert on what was fetched. Replaces the prior pattern of mocking `httpx.AsyncClient` directly.
 
 ### Configuration Fixtures
 - `default_client_config`: Default client configuration for testing
@@ -182,13 +185,16 @@ def test_with_fixture(sample_scores_data):
     assert len(sample_scores_data) > 0
 ```
 
-### Mocking
-Use the provided mock fixtures or create custom mocks:
+### Faking the transport
+Inject `fake_transport` into `OrbAPIClient` and stage canned responses keyed by wire name:
 ```python
-def test_with_mock(mock_httpx_response):
-    mock_httpx_response.json.return_value = {"test": "data"}
-    # Test implementation
+async def test_with_fake_transport(sample_scores_data, fake_transport):
+    fake_transport.responses["scores_1m"] = sample_scores_data
+    client = OrbAPIClient(host="192.168.1.100", transport=fake_transport)
+    result = await client.get_scores_1m()
+    assert fake_transport.calls[-1][0] == "scores_1m"
 ```
+For the production HTTP adapter itself, see `test_transport.py` — that is the only place httpx is mocked directly.
 
 ## Continuous Integration
 

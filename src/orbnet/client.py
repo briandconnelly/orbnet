@@ -22,6 +22,7 @@ from .models import (
     WebResponsivenessRecord,
     WifiLinkRecord,
 )
+from .transport import DatasetTransport, HttpxDatasetTransport
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +62,8 @@ class OrbAPIClient:
         caller_id: str | None = None,
         client_id: str | None = None,
         timeout: float = 30.0,
+        *,
+        transport: DatasetTransport | None = None,
     ):
         """
         Initialize the Orb API client.
@@ -75,6 +78,14 @@ class OrbAPIClient:
                       User-Agent). Useful for identifying different applications
                       or services. If None, uses a default identifier.
             timeout: Request timeout in seconds (default: 30.0)
+            transport: Optional `DatasetTransport` for testing. If None,
+                       builds a default `HttpxDatasetTransport` from
+                       host/port/client_id/timeout. The transport
+                       snapshots these values at construction; mutating
+                       `self.config` post-init does not alter request
+                       target, headers, or timeout. (See
+                       `orbnet.transport` for the seam's current
+                       httpx-shaped contract.)
 
         Examples:
             Connect to Orb sensor:
@@ -104,6 +115,16 @@ class OrbAPIClient:
                 f"orbnet/{get_version('orbnet')}" if client_id is None else client_id
             ),
             timeout=timeout,
+        )
+        self._transport: DatasetTransport = (
+            transport
+            if transport is not None
+            else HttpxDatasetTransport(
+                host=self.config.host,
+                port=self.config.port,
+                client_id=cast(str, self.config.client_id),
+                timeout=self.config.timeout,
+            )
         )
 
     @property
@@ -138,40 +159,6 @@ class OrbAPIClient:
         """Construct the base URL from host and port"""
         return f"http://{self.config.host}:{self.config.port}"
 
-    def _get_headers(self) -> dict[str, str]:
-        """Get common headers for API requests"""
-        return {"Accept": "application/json", "User-Agent": self.client_id}
-
-    async def _get_dataset(
-        self,
-        dataset_name: str,
-        caller_id: str | None = None,
-        **params,
-    ) -> list[dict[str, Any]]:
-        """
-        Internal method to fetch a dataset from the Local Data API.
-
-        Args:
-            dataset_name: Name of the dataset (e.g., "responsiveness_1s")
-            caller_id: Override the default caller_id for this request
-            **params: Additional query parameters
-
-        Returns:
-            List of records as dictionaries
-        """
-        caller = caller_id or self.config.caller_id
-        endpoint = f"{self.base_url}/api/v2/datasets/{dataset_name}.json"
-
-        query_params = {"id": caller, **params}
-
-        async with httpx.AsyncClient(timeout=self.config.timeout) as client:
-            response = await client.get(
-                endpoint, headers=self._get_headers(), params=query_params
-            )
-            response.raise_for_status()
-
-            return response.json()
-
     async def _fetch(
         self,
         spec: DatasetSpec,
@@ -197,10 +184,10 @@ class OrbAPIClient:
                 f"Valid: {', '.join(spec.granularities)}"
             )
 
-        raw_data = await self._get_dataset(
+        caller = caller_id or self.config.caller_id
+        raw_data = await self._transport.fetch_dataset(
             spec.wire_name(granularity),
-            caller_id=caller_id,
-            **params,
+            {"id": caller, **params},
         )
         return [spec.record_class(**record) for record in raw_data]
 
