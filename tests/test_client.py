@@ -778,6 +778,37 @@ class TestExplicitOverrideSemantics:
         assert client.client_id.startswith("orbnet/")
 
 
+class TestNonStringIdentifierRejection:
+    """OrbClientConfig (deleted in PR3) rejected non-string caller_id /
+    client_id via Pydantic's default strict-string typing. Inline TypeAdapter
+    validation in __init__ preserves that rejection."""
+
+    def test_non_string_caller_id_raises(self):
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            OrbAPIClient(host="192.168.1.100", caller_id=42)  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]  # noqa: E501
+
+    def test_non_string_client_id_raises(self):
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            OrbAPIClient(host="192.168.1.100", client_id=42)  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]  # noqa: E501
+
+    def test_caller_id_none_still_generates_uuid(self):
+        """None bypasses the validator (default branch). Sanity check
+        that the validation didn't accidentally break the UUID default."""
+        client = OrbAPIClient(host="192.168.1.100", caller_id=None)
+        assert client.caller_id is not None
+        assert client.caller_id != ""
+
+    def test_client_id_none_still_uses_default(self):
+        """None bypasses the validator. Sanity check that the default
+        identifier path still works."""
+        client = OrbAPIClient(host="192.168.1.100", client_id=None)
+        assert client.client_id.startswith("orbnet/")
+
+
 class TestPollDatasetPropagatesProgrammingErrors:
     """poll_dataset only swallows transport (httpx) errors. Programming errors
     such as pydantic validation failures and callback bugs must propagate so

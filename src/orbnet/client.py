@@ -28,6 +28,7 @@ _BOOL_ADAPTER: TypeAdapter[bool] = TypeAdapter(bool)
 _CALLER_ID_ADAPTER: TypeAdapter[str | None] = TypeAdapter(str | None)
 _HOST_ADAPTER: TypeAdapter[str] = TypeAdapter(Annotated[str, Field(min_length=1)])
 _PORT_ADAPTER: TypeAdapter[int] = TypeAdapter(Annotated[int, Field(ge=1, le=65535)])
+_STR_ADAPTER: TypeAdapter[str] = TypeAdapter(str)
 _TIMEOUT_ADAPTER: TypeAdapter[float] = TypeAdapter(Annotated[float, Field(gt=0)])
 
 logger = logging.getLogger(__name__)
@@ -115,9 +116,15 @@ class OrbAPIClient:
         """
         self.host: str = _HOST_ADAPTER.validate_python(host)
         self.port: int = _PORT_ADAPTER.validate_python(port)
-        self.caller_id: str = str(uuid.uuid4()) if caller_id is None else caller_id
+        self.caller_id: str = (
+            str(uuid.uuid4())
+            if caller_id is None
+            else _STR_ADAPTER.validate_python(caller_id)
+        )
         self.client_id: str = (
-            f"orbnet/{get_version('orbnet')}" if client_id is None else client_id
+            f"orbnet/{get_version('orbnet')}"
+            if client_id is None
+            else _STR_ADAPTER.validate_python(client_id)
         )
         self.timeout: float = _TIMEOUT_ADAPTER.validate_python(timeout)
         self._transport: DatasetTransport = (
