@@ -160,7 +160,7 @@ class OrbAPIClient:
         """
         spec.validate_granularity(granularity)
 
-        caller = caller_id or self.caller_id
+        caller = self.caller_id if caller_id is None else caller_id
         raw_data = await self._transport.fetch_dataset(
             spec.wire_name(granularity),
             {"id": caller, **params},

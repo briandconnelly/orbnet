@@ -591,6 +591,29 @@ class TestFetchHelper:
         # `id` is always populated alongside extra params.
         assert "id" in params
 
+    @pytest.mark.asyncio
+    async def test_fetch_honors_explicit_empty_string_caller_id(
+        self, sample_scores_data, fake_transport
+    ):
+        """An explicit empty-string caller_id override must reach the
+        transport unchanged. The public API uses None as the
+        \"use default\" sentinel; empty strings are real overrides
+        (per TestExplicitOverrideSemantics::test_empty_caller_id_is_preserved
+        on __init__)."""
+        from orbnet.datasets import DATASETS
+
+        fake_transport.responses["scores_1m"] = sample_scores_data
+
+        client = OrbAPIClient(
+            host="192.168.1.100",
+            caller_id="default-id",
+            transport=fake_transport,
+        )
+        await client._fetch(DATASETS["scores"], "1m", caller_id="")
+
+        params = fake_transport.calls[-1][1]
+        assert params["id"] == ""
+
 
 class TestGetAllDatasetsPlan:
     """Verify get_all_datasets dispatches to the right wire endpoints."""
