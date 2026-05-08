@@ -22,29 +22,6 @@ NETWORK_STATE_DESC = (
 LOCATION_SOURCE_DESC = "Location Source: 0=unknown, 1=geoip (may not be included)"
 
 
-class OrbClientConfig(BaseModel):
-    """Configuration for the Orb API Client"""
-
-    host: str = Field(
-        min_length=1,
-        description="Hostname or IP address of the Orb sensor",
-    )
-    port: int = Field(
-        default=7080, ge=1, le=65535, description="Port number for the Orb API"
-    )
-    caller_id: str | None = Field(
-        default=None,
-        description="Unique ID for this caller to track polling state. If None, generates a random UUID.",  # noqa: E501
-    )
-    client_id: str | None = Field(
-        default=None,
-        description="Optional identifier for the HTTP client itself (sent as User-Agent header). If None, uses a default.",  # noqa: E501
-    )
-    timeout: float = Field(default=30.0, gt=0, description="Request timeout in seconds")
-
-    model_config = ConfigDict(validate_assignment=True)
-
-
 class PollingConfig(BaseModel):
     """Configuration for polling datasets"""
 

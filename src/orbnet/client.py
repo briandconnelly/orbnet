@@ -3,17 +3,16 @@ import inspect
 import logging
 import uuid
 from importlib.metadata import version as get_version
-from typing import Any, cast
+from typing import Annotated, Any
 
 import httpx
-from pydantic import TypeAdapter
+from pydantic import Field, TypeAdapter
 
 from .datasets import DATASETS, DatasetSpec, parse_poll_alias
 from .errors import ErrorContext, translate_exception
 from .models import (
     AllDatasetsResponse,
     Granularity,
-    OrbClientConfig,
     PollingCallback,
     PollingConfig,
     ResponsivenessRecord,
@@ -27,6 +26,10 @@ from .transport import DatasetTransport, HttpxDatasetTransport
 _GRANULARITY_ADAPTER: TypeAdapter[Granularity] = TypeAdapter(Granularity)
 _BOOL_ADAPTER: TypeAdapter[bool] = TypeAdapter(bool)
 _CALLER_ID_ADAPTER: TypeAdapter[str | None] = TypeAdapter(str | None)
+_HOST_ADAPTER: TypeAdapter[str] = TypeAdapter(Annotated[str, Field(min_length=1)])
+_PORT_ADAPTER: TypeAdapter[int] = TypeAdapter(Annotated[int, Field(ge=1, le=65535)])
+_STR_ADAPTER: TypeAdapter[str] = TypeAdapter(str)
+_TIMEOUT_ADAPTER: TypeAdapter[float] = TypeAdapter(Annotated[float, Field(gt=0)])
 
 logger = logging.getLogger(__name__)
 
@@ -86,8 +89,8 @@ class OrbAPIClient:
                        builds a default `HttpxDatasetTransport` from
                        host/port/client_id/timeout. The transport
                        snapshots these values at construction; mutating
-                       `self.config` post-init does not alter request
-                       target, headers, or timeout. (See
+                       attributes like `self.host` post-init does not
+                       alter request target, headers, or timeout. (See
                        `orbnet.transport` for the seam's current
                        httpx-shaped contract.)
 
@@ -111,57 +114,34 @@ class OrbAPIClient:
             ...     timeout=120.0
             ... )
         """
-        self.config = OrbClientConfig(
-            host=host,
-            port=port,
-            caller_id=str(uuid.uuid4()) if caller_id is None else caller_id,
-            client_id=(
-                f"orbnet/{get_version('orbnet')}" if client_id is None else client_id
-            ),
-            timeout=timeout,
+        self.host: str = _HOST_ADAPTER.validate_python(host)
+        self.port: int = _PORT_ADAPTER.validate_python(port)
+        self.caller_id: str = (
+            str(uuid.uuid4())
+            if caller_id is None
+            else _STR_ADAPTER.validate_python(caller_id)
         )
+        self.client_id: str = (
+            f"orbnet/{get_version('orbnet')}"
+            if client_id is None
+            else _STR_ADAPTER.validate_python(client_id)
+        )
+        self.timeout: float = _TIMEOUT_ADAPTER.validate_python(timeout)
         self._transport: DatasetTransport = (
             transport
             if transport is not None
             else HttpxDatasetTransport(
-                host=self.config.host,
-                port=self.config.port,
-                client_id=cast(str, self.config.client_id),
-                timeout=self.config.timeout,
+                host=self.host,
+                port=self.port,
+                client_id=self.client_id,
+                timeout=self.timeout,
             )
         )
 
     @property
-    def host(self) -> str:
-        """Get the configured host"""
-        return self.config.host
-
-    @property
-    def port(self) -> int:
-        """Get the configured port"""
-        return self.config.port
-
-    @property
-    def caller_id(self) -> str:
-        """Get the configured caller_id"""
-        # __init__ always resolves caller_id to a non-None value before storing.
-        return cast(str, self.config.caller_id)
-
-    @property
-    def client_id(self) -> str:
-        """Get the configured client_id"""
-        # __init__ always resolves client_id to a non-None value before storing.
-        return cast(str, self.config.client_id)
-
-    @property
-    def timeout(self) -> float:
-        """Get the configured timeout"""
-        return self.config.timeout
-
-    @property
     def base_url(self) -> str:
         """Construct the base URL from host and port"""
-        return f"http://{self.config.host}:{self.config.port}"
+        return f"http://{self.host}:{self.port}"
 
     async def _fetch(
         self,
@@ -180,7 +160,7 @@ class OrbAPIClient:
         """
         spec.validate_granularity(granularity)
 
-        caller = caller_id or self.config.caller_id
+        caller = self.caller_id if caller_id is None else caller_id
         raw_data = await self._transport.fetch_dataset(
             spec.wire_name(granularity),
             {"id": caller, **params},
