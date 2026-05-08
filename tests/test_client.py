@@ -777,6 +777,15 @@ class TestExplicitOverrideSemantics:
         client = OrbAPIClient(host="192.168.1.100", client_id=None)
         assert client.client_id.startswith("orbnet/")
 
+    def test_port_above_max_is_rejected(self):
+        """port=65536 should raise ValidationError (above _PORT_ADAPTER's
+        le=65535 upper bound). Closes the boundary-coverage gap left by
+        the deleted TestOrbClientConfig.test_port_validation."""
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            OrbAPIClient(host="192.168.1.100", port=65536)
+
 
 class TestNonStringIdentifierRejection:
     """OrbClientConfig (deleted in PR3) rejected non-string caller_id /
