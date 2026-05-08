@@ -71,20 +71,19 @@ class TestIntegration:
         """Test error handling across components."""
         from pydantic import ValidationError
 
-        from orbnet.models import OrbClientConfig
+        from orbnet.client import OrbAPIClient
 
-        # Test invalid configuration
+        # Invalid configuration is rejected at construction.
         with pytest.raises(ValidationError):
-            OrbClientConfig(host="test-host", port=0)  # Invalid port
-
+            OrbAPIClient(host="test-host", port=0)
         with pytest.raises(ValidationError):
-            OrbClientConfig(host="test-host", timeout=-1.0)  # Invalid timeout
+            OrbAPIClient(host="test-host", timeout=-1.0)
 
-        # Test valid configuration
-        config = OrbClientConfig(host="192.168.1.100", port=8080, timeout=30.0)
-        assert config.host == "192.168.1.100"
-        assert config.port == 8080
-        assert config.timeout == 30.0
+        # Valid configuration succeeds.
+        client = OrbAPIClient(host="192.168.1.100", port=8080, timeout=30.0)
+        assert client.host == "192.168.1.100"
+        assert client.port == 8080
+        assert client.timeout == 30.0
 
     @pytest.mark.slow
     @pytest.mark.asyncio
@@ -192,7 +191,6 @@ class TestIntegration:
         from orbnet.mcp_server import _get_client_info_impl
         from orbnet.models import (
             AllDatasetsResponse,
-            OrbClientConfig,
             ResponsivenessRecord,
             ScoreRecord,
             SpeedRecord,
@@ -202,11 +200,9 @@ class TestIntegration:
 
         # Test that they can be instantiated
         client = OrbAPIClient(host="192.168.1.100")
-        config = OrbClientConfig(host="192.168.1.100")
         info = _get_client_info_impl(host="192.168.1.100")
 
         assert client is not None
-        assert config is not None
         assert info is not None
 
         # Verify record types are available

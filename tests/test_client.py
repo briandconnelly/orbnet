@@ -744,9 +744,9 @@ class TestExplicitOverrideSemantics:
     """__init__ uses `is None` checks, not falsy fallbacks, so explicit
     empty-string overrides are honored rather than silently replaced.
 
-    The one exception is `host`, which has min_length=1 in OrbClientConfig
-    — an empty hostname produces a structurally invalid base URL like
-    `http://:7080`, so it's rejected at construction.
+    The one exception is `host`, which is validated by `_HOST_ADAPTER`
+    (min_length=1) — an empty hostname produces a structurally invalid
+    base URL like `http://:7080`, so it's rejected at construction.
     """
 
     def test_empty_host_is_rejected(self):

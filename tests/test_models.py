@@ -8,7 +8,6 @@ from pydantic import ValidationError
 from orbnet.models import (
     AllDatasetsResponse,
     NetworkDimensions,
-    OrbClientConfig,
     PollingConfig,
     ResponsivenessMeasures,
     ResponsivenessRecord,
@@ -22,57 +21,6 @@ from orbnet.models import (
     WifiLinkMeasures,
     WifiLinkRecord,
 )
-
-
-class TestOrbClientConfig:
-    """Test OrbClientConfig model."""
-
-    def test_default_values(self):
-        """Test default configuration values."""
-        config = OrbClientConfig(host="192.168.1.100")
-        assert config.host == "192.168.1.100"
-        assert config.port == 7080
-        assert config.caller_id is None
-        assert config.client_id is None
-        assert config.timeout == 30.0
-
-    def test_custom_values(self):
-        """Test custom configuration values."""
-        config = OrbClientConfig(
-            host="192.168.1.100",
-            port=8080,
-            caller_id="test-caller",
-            client_id="test-client",
-            timeout=60.0,
-        )
-        assert config.host == "192.168.1.100"
-        assert config.port == 8080
-        assert config.caller_id == "test-caller"
-        assert config.client_id == "test-client"
-        assert config.timeout == 60.0
-
-    def test_port_validation(self):
-        """Test port number validation."""
-        # Valid ports
-        OrbClientConfig(host="192.168.1.100", port=1)
-        OrbClientConfig(host="192.168.1.100", port=65535)
-
-        # Invalid ports
-        with pytest.raises(ValidationError):
-            OrbClientConfig(host="192.168.1.100", port=0)
-        with pytest.raises(ValidationError):
-            OrbClientConfig(host="192.168.1.100", port=65536)
-
-    def test_timeout_validation(self):
-        """Test timeout validation."""
-        # Valid timeout
-        OrbClientConfig(host="192.168.1.100", timeout=0.1)
-
-        # Invalid timeout
-        with pytest.raises(ValidationError):
-            OrbClientConfig(host="192.168.1.100", timeout=0)
-        with pytest.raises(ValidationError):
-            OrbClientConfig(host="192.168.1.100", timeout=-1.0)
 
 
 class TestPollingConfig:
